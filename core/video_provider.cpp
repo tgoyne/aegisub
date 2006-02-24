@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro, Fredrik Mellbin
+// Copyright (c) 2006, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,32 +34,54 @@
 //
 
 
-#pragma once
+///////////
+// Headers
+#include "video_provider_avs.h"
+#include "video_provider_lavc.h"
+#include "options.h"
 
 
-////////////////////////////
-// Video Provider interface
-class VideoProvider {
-public:
-	virtual ~VideoProvider() {}
+////////////////
+// Get provider
+VideoProvider *VideoProvider::GetProvider(wxString video,wxString subtitles) {
+	// Check if avisynth is available
+	bool avisynthAvailable = false;
+	#ifdef __WINDOWS__
+	try {
+		// If avisynth.dll cannot be loaded, an exception will be thrown and avisynthAvailable will never be set to true
+		AviSynthWrapper avs;
+		avisynthAvailable = true;
+	}
+	catch (...) {}
+	#endif
 
-	virtual void RefreshSubtitles()=0;		// Refresh subtitles display
+	// Initialize to null
+	VideoProvider *provider = NULL;
 
-	virtual wxBitmap GetFrame(int n)=0;						// Get frame as bitmap
-	virtual void GetFloatFrame(float* Buffer, int n)=0;		// Get frame as float (for FexTracker)
+	// See if it's OK to use LAVC
+	#ifdef USE_LAVC
+	if (Options.AsBool(_T("Use ffmpeg"))) {
+		try {
+			provider = new LAVCVideoProvider(video,subtitles,1.0);
+		}
+		catch (...) {
+			if (avisynthAvailable) {
+				wxMessageBox(_T("Failed loading FFmpeg decoder for video, falling back to Avisynth."),_T("FFmpeg error."));
+				provider = NULL;
+			}
 
-	virtual int GetPosition()=0;			// Get the current frame being displayed
-	virtual int GetFrameCount()=0;			// Get total number of frames
-	virtual double GetFPS()=0;				// Get framerate in frames per second
+			// Out of options, rethrow
+			else throw;
+		}
+	}
+	#endif
 
-	virtual void SetDAR(double dar)=0;		// Set display aspect ratio (width/height)
-	virtual void SetZoom(double zoom)=0;	// Set zoom factor
-	virtual int GetWidth()=0;				// Returns the display width in pixels
-	virtual int GetHeight()=0;				// Returns the display height in pixels
-	virtual double GetZoom()=0;				// Returns the zoom factor
+	// Use avisynth provider
+	#ifdef __WINDOWS__
+	bool usedDirectshow = false;
+	if (!provider) provider = new AvisynthVideoProvider(video,subtitles,1.0,usedDirectshow);
+	#endif
 
-	virtual int GetSourceWidth()=0;			// Returns the original source width in pixels
-	virtual int GetSourceHeight()=0;		// Returns the original source height in pixels
-
-	static VideoProvider *GetProvider(wxString video,wxString subtitles);
-};
+	// Return provider
+	return provider;
+}
