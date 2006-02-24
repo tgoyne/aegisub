@@ -33,9 +33,15 @@
 // Contact: mailto:zeratul@cellosoft.com
 //
 
-#ifndef VIDEO_PROVIDER_AVS_H
-#define VIDEO_PROVIDER_AVS_H
 
+#pragma once
+
+
+///////////
+// Headers
+#include <wx/wxprec.h>
+
+#ifdef __WINDOWS__
 #include "avisynth_wrap.h"
 #include "video_provider.h"
 
