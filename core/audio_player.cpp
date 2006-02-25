@@ -45,12 +45,16 @@
 // Constructor
 AudioPlayer::AudioPlayer() {
 	provider = NULL;
+	displayTimer = NULL;
 }
 
 
 //////////////
 // Destructor
 AudioPlayer::~AudioPlayer() {
+	if (displayTimer) {
+		displayTimer->Stop();
+	}
 }
 
 
@@ -58,6 +62,27 @@ AudioPlayer::~AudioPlayer() {
 // Set provider
 void AudioPlayer::SetProvider(AudioProvider *_provider) {
 	provider = _provider;
+}
+
+
+////////////////
+// Get provider
+AudioProvider *AudioPlayer::GetProvider() {
+	return provider;
+}
+
+
+/////////////
+// Get mutex
+wxMutex *AudioPlayer::GetMutex() {
+	return NULL;
+}
+
+
+/////////////
+// Set timer
+void AudioPlayer::SetDisplayTimer(wxTimer *timer) {
+	displayTimer = timer;
 }
 
 
