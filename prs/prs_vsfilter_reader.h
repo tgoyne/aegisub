@@ -34,39 +34,17 @@
 //
 
 
-#ifndef AVISYNTH_WRAP_H
-#define AVISYNTH_WRAP_H
+//////////////
+// Prototypes
+class PRSFile;
+class AssFile;
 
 
-///////////
-// Headers
-#include <wx/wxprec.h>
-
-#ifdef __WINDOWS__
-#include <windows.h>
-#include "avisynth.h"
-
-
-//////////////////////////////////
-// Typedef to make my life easier
-typedef IScriptEnvironment* __stdcall FUNC(int);
-
-
-///////////////////////////
-// AviSynth wrapping class
-class AviSynthWrapper {
+/////////////////////////
+// VSFilter reader class
+class PRSVSFilterReader {
 private:
-	static int avs_refcount;
-	static HINSTANCE hLib;
-protected:
-	static IScriptEnvironment *env;
+
 public:
-	static wxMutex AviSynthMutex;
-
-	IScriptEnvironment *GetEnv();
-	AviSynthWrapper();
-	~AviSynthWrapper();
+	void ConvertFile(AssFile *subs,PRSFile *prs);
 };
-
-#endif
-#endif

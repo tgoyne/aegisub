@@ -34,39 +34,32 @@
 //
 
 
-#ifndef AVISYNTH_WRAP_H
-#define AVISYNTH_WRAP_H
+#pragma once
+
+
+//////////////
+// Prototypes
+class PRSEntry;
 
 
 ///////////
 // Headers
-#include <wx/wxprec.h>
-
-#ifdef __WINDOWS__
-#include <windows.h>
-#include "avisynth.h"
+#include <list>
 
 
-//////////////////////////////////
-// Typedef to make my life easier
-typedef IScriptEnvironment* __stdcall FUNC(int);
-
-
-///////////////////////////
-// AviSynth wrapping class
-class AviSynthWrapper {
+///////////////////////////////
+// Pre-Rendered Subtitles file
+class PRSFile {
 private:
-	static int avs_refcount;
-	static HINSTANCE hLib;
-protected:
-	static IScriptEnvironment *env;
+	std::list<PRSEntry*> entryList;
+	void Reset();
+
 public:
-	static wxMutex AviSynthMutex;
+	PRSFile();
+	~PRSFile();
 
-	IScriptEnvironment *GetEnv();
-	AviSynthWrapper();
-	~AviSynthWrapper();
+	void AddEntry(PRSEntry *entry);
+
+	void Save(const char *path);
+	void Load(const char *path,bool reset=true);
 };
-
-#endif
-#endif

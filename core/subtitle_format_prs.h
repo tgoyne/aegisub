@@ -1,4 +1,4 @@
-// Copyright (c) 2005, Rodrigo Braz Monteiro
+// Copyright (c) 2006, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,39 +34,18 @@
 //
 
 
-#ifndef AVISYNTH_WRAP_H
-#define AVISYNTH_WRAP_H
+#pragma once
 
 
 ///////////
 // Headers
-#include <wx/wxprec.h>
-
-#ifdef __WINDOWS__
-#include <windows.h>
-#include "avisynth.h"
+#include "subtitle_format.h"
 
 
-//////////////////////////////////
-// Typedef to make my life easier
-typedef IScriptEnvironment* __stdcall FUNC(int);
-
-
-///////////////////////////
-// AviSynth wrapping class
-class AviSynthWrapper {
-private:
-	static int avs_refcount;
-	static HINSTANCE hLib;
-protected:
-	static IScriptEnvironment *env;
+//////////////
+// PRS writer
+class PRSSubtitleFormat : public SubtitleFormat {
 public:
-	static wxMutex AviSynthMutex;
-
-	IScriptEnvironment *GetEnv();
-	AviSynthWrapper();
-	~AviSynthWrapper();
+	bool CanWriteFile(wxString filename);
+	void WriteFile(wxString filename,wxString encoding);
 };
-
-#endif
-#endif

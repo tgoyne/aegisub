@@ -34,39 +34,19 @@
 //
 
 
-#ifndef AVISYNTH_WRAP_H
-#define AVISYNTH_WRAP_H
+#pragma once
 
 
 ///////////
 // Headers
-#include <wx/wxprec.h>
-
-#ifdef __WINDOWS__
-#include <windows.h>
-#include "avisynth.h"
+#include "prs_entry.h"
 
 
-//////////////////////////////////
-// Typedef to make my life easier
-typedef IScriptEnvironment* __stdcall FUNC(int);
-
-
-///////////////////////////
-// AviSynth wrapping class
-class AviSynthWrapper {
-private:
-	static int avs_refcount;
-	static HINSTANCE hLib;
-protected:
-	static IScriptEnvironment *env;
+///////////////
+// Image class
+class PRSImage : public PRSEntry {
 public:
-	static wxMutex AviSynthMutex;
-
-	IScriptEnvironment *GetEnv();
-	AviSynthWrapper();
-	~AviSynthWrapper();
+	int id;
+	int dataLen;
+	void *data;
 };
-
-#endif
-#endif

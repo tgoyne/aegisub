@@ -34,39 +34,34 @@
 //
 
 
-#ifndef AVISYNTH_WRAP_H
-#define AVISYNTH_WRAP_H
+#pragma once
+
+
+///////////////
+// Blend modes
+enum PRSBlendMode {
+	NORMAL = 0,
+	ADD,
+	SUBTRACT,
+	INVERSE_SUBTRACT,
+	MULTIPLY
+};
 
 
 ///////////
 // Headers
-#include <wx/wxprec.h>
-
-#ifdef __WINDOWS__
-#include <windows.h>
-#include "avisynth.h"
+#include "prs_entry.h"
 
 
-//////////////////////////////////
-// Typedef to make my life easier
-typedef IScriptEnvironment* __stdcall FUNC(int);
-
-
-///////////////////////////
-// AviSynth wrapping class
-class AviSynthWrapper {
-private:
-	static int avs_refcount;
-	static HINSTANCE hLib;
-protected:
-	static IScriptEnvironment *env;
+/////////////////
+// Display class
+class PRSDisplay : public PRSEntry {
 public:
-	static wxMutex AviSynthMutex;
-
-	IScriptEnvironment *GetEnv();
-	AviSynthWrapper();
-	~AviSynthWrapper();
+	int start;				// First time to show this on (INCLUSIVE) (possible first frame?)
+	int end;				// Last time to show this on (EXCLUSIVE) (possible last frame?)
+	int id;					// ID of picture to be shown
+	int layer;				// Number of layer to draw this on
+	short x,y;				// X and Y coordinates to draw picture on
+	unsigned char alpha;	// Alpha blend of picture
+	unsigned char blend;	// Blend mode to use
 };
-
-#endif
-#endif

@@ -41,12 +41,14 @@
 #ifdef __WINDOWS__
 #include "options.h"
 
+
 ///////////////////////////////
 // Static field initialization
 int AviSynthWrapper::avs_refcount = 0;
 HINSTANCE AviSynthWrapper::hLib = NULL;
 IScriptEnvironment *AviSynthWrapper::env = NULL;
 wxMutex AviSynthWrapper::AviSynthMutex;
+
 
 ////////////////////////
 // AviSynth constructor
@@ -79,6 +81,7 @@ AviSynthWrapper::AviSynthWrapper() {
 	avs_refcount++;
 }
 
+
 ///////////////////////
 // AviSynth destructor
 AviSynthWrapper::~AviSynthWrapper() {
@@ -86,6 +89,13 @@ AviSynthWrapper::~AviSynthWrapper() {
 		delete env;
 		FreeLibrary(hLib);
 	}
+}
+
+
+///////////////////
+// Get environment
+IScriptEnvironment *AviSynthWrapper::GetEnv() {
+	return env;
 }
 
 #endif

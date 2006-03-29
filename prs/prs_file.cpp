@@ -34,39 +34,37 @@
 //
 
 
-#ifndef AVISYNTH_WRAP_H
-#define AVISYNTH_WRAP_H
-
-
 ///////////
 // Headers
-#include <wx/wxprec.h>
-
-#ifdef __WINDOWS__
-#include <windows.h>
-#include "avisynth.h"
+#include "prs_file.h"
 
 
-//////////////////////////////////
-// Typedef to make my life easier
-typedef IScriptEnvironment* __stdcall FUNC(int);
+///////////////
+// Constructor
+PRSFile::PRSFile () {
+}
 
 
-///////////////////////////
-// AviSynth wrapping class
-class AviSynthWrapper {
-private:
-	static int avs_refcount;
-	static HINSTANCE hLib;
-protected:
-	static IScriptEnvironment *env;
-public:
-	static wxMutex AviSynthMutex;
+//////////////
+// Destructor
+PRSFile::~PRSFile() {
+}
 
-	IScriptEnvironment *GetEnv();
-	AviSynthWrapper();
-	~AviSynthWrapper();
-};
 
-#endif
-#endif
+////////
+// Save
+void PRSFile::Save(const char *path) {
+}
+
+
+////////
+// Load
+void PRSFile::Load(const char *path, bool reset) {
+}
+
+
+/////////////
+// Add entry
+void PRSFile::AddEntry(PRSEntry *entry) {
+	entryList.push_back(entry);
+}
