@@ -34,40 +34,24 @@
 //
 
 
-#pragma once
-
-
 ///////////
 // Headers
-#include <stdio.h>
-#include <vector>
+#include "prs_entry.h"
+#include "prs_display.h"
+#include "prs_image.h"
 
 
-//////////////
-// Prototypes
-class PRSDisplay;
-class PRSImage;
+///////////////////
+// Return as image
+PRSImage* PRSEntry::GetImage(PRSEntry* entry) {
+	if (entry->GetType() == IMAGE_ENTRY) return ((PRSImage*) entry);
+	return NULL;
+}
 
 
-///////////////
-// Entry types
-enum PRSEntryType {
-	BASE_ENTRY = 0,
-	IMAGE_ENTRY,
-	DISPLAY_ENTRY
-};
-
-
-////////////////////////
-// PRS Entry base class
-class PRSEntry {
-public:
-	PRSEntry() {}
-	virtual ~PRSEntry() {}
-
-	virtual PRSEntryType GetType() { return BASE_ENTRY; }
-	virtual void WriteData(std::vector<char> &vec) { }
-
-	static PRSImage* GetImage(PRSEntry* entry);
-	static PRSDisplay* GetDisplay(PRSEntry* entry);
-};
+/////////////////////
+// Return as display
+PRSDisplay* PRSEntry::GetDisplay(PRSEntry* entry) {
+	if (entry->GetType() == DISPLAY_ENTRY) return ((PRSDisplay*) entry);
+	return NULL;
+}
