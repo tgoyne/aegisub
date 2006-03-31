@@ -40,6 +40,7 @@
 //////////////
 // Prototypes
 class PRSEntry;
+class PRSImage;
 
 
 ///////////
@@ -62,4 +63,6 @@ public:
 
 	void Save(std::string path);
 	void Load(std::string path,bool reset=true);
+
+	PRSImage *FindDuplicateImage(PRSImage *img);
 };
