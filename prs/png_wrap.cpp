@@ -1,4 +1,4 @@
-// Copyright (c) 2005, Rodrigo Braz Monteiro
+// Copyright (c) 2006, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,32 +33,70 @@
 // Contact: mailto:zeratul@cellosoft.com
 //
 
-#pragma once
+
+///////////
+// Headers
+#include <png.h>
+#include "png_wrap.h"
 
 
 ///////////////
-// Color space
-enum ColorSpaceType {
-	ColorSpace_RGB32,
-	ColorSpace_RGB24,
-	ColorSpace_YUY2,
-	ColorSpace_YV12
-};
+// Constructor
+PNGWrapper::PNGWrapper() {
+	initialized = false;
+	pos = 0;
+}
 
 
-/////////////////////
-// Video frame class
-class PRSVideoFrame {
-public:
-	bool ownData;				// If set to true, data will be deleted on destructor (defaults to false)
-	char *data[4];				// Data for each of the planes (interleaved formats only use data[0])
-	int w;						// Width
-	int h;						// Height
-	int pitch;					// Pitch (that is, width plus invisible area for optimization)
-	ColorSpaceType colorSpace;	// Color space
+//////////////
+// Destructor
+PNGWrapper::~PNGWrapper() {
+	if (initialized) End();
+}
 
-	PRSVideoFrame();
-	~PRSVideoFrame();
 
-	void Overlay(PRSVideoFrame *dst,int x,int y,unsigned char alpha=255);
-};
+//////////////
+// Read image
+void PNGWrapper::Read(void *dst) {
+	// Check initialization
+	if (!initialized) Begin();
+}
+
+
+//////////////
+// Initialize
+void PNGWrapper::Begin() {
+	// Check initialization
+	if (initialized) End();
+	initialized = true;
+
+	// Initialize libpng structures
+	png_structp png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png_ptr) throw 1;
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr) {
+		png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
+		throw 1;
+	}
+	png_infop end_info = png_create_info_struct(png_ptr);
+	if (!end_info) {
+		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+		throw 1;
+	}
+
+	// Set jump for error handling (man, I hate this lib)
+	if (setjmp(png_jmpbuf(png_ptr))) {
+		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+		throw 1;
+	}
+
+}
+
+
+////////////
+// Clean up
+void PNGWrapper::End() {
+	// Check initialization
+	if (!initialized) return;
+	initialized = false;
+}
