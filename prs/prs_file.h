@@ -41,11 +41,14 @@
 // Prototypes
 class PRSEntry;
 class PRSImage;
+class PRSDisplay;
 
 
 ///////////
 // Headers
 #include <list>
+#include <vector>
+#include "prs_video_frame.h"
 
 
 ///////////////////////////////
@@ -63,6 +66,9 @@ public:
 
 	void Save(std::string path);
 	void Load(std::string path,bool reset=true);
+
+	void GetDisplayBlocksAtFrame(int n,std::vector<PRSDisplay*> &blocks);
+	void DrawFrame(int n,PRSVideoFrame *frame);
 
 	PRSImage *FindDuplicateImage(PRSImage *img);
 };

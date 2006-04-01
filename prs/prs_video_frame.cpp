@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro, Fredrik Mellbin
+// Copyright (c) 2005, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,26 +32,3 @@
 // Website: http://aegisub.cellosoft.com
 // Contact: mailto:zeratul@cellosoft.com
 //
-
-
-#pragma once
-
-
-//////////////
-// Prototypes
-class AegisubVideoFrame;
-class AssFile;
-
-
-////////////////////////////
-// Video Provider interface
-class SubtitleRasterizer {
-public:
-	virtual ~SubtitleRasterizer() {}
-
-	wxString GetFromDisk(AssFile *subs);
-
-	virtual void Load(AssFile *subs)=0;
-	virtual void Close() {}
-	virtual void RenderFrame(AegisubVideoFrame *frame,int ms)=0;
-};

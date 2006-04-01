@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro, Fredrik Mellbin
+// Copyright (c) 2006, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,24 +34,63 @@
 //
 
 
-#pragma once
+///////////
+// Headers
+#include "draw_prs.h"
+#include "../prs/prs_file.h"
+#include "../prs/prs_video_frame.h"
+
+
+///////////////
+// Constructor
+DrawPRS::DrawPRS (IScriptEnvironment* _env, PClip _child, const char *filename)
+: GenericVideoFilter(_child)
+{
+	// Set environment
+	env = _env;
+
+	// Load file
+	try {
+		file.Load(filename);
+	}
+
+	// Catch exception
+	catch (std::exception e) {
+		env->ThrowError(e.what());
+	}
+}
 
 
 //////////////
-// Prototypes
-class AegisubVideoFrame;
-class AssFile;
+// Destructor
+DrawPRS::~DrawPRS() {
+}
 
 
-////////////////////////////
-// Video Provider interface
-class SubtitleRasterizer {
-public:
-	virtual ~SubtitleRasterizer() {}
+/////////////
+// Get frame
+PVideoFrame __stdcall DrawPRS::GetFrame(int n, IScriptEnvironment* env) {
+	// Get frame
+	PVideoFrame avsFrame = child->GetFrame(n,env);
 
-	wxString GetFromDisk(AssFile *subs);
+	try {
+		// Create the PRSFrame structure
+		PRSVideoFrame frame;
+		frame.data[0] = (char*) avsFrame->GetWritePtr();
+		frame.w = avsFrame->GetRowSize();
+		frame.h = avsFrame->GetHeight();
+		frame.pitch = avsFrame->GetPitch();
+		frame.colorSpace = ColorSpace_RGB32;
 
-	virtual void Load(AssFile *subs)=0;
-	virtual void Close() {}
-	virtual void RenderFrame(AegisubVideoFrame *frame,int ms)=0;
-};
+		// Draw into the frame
+		file.DrawFrame(n,&frame);
+	}
+
+	// Catch exception
+	catch (std::exception e) {
+		env->ThrowError(e.what());
+	}
+
+	// Return frame
+	return avsFrame;
+}
