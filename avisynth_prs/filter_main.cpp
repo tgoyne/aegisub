@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro, Fredrik Mellbin
+// Copyright (c) 2006, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,24 +34,22 @@
 //
 
 
-#pragma once
+///////////
+// Headers
+#include <windows.h>
+#include "avisynth.h"
+#include "draw_prs.h"
 
 
-//////////////
-// Prototypes
-class AegisubVideoFrame;
-class AssFile;
+// This is the function that created the filter, when the filter has been called.
+AVSValue __cdecl CreateDrawPRS(AVSValue args, void* user_data, IScriptEnvironment* env) {
+	return new DrawPRS(env, args[0].AsClip(), args[1].AsString());  
+}
 
 
-////////////////////////////
-// Video Provider interface
-class SubtitleRasterizer {
-public:
-	virtual ~SubtitleRasterizer() {}
-
-	wxString GetFromDisk(AssFile *subs);
-
-	virtual void Load(AssFile *subs)=0;
-	virtual void Close() {}
-	virtual void RenderFrame(AegisubVideoFrame *frame,int ms)=0;
-};
+// The following function is the function that actually registers the filter in AviSynth
+// It is called automatically, when the plugin is loaded to see which functions this filter contains.
+extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit2(IScriptEnvironment* env) {
+    env->AddFunction("DrawPRS", "c[file]s", CreateDrawPRS, 0);
+    return "`Pre-Rendered Subtitles' by Rodrigo Braz Monteiro (ArchMage ZeratuL)";
+}

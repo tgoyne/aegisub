@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro, Fredrik Mellbin
+// Copyright (c) 2005, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,25 +33,26 @@
 // Contact: mailto:zeratul@cellosoft.com
 //
 
-
 #pragma once
 
 
-//////////////
-// Prototypes
-class AegisubVideoFrame;
-class AssFile;
+///////////////
+// Color space
+enum ColorSpaceType {
+	ColorSpace_RGB32,
+	ColorSpace_RGB24,
+	ColorSpace_YUY2,
+	ColorSpace_YV12
+};
 
 
-////////////////////////////
-// Video Provider interface
-class SubtitleRasterizer {
+/////////////////////
+// Video frame class
+class PRSVideoFrame {
 public:
-	virtual ~SubtitleRasterizer() {}
-
-	wxString GetFromDisk(AssFile *subs);
-
-	virtual void Load(AssFile *subs)=0;
-	virtual void Close() {}
-	virtual void RenderFrame(AegisubVideoFrame *frame,int ms)=0;
+	char *data[4];
+	int w;
+	int h;
+	int pitch;
+	ColorSpaceType colorSpace;
 };

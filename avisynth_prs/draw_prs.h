@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro, Fredrik Mellbin
+// Copyright (c) 2006, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -37,21 +37,23 @@
 #pragma once
 
 
-//////////////
-// Prototypes
-class AegisubVideoFrame;
-class AssFile;
+///////////
+// Headers
+#include <windows.h>
+#include "avisynth.h"
+#include "../prs/prs_file.h"
 
 
-////////////////////////////
-// Video Provider interface
-class SubtitleRasterizer {
+/////////
+// Class
+class DrawPRS : public GenericVideoFilter {
+private:
+	IScriptEnvironment* env;
+	PRSFile file;
+
 public:
-	virtual ~SubtitleRasterizer() {}
+	DrawPRS (IScriptEnvironment* _env, PClip _child, const char *file);
+	~DrawPRS ();
 
-	wxString GetFromDisk(AssFile *subs);
-
-	virtual void Load(AssFile *subs)=0;
-	virtual void Close() {}
-	virtual void RenderFrame(AegisubVideoFrame *frame,int ms)=0;
+	PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 };
