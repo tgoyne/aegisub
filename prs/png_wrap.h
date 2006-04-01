@@ -1,4 +1,4 @@
-// Copyright (c) 2005, Rodrigo Braz Monteiro
+// Copyright (c) 2006, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,32 +33,24 @@
 // Contact: mailto:zeratul@cellosoft.com
 //
 
-#pragma once
-
-
-///////////////
-// Color space
-enum ColorSpaceType {
-	ColorSpace_RGB32,
-	ColorSpace_RGB24,
-	ColorSpace_YUY2,
-	ColorSpace_YV12
-};
-
 
 /////////////////////
-// Video frame class
-class PRSVideoFrame {
+// PNG Wrapper class
+class PNGWrapper {
+private:
+	bool initialized;
+	int pos;
+	void *data;
+
+	void Begin();
+	void End();
+
 public:
-	bool ownData;				// If set to true, data will be deleted on destructor (defaults to false)
-	char *data[4];				// Data for each of the planes (interleaved formats only use data[0])
-	int w;						// Width
-	int h;						// Height
-	int pitch;					// Pitch (that is, width plus invisible area for optimization)
-	ColorSpaceType colorSpace;	// Color space
+	PNGWrapper();
+	~PNGWrapper();
 
-	PRSVideoFrame();
-	~PRSVideoFrame();
+	void SetData(void *ptr) { data = ptr; pos = 0; }
+	void *GetData() { return data; }
 
-	void Overlay(PRSVideoFrame *dst,int x,int y,unsigned char alpha=255);
+	void Read(void *dst);
 };
