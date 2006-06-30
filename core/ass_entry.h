@@ -46,6 +46,7 @@
 // Prototypes
 class AssDialogue;
 class AssStyle;
+class AssAttachment;
 
 
 ///////////////////
@@ -53,7 +54,8 @@ class AssStyle;
 enum ASS_EntryType {
 	ENTRY_BASE,
 	ENTRY_DIALOGUE,
-	ENTRY_STYLE
+	ENTRY_STYLE,
+	ENTRY_ATTACHMENT
 };
 
 
@@ -81,6 +83,7 @@ public:
 	virtual wxString GetSSAText();
 	static AssDialogue *GetAsDialogue(AssEntry *base);	// Returns an entry base as a dialogue if it is valid, null otherwise
 	static AssStyle *GetAsStyle(AssEntry *base);		// Returns an entry base as a style if it is valid, null otherwise
+	static AssAttachment *GetAsAttachment(AssEntry *base);// Returns an entry base as an attachment if it is valid, null otherwise
 };
 
 // This operator is for sorting
