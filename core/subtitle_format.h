@@ -70,7 +70,7 @@ protected:
 	void Clear();
 	void LoadDefault();
 	AssFile *GetAssFile() { return assFile; }
-	int AddLine(wxString data,wxString group,int lasttime,bool &IsSSA);
+	int AddLine(wxString data,wxString group,int lasttime,bool &IsSSA,wxString *outgroup=NULL);
 
 public:
 	SubtitleFormat();
