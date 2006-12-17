@@ -47,6 +47,11 @@
 #include "vfr.h"
 
 
+//////////////
+// Prototypes
+class AssFile;
+
+
 /////////////////////////////
 // STD IO for MatroskaParser
 class MkvStdIO : public InputStream {
@@ -83,8 +88,6 @@ private:
 	std::vector<double> timecodes;
 	wxArrayInt bytePos;
 
-	void Parse();
-
 public:
 	MkvStdIO *input;
 	MatroskaFile *file;
@@ -95,13 +98,15 @@ public:
 	~MatroskaWrapper();
 
 	bool IsOpen() { return file != NULL; }
-	void Open(wxString filename);
+	void Open(wxString filename,bool parse=true);
 	void Close();
+	void Parse();
 
 	void SetToTimecodes(FrameRate &target);
 	wxArrayInt GetBytePositions() { return bytePos; }
 	unsigned int GetFrameCount() { return timecodes.size(); }
 	wxArrayInt GetKeyFrames();
+	void GetSubtitles(AssFile *target);
 
 	static MatroskaWrapper wrapper;
 };
