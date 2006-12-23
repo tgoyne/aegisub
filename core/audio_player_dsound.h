@@ -39,6 +39,8 @@
 
 ///////////
 // Headers
+#include "setup.h"
+#if USE_DIRECTSOUND == 1
 #include "audio_player.h"
 #include <dsound.h>
 
@@ -109,3 +111,5 @@ public:
 
 	wxMutex *GetMutex() { return &DSMutex; }
 };
+
+#endif
