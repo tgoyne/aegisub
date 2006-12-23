@@ -36,9 +36,8 @@
 
 #pragma once
 
-#ifndef LAVC_FILE_H
-#define LAVC_FILE_H
-#ifdef USE_LAVC
+#include "setup.h"
+#if USE_LAVC == 1
 
 #define EMULATE_INTTYPES
 #include <wx/filename.h>
@@ -67,5 +66,3 @@ public:
 };
 
 #endif /* USE_LAVC */
-#endif /* LAVC_FILE_H */
-
