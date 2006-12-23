@@ -38,6 +38,9 @@
 // Headers
 #include <wx/wxprec.h>
 #include "audio_player_portaudio.h"
+#ifdef USE_DSOUND
+#include "audio_player_dsound.h"
+#endif
 #include "audio_provider.h"
 
 
@@ -115,10 +118,22 @@ void AudioPlayer::OnStopAudio(wxCommandEvent &event) {
 // Get player
 AudioPlayer* AudioPlayer::GetAudioPlayer() {
 	// Prepare
-	AudioPlayer *player;
+	AudioPlayer *player = NULL;
 
-	// Get player
-	player = new PortAudioPlayer;
+	try {
+		// Get DirectSound player
+		#ifdef USE_DSOUND
+		player = new DirectSoundPlayer;
+		#endif
+
+		// Get PortAudio player
+		if (!player) player = new PortAudioPlayer;
+	}
+	catch (...) {
+		delete player;
+		player = NULL;
+		throw;
+	}
 
 	// Got player?
 	if (!player) throw _T("Unable to create audio player.");
