@@ -34,80 +34,68 @@
 //
 
 
-#pragma once
+//
+// This is a configuration file for the Aegisub project
+//
+// In order to use it, copy it as setup.h and edit anything you might want there
+// DO NOT commit your personal setup.h to the repository
+//
 
 
-///////////
-// Headers
-#include <wx/wxprec.h>
-#ifdef __WINDOWS__
-#include "setup.h"
-#if USE_DIRECTSHOW == 1
-#include "video_provider.h"
-#pragma warning(disable: 4995)
-#include <dshow.h>
-#include <atlbase.h>
-#include <atlcom.h>
-#include <atlstr.h>
-#include <atlcoll.h>
-#include "videosink.h"
+
+////////////////////////////////////
+// Enable DirectShow Video Provider
+// Requires: Win32, DirectX SDK
+#define USE_DIRECTSHOW 0
 
 
 ///////////////////////////////////
-// DirectShow Video Provider class
-class DirectShowVideoProvider: public VideoProvider {
-private:
-	wxString subfilename;
+// Enable DirectSound Audio Player
+// Requires: Win32, DirectX SDK
+#define USE_DIRECTSOUND 1
 
-	unsigned int last_fnum;
-	unsigned int width;
-	unsigned int height;
-	unsigned int num_frames;
-	double fps;
 
-	int depth;
-	double dar;
-	double zoom;
+/////////////////////////////////
+// Enable PortAudio Audio Player
+// Requires: PortAudio library
+#define USE_PORTAUDIO 0
 
-	unsigned char* data;
-	wxBitmap last_frame;
 
-	wxBitmap GetFrame(int n, bool force);
-	void AttachOverlay(SubtitleProvider::Overlay *_overlay) {}
-	HRESULT OpenVideo(wxString _filename);
+//////////////////////////////
+// Enable ASpell spellchecker
+// Requires: aspell ibrary
+#define USE_ASPELL 0
 
-	void RegROT();
-	void UnregROT();
 
-	CComPtr<IVideoSink>     m_pR;
-	CComPtr<IMediaControl>  m_pGC;
-	CComPtr<IMediaSeeking>  m_pGS;
-	HANDLE                  m_hFrameReady;
-	bool                    m_registered;
-	DWORD                   m_rot_cookie;
+//////////////////////////////
+// Enable LAVC video provider
+// Requires: FFMPEG library
+#define USE_LAVC 0
 
-public:
-	DirectShowVideoProvider(wxString _filename, wxString _subfilename);
-	~DirectShowVideoProvider();
 
-	void RefreshSubtitles();
-	void SetDAR(double _dar);
-	void SetZoom(double _zoom);
+////////////////////////
+// Enable PRS Exporting
+// Requires: wxPNG library
+#define USE_PRS 1
 
-	wxBitmap GetFrame(int n) { return wxBitmap(64,64); };
-	void GetFloatFrame(float* Buffer, int n);
 
-	int GetPosition() { return last_fnum; };
-	int GetFrameCount() { return num_frames; };
-	double GetFPS() { return fps; };
+/////////////////////
+// Enable FexTracker
+// Requires: Win32, FexTracker library
+#define USE_FEXTRACKER 1
 
-	int GetWidth() { return width; };
-	int GetHeight() { return height; };
-	double GetZoom() { return zoom; };
 
-	int GetSourceWidth() { return width; };
-	int GetSourceHeight() { return height; };
-};
+// The following two are Linux-specific, so it would involve changing the makefiles
+// Therefore, I haven't changed the code to make them work, yet
 
-#endif
-#endif
+
+/////////////////
+// Enable LibASS
+// Requires: libass library, GNU?
+#define USE_LIBASS 0
+
+
+//////////////
+// Enable ASA
+// Requires: asa library
+#define USE_ASA 0
