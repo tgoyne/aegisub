@@ -38,9 +38,9 @@
 // Includes
 #include <wx/wxprec.h>
 #include <wx/display.h>
-#include "splash.h"
+#include "dialog_splash.h"
 #include "options.h"
-#include "tip.h"
+#include "dialog_tip.h"
 
 
 ///////////////
