@@ -42,6 +42,7 @@
 #include <wx/wxprec.h>
 #include <wx/wxscintilla.h>
 #include "spellchecker.h"
+#include "thesaurus.h"
 
 
 //////////////
@@ -54,9 +55,12 @@ class SubsEditBox;
 class SubsTextEditCtrl : public wxScintilla {
 private:
 	SpellChecker *spellchecker;
+	Thesaurus *thesaurus;
+
 	wxString delim;
 	wxString currentWord;
 	wxArrayString sugs;
+	wxArrayString thesSugs;
 	int currentWordPos;
 
 	void OnMouseEvent(wxMouseEvent &event);
@@ -102,5 +106,7 @@ enum {
 	EDIT_MENU_SELECT_ALL,
 	EDIT_MENU_ADD_TO_DICT,
 	EDIT_MENU_SUGGESTION,
-	EDIT_MENU_SUGGESTIONS
+	EDIT_MENU_SUGGESTIONS,
+	EDIT_MENU_THESAURUS = 1450,
+	EDIT_MENU_THESAURUS_SUGS
 };
