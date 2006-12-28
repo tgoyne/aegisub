@@ -49,6 +49,7 @@
 //////////////
 // Prototypes
 class FrameMain;
+namespace Automation4 { class AutoloadScriptManager; }
 
 
 ////////////////////////////////
@@ -61,6 +62,7 @@ private:
 public:
 	AegisubLocale locale;
 	FrameMain *frame;
+	Automation4::AutoloadScriptManager *global_scripts;
 
 	static wxString fullPath;
 	static wxString folderName;
@@ -86,6 +88,8 @@ public:
 	//int OnRun();
 	DECLARE_EVENT_TABLE()
 };
+
+DECLARE_APP(AegisubApp)
 
 
 ////////////////
