@@ -41,9 +41,10 @@
 // Headers
 #include <wx/wxprec.h>
 
-#ifdef __WINDOWS__
+#ifdef __WIN32__
 #include "avisynth_wrap.h"
 #include "video_provider.h"
+#include "subtitles_provider.h"
 
 /*class GetFrameVPThread: public wxThread {
 private:
@@ -58,61 +59,48 @@ public:
 	GetFrameVPThread(PClip clip);
 };*/
 
-class AvisynthVideoProvider: public VideoProvider, AviSynthWrapper {
+
+////////////
+// Provider
+class AvisynthVideoProvider: public VideoProvider, SubtitlesProvider, AviSynthWrapper {
 private:
 	VideoInfo vi;
+	AegiVideoFrame iframe;
 
-	wxString subfilename;
 	wxString rendererCallString;
 
-	int last_fnum;
 	int num_frames;
+	int last_fnum;
 
-	int depth;
-
-	unsigned char* data;
-	wxBitmap last_frame;
-
-	double dar;
-	double zoom;
 	double fps;
 	wxArrayInt frameTime;
 
 	PClip RGB32Video;
 	PClip SubtitledVideo;
-	PClip ResizedVideo;
 
 	PClip OpenVideo(wxString _filename, bool mpeg2dec3_priority = true);
 	PClip ApplySubtitles(wxString _filename, PClip videosource);
-	PClip ApplyDARZoom(double _zoom, double _dar, PClip videosource);
-	wxBitmap GetFrame(int n, bool force);
+
 	void LoadVSFilter();
 	void LoadASA();
 	void LoadRenderer();
-	void AttachOverlay(SubtitleProvider::Overlay *_overlay) {}
 
 public:
-	AvisynthVideoProvider(wxString _filename, wxString _subfilename, double fps=0.0);
+	AvisynthVideoProvider(wxString _filename, double fps=0.0);
 	~AvisynthVideoProvider();
 
-	void RefreshSubtitles();
-	void SetDAR(double _dar);
-	void SetZoom(double _zoom);
+	SubtitlesProvider *GetAsSubtitlesProvider();
+	void LoadSubtitles(AssFile *subs);
 
-	wxBitmap GetFrame(int n) { return GetFrame(n,false); };
+	const AegiVideoFrame DoGetFrame(int n);
 	void GetFloatFrame(float* Buffer, int n);
 
 	// properties
 	int GetPosition() { return last_fnum; };
 	int GetFrameCount() { return num_frames? num_frames: vi.num_frames; };
 	double GetFPS() { return (double)vi.fps_numerator/(double)vi.fps_denominator; };
-
 	int GetWidth() { return vi.width; };
 	int GetHeight() { return vi.height; };
-	double GetZoom() { return zoom; };
-
-	int GetSourceWidth() { return RGB32Video->GetVideoInfo().width; };
-	int GetSourceHeight() { return RGB32Video->GetVideoInfo().height; };
 
 	void OverrideFrameTimeList(wxArrayInt list);
 };

@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro
+// Copyright (c) 2007, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,72 +34,41 @@
 //
 
 
-//
-// Precompiled Header File
-//
-// In order to use it, set the project to use this header as precompiled and
-// insert it in every source file (under C/C++ -> Advanced -> Force Includes),
-// then set stdwx.cpp to generate the precompiled header
-//
-// Note: make sure that you disable use of precompiled headers on md5.c and
-// MatroskaParser.c, as well as any possible future .c files.
-//
+#pragma once
 
 
-////////////
-// C++ only
-#ifdef __cplusplus
-
-/////////
-// Setup
-#include "setup.h"
-
-
-/////////////////////
-// wxWidgets headers
-#include <wx/wxprec.h>
-#include <wx/notebook.h>
-#include <wx/statline.h>
-#include <wx/tglbtn.h>
-#include <wx/tokenzr.h>
-#include <wx/wfstream.h>
-#include <wx/filename.h>
-#include <wx/sashwin.h>
-#include <wx/file.h>
-#include <wx/filedlg.h>
-#include <wx/grid.h>
-#include <wx/fontdlg.h>
-#include <wx/clipbrd.h>
-#include <wx/msgdlg.h>
-#include <wx/stackwalk.h>
-#include <wx/spinctrl.h>
-#include <wx/wfstream.h>
-#include <wx/tipdlg.h>
-#include <wx/event.h>
-#include <wx/wxscintilla.h>
-#include <wx/string.h>
-#include <wx/glcanvas.h>
-
-
-///////////////
-// STD headers
-#include <vector>
-#include <list>
+///////////
+// Headers
 #include <map>
 
 
-///////////////
-// DirectSound
-#if USE_DIRECTSOUND == 1
-#include <dsound.h>
-#endif
+/////////////////
+// Factory class
+template <class T>
+class AegisubFactory {
+protected:
+	static std::map<wxString,T*> *factories;
+	void RegisterFactory(wxString name) {
+		if (factories == NULL) factories = new std::map<wxString,T*>;
+		factories->insert(std::make_pair(name.Lower(),(T*)this));
+	}
+	static T *GetFactory(wxString name) {
+		if (factories == NULL) {
+			factories = new std::map<wxString,T*>;
+			return NULL;
+		}
+		std::map<wxString,T*>::iterator res = factories->find(name.Lower());
+		if (res != factories->end()) return res->second;
+		return NULL;
+	}
 
-
-////////////
-// Hunspell
-#if USE_HUNSPELL == 1
-#include <hunspell/hunspell.hxx>
-#endif
-
-
-#endif // C++
+public:
+	static wxArrayString GetFactoryList() {
+		wxArrayString list;
+		for (std::map<wxString,T*>::iterator cur=factories->begin();cur!=factories->end();cur++) {
+			list.Add(cur->first);
+		}
+		return list;
+	}
+	virtual ~AegisubFactory() {}
+};

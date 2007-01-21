@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro
+// Copyright (c) 2007, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,72 +34,42 @@
 //
 
 
-//
-// Precompiled Header File
-//
-// In order to use it, set the project to use this header as precompiled and
-// insert it in every source file (under C/C++ -> Advanced -> Force Includes),
-// then set stdwx.cpp to generate the precompiled header
-//
-// Note: make sure that you disable use of precompiled headers on md5.c and
-// MatroskaParser.c, as well as any possible future .c files.
-//
+#pragma once
 
 
-////////////
-// C++ only
-#ifdef __cplusplus
-
-/////////
-// Setup
-#include "setup.h"
-
-
-/////////////////////
-// wxWidgets headers
+///////////
+// Headers
 #include <wx/wxprec.h>
-#include <wx/notebook.h>
-#include <wx/statline.h>
-#include <wx/tglbtn.h>
-#include <wx/tokenzr.h>
-#include <wx/wfstream.h>
-#include <wx/filename.h>
-#include <wx/sashwin.h>
-#include <wx/file.h>
-#include <wx/filedlg.h>
-#include <wx/grid.h>
-#include <wx/fontdlg.h>
-#include <wx/clipbrd.h>
-#include <wx/msgdlg.h>
-#include <wx/stackwalk.h>
-#include <wx/spinctrl.h>
-#include <wx/wfstream.h>
-#include <wx/tipdlg.h>
-#include <wx/event.h>
-#include <wx/wxscintilla.h>
-#include <wx/string.h>
-#include <wx/glcanvas.h>
+#include "video_frame.h"
+#include "factory.h"
 
 
-///////////////
-// STD headers
-#include <vector>
-#include <list>
-#include <map>
+//////////////
+// Prototypes
+class AssFile;
 
 
-///////////////
-// DirectSound
-#if USE_DIRECTSOUND == 1
-#include <dsound.h>
-#endif
+////////////////////////////////
+// Subtitles provider interface
+class SubtitlesProvider {
+public:
+	virtual ~SubtitlesProvider();
+
+	virtual bool CanRaster() { return false; }
+
+	virtual void LoadSubtitles(AssFile *subs)=0;
+	virtual void DrawSubtitles(AegiVideoFrame &dst,double time) {}
+};
 
 
-////////////
-// Hunspell
-#if USE_HUNSPELL == 1
-#include <hunspell/hunspell.hxx>
-#endif
+///////////
+// Factory
+class SubtitlesProviderFactory : public AegisubFactory<SubtitlesProviderFactory> {
+protected:
+	virtual SubtitlesProvider *CreateProvider()=0;
+	SubtitlesProviderFactory(wxString name) { RegisterFactory(name); }
 
-
-#endif // C++
+public:
+	virtual ~SubtitlesProviderFactory() {}
+	static SubtitlesProvider *GetProvider();
+};
