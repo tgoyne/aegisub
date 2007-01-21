@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro
+// Copyright (c) 2007, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,72 +34,44 @@
 //
 
 
-//
-// Precompiled Header File
-//
-// In order to use it, set the project to use this header as precompiled and
-// insert it in every source file (under C/C++ -> Advanced -> Force Includes),
-// then set stdwx.cpp to generate the precompiled header
-//
-// Note: make sure that you disable use of precompiled headers on md5.c and
-// MatroskaParser.c, as well as any possible future .c files.
-//
+#pragma once
 
 
-////////////
-// C++ only
-#ifdef __cplusplus
-
-/////////
-// Setup
-#include "setup.h"
+//////////////////////
+// Video Frame format
+enum VideoFrameFormat {
+	FORMAT_RGB24,
+	FORMAT_RGB32,
+	FORMAT_YUY2,
+	FORMAT_YV12
+};
 
 
 /////////////////////
-// wxWidgets headers
-#include <wx/wxprec.h>
-#include <wx/notebook.h>
-#include <wx/statline.h>
-#include <wx/tglbtn.h>
-#include <wx/tokenzr.h>
-#include <wx/wfstream.h>
-#include <wx/filename.h>
-#include <wx/sashwin.h>
-#include <wx/file.h>
-#include <wx/filedlg.h>
-#include <wx/grid.h>
-#include <wx/fontdlg.h>
-#include <wx/clipbrd.h>
-#include <wx/msgdlg.h>
-#include <wx/stackwalk.h>
-#include <wx/spinctrl.h>
-#include <wx/wfstream.h>
-#include <wx/tipdlg.h>
-#include <wx/event.h>
-#include <wx/wxscintilla.h>
-#include <wx/string.h>
-#include <wx/glcanvas.h>
+// Video Frame class
+class AegiVideoFrame {
+private:
+	unsigned int memSize[4];
 
+public:
+	unsigned char *data[4];		// Pointers to the data planes. Interleaved formats only use data[0]
+	VideoFrameFormat format;	// Data format, one of FORMAT_RGB24, FORMAT_RGB32, FORMAT_YUY2 and FORMAT_YV12
+	unsigned int w;				// Width in pixels
+	unsigned int h;				// Height in pixels
+	unsigned int pitch[4];		// Pitch, that is, the number of bytes used by each row.
 
-///////////////
-// STD headers
-#include <vector>
-#include <list>
-#include <map>
+	bool flipped;				// First row is actually the bottom one
+	bool invertChannels;		// Invert Red and Blue channels
+	bool cppAlloc;				// Allocated with C++'s "new" operator, instead of "malloc"
 
+	AegiVideoFrame();
+	AegiVideoFrame(int width,int height,VideoFrameFormat format=FORMAT_RGB32);
 
-///////////////
-// DirectSound
-#if USE_DIRECTSOUND == 1
-#include <dsound.h>
-#endif
+	void Allocate();
+	void Clear();
+	void CopyFrom(const AegiVideoFrame &source);
 
-
-////////////
-// Hunspell
-#if USE_HUNSPELL == 1
-#include <hunspell/hunspell.hxx>
-#endif
-
-
-#endif // C++
+	wxImage GetImage() const;
+	void GetFloat(float *buffer) const;
+	int GetBpp(int plane=0) const;
+};

@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro
+// Copyright (c) 2007, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,72 +34,51 @@
 //
 
 
-//
-// Precompiled Header File
-//
-// In order to use it, set the project to use this header as precompiled and
-// insert it in every source file (under C/C++ -> Advanced -> Force Includes),
-// then set stdwx.cpp to generate the precompiled header
-//
-// Note: make sure that you disable use of precompiled headers on md5.c and
-// MatroskaParser.c, as well as any possible future .c files.
-//
+///////////
+// Headers
+#include "subtitles_provider.h"
+#include "options.h"
 
 
-////////////
-// C++ only
-#ifdef __cplusplus
-
-/////////
-// Setup
-#include "setup.h"
+//////////////
+// Destructor
+SubtitlesProvider::~SubtitlesProvider() {
+}
 
 
-/////////////////////
-// wxWidgets headers
-#include <wx/wxprec.h>
-#include <wx/notebook.h>
-#include <wx/statline.h>
-#include <wx/tglbtn.h>
-#include <wx/tokenzr.h>
-#include <wx/wfstream.h>
-#include <wx/filename.h>
-#include <wx/sashwin.h>
-#include <wx/file.h>
-#include <wx/filedlg.h>
-#include <wx/grid.h>
-#include <wx/fontdlg.h>
-#include <wx/clipbrd.h>
-#include <wx/msgdlg.h>
-#include <wx/stackwalk.h>
-#include <wx/spinctrl.h>
-#include <wx/wfstream.h>
-#include <wx/tipdlg.h>
-#include <wx/event.h>
-#include <wx/wxscintilla.h>
-#include <wx/string.h>
-#include <wx/glcanvas.h>
+////////////////
+// Get provider
+SubtitlesProvider* SubtitlesProviderFactory::GetProvider() {
+	// List of providers
+	wxArrayString list = GetFactoryList();
+
+	// None available
+	if (list.Count() == 0) throw _T("No video providers are available.");
+
+	// Put preffered on top
+	wxString preffered = Options.AsText(_T("Subtitles provider")).Lower();
+	if (list.Index(preffered) != wxNOT_FOUND) {
+		list.Remove(preffered);
+		list.Insert(preffered,0);
+	}
+
+	// Get provider
+	wxString error;
+	for (unsigned int i=0;i<list.Count();i++) {
+		try {
+			SubtitlesProvider *provider = GetFactory(list[i])->CreateProvider();
+			if (provider) return provider;
+		}
+		catch (wxString err) { error += list[i] + _T(" factory: ") + err + _T("\n"); }
+		catch (const wxChar *err) { error += list[i] + _T(" factory: ") + wxString(err) + _T("\n"); }
+		catch (...) { error += list[i] + _T(" factory: Unknown error\n"); }
+	}
+
+	// Failed
+	throw error;
+}
 
 
-///////////////
-// STD headers
-#include <vector>
-#include <list>
-#include <map>
-
-
-///////////////
-// DirectSound
-#if USE_DIRECTSOUND == 1
-#include <dsound.h>
-#endif
-
-
-////////////
-// Hunspell
-#if USE_HUNSPELL == 1
-#include <hunspell/hunspell.hxx>
-#endif
-
-
-#endif // C++
+//////////
+// Static
+std::map<wxString,SubtitlesProviderFactory*>* AegisubFactory<SubtitlesProviderFactory>::factories=NULL;

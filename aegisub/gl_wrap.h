@@ -1,4 +1,4 @@
-// Copyright (c) 2006, Rodrigo Braz Monteiro
+// Copyright (c) 2007, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,72 +34,25 @@
 //
 
 
-//
-// Precompiled Header File
-//
-// In order to use it, set the project to use this header as precompiled and
-// insert it in every source file (under C/C++ -> Advanced -> Force Includes),
-// then set stdwx.cpp to generate the precompiled header
-//
-// Note: make sure that you disable use of precompiled headers on md5.c and
-// MatroskaParser.c, as well as any possible future .c files.
-//
+#pragma once
 
 
-////////////
-// C++ only
-#ifdef __cplusplus
+//////////////////
+// OpenGL Wrapper
+class OpenGLWrapper {
+private:
+	float r1,g1,b1,a1;
+	float r2,g2,b2,a2;
+	int lw;
 
-/////////
-// Setup
-#include "setup.h"
-
-
-/////////////////////
-// wxWidgets headers
-#include <wx/wxprec.h>
-#include <wx/notebook.h>
-#include <wx/statline.h>
-#include <wx/tglbtn.h>
-#include <wx/tokenzr.h>
-#include <wx/wfstream.h>
-#include <wx/filename.h>
-#include <wx/sashwin.h>
-#include <wx/file.h>
-#include <wx/filedlg.h>
-#include <wx/grid.h>
-#include <wx/fontdlg.h>
-#include <wx/clipbrd.h>
-#include <wx/msgdlg.h>
-#include <wx/stackwalk.h>
-#include <wx/spinctrl.h>
-#include <wx/wfstream.h>
-#include <wx/tipdlg.h>
-#include <wx/event.h>
-#include <wx/wxscintilla.h>
-#include <wx/string.h>
-#include <wx/glcanvas.h>
-
-
-///////////////
-// STD headers
-#include <vector>
-#include <list>
-#include <map>
-
-
-///////////////
-// DirectSound
-#if USE_DIRECTSOUND == 1
-#include <dsound.h>
-#endif
-
-
-////////////
-// Hunspell
-#if USE_HUNSPELL == 1
-#include <hunspell/hunspell.hxx>
-#endif
-
-
-#endif // C++
+public:
+	void SetLineColour(wxColour col,float alpha=1.0f,int width=1);
+	void SetFillColour(wxColour col,float alpha=1.0f);
+	void SetModeLine();
+	void SetModeFill();
+	void DrawLine(float x1,float y1,float x2,float y2);
+	void DrawEllipse(float x,float y,float radiusX,float radiusY);
+	void DrawCircle(float x,float y,float radius) { DrawEllipse(x,y,radius,radius); }
+	void DrawRectangle(float x1,float y1,float x2,float y2);
+	void DrawRing(float x,float y,float r1,float r2,float ar=1.0f,float arcStart=0.0f,float arcEnd=0.0f);
+};
