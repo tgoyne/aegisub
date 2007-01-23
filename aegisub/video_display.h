@@ -78,6 +78,7 @@ private:
 	void OnSaveSnapshot(wxCommandEvent &event);
 	void OnCopyCoords(wxCommandEvent &event);
 	void OnEraseBackground(wxEraseEvent &event) {}
+	void OnSizeEvent(wxSizeEvent &event);
 
 public:
 	VideoDisplayVisual *visual;
