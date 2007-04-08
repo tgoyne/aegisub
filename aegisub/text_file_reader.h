@@ -76,7 +76,9 @@ public:
 
 	wxString ReadLineFromFile();
 	bool HasMoreLines();
+
 	static void EnsureValid(const wxString encoding);
+	wxString GetCurrentEncoding();
 	static wxString GetEncoding(const wxString filename);
 };
 
