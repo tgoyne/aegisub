@@ -42,9 +42,9 @@
 #include "subtitle_format.h"
 
 
-//////////////////////
-// TTXT reader/writer
-class TTXTSubtitleFormat : public SubtitleFormat {
+//////////////////////////
+// MicroDVD reader/writer
+class MicroDVDSubtitleFormat : public SubtitleFormat {
 public:
 	wxString GetName();
 	wxArrayString GetReadWildcards();
