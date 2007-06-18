@@ -71,6 +71,7 @@ protected:
 	void LoadDefault(bool defline=true);
 	AssFile *GetAssFile() { return assFile; }
 	int AddLine(wxString data,wxString group,int lasttime,int &version,wxString *outgroup=NULL);
+	double AskForFPS();
 
 	virtual wxString GetName()=0;
 	virtual wxArrayString GetReadWildcards();
