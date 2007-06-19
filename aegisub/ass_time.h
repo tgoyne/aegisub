@@ -53,6 +53,12 @@ public:
 
 	AssTime();
 
+	int GetTimeHours();
+	int GetTimeMinutes();
+	int GetTimeSeconds();
+	int GetTimeMiliseconds();
+	int GetTimeCentiseconds();
+
 	int GetMS();						// Returns miliseconds
 	void SetMS(int ms);					// Sets values to miliseconds
 	void ParseASS(const wxString text);	// Sets value to text-form time, in ASS format
