@@ -39,35 +39,15 @@
 
 ///////////
 // Headers
-#include "ass_dialogue.h"
 #include "subtitle_format.h"
-#include <wx/xml/xml.h>
 
 
-//////////////////////
-// TTXT reader/writer
-class TTXTSubtitleFormat : public SubtitleFormat {
-private:
-	int version;
-	AssDialogue *diag;
-	AssDialogue *prev;
-
-	bool ProcessLine(wxXmlNode *node);
-	void ProcessHeader(wxXmlNode *node);
-
-	void WriteHeader(wxXmlNode *root);
-	void WriteLine(wxXmlNode *root,AssDialogue *line);
-
-	void ConvertToTTXT();
-
+///////////////////////
+// Adobe Encore writer
+class EncoreSubtitleFormat : public SubtitleFormat {
 public:
 	wxString GetName();
-	wxArrayString GetReadWildcards();
 	wxArrayString GetWriteWildcards();
-
-	bool CanReadFile(wxString filename);
-	void ReadFile(wxString filename,wxString forceEncoding);
-
 	bool CanWriteFile(wxString filename);
 	void WriteFile(wxString filename,wxString encoding);
 };
