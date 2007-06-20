@@ -1,4 +1,4 @@
-// Copyright (c) 2005, Rodrigo Braz Monteiro
+// Copyright (c) 2007, Rodrigo Braz Monteiro
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
 ////////////
 // Includes
 #include <wx/wxprec.h>
-#include <map>
+#include <wx/stc/stc.h>
 
 
 //////////////
@@ -51,29 +51,30 @@ class DialogFontsCollector;
 class FrameMain;
 
 
-////////////
-// Typedefs
-typedef std::map<wxString,wxString> FontMap;
-
-
 /////////////////
 // Worker thread
 class FontsCollectorThread : public wxThread {
 private:
 	AssFile *subs;
+	AssStyle *curStyle;
 	wxString destination;
 	DialogFontsCollector *collector;
 	int curLine;
+	wxString destFolder;
 
 	static FontsCollectorThread *instance;
 
-	std::map<wxString,wxString> regFonts;
 	wxArrayString fonts;
 
+	bool ProcessFont(wxString fontname);
+	int CopyFont(wxString filename);
+	bool ArchiveFont(wxString filename);
+	bool AttachFont(wxString filename);
+
 	void Collect();
-	wxArrayString GetFontFiles (wxString face);
 	void AddFont(wxString fontname,bool isStyle);
 	void CollectFontData();
+	void AppendText(wxString text,int colour=0);
 
 public:
 	FontsCollectorThread(AssFile *subs,wxString destination,DialogFontsCollector *collector);
@@ -90,35 +91,23 @@ class DialogFontsCollector : public wxDialog {
 
 private:
 	wxTextCtrl *DestBox;
-	wxTextCtrl *LogBox;
+	wxStyledTextCtrl *LogBox;
 	wxButton *BrowseButton;
 	wxButton *StartButton;
 	wxButton *CloseButton;
-	wxCheckBox *AttachmentCheck;
-	wxCheckBox *ArchiveCheck;
 	wxStaticText *DestLabel;
+	wxRadioBox *CollectAction;
 	FrameMain *main;
 
 	void OnStart(wxCommandEvent &event);
 	void OnClose(wxCommandEvent &event);
 	void OnBrowse(wxCommandEvent &event);
-	void OnCheckAttach(wxCommandEvent &event);
-	void OnCheckArchive(wxCommandEvent &event);
-	void Update();
+	void OnRadio(wxCommandEvent &event);
+	void Update(int value=-1);
 
 public:
 	DialogFontsCollector(wxWindow *parent);
 	~DialogFontsCollector();
 
 	DECLARE_EVENT_TABLE()
-};
-
-
-///////
-// IDs
-enum {
-	BROWSE_BUTTON = 1100,
-	START_BUTTON,
-	ATTACHMENT_CHECK,
-	ARCHIVE_CHECK
 };
