@@ -36,12 +36,12 @@
 
 ///////////
 // Headers
-#include "video_draggable_feature.h"
+#include "visual_feature.h"
 
 
 ///////////////
 // Constructor
-VideoDraggableFeature::VideoDraggableFeature() {
+VisualDraggableFeature::VisualDraggableFeature() {
 	type = DRAG_NONE;
 	x = -1;
 	y = -1;
@@ -51,12 +51,12 @@ VideoDraggableFeature::VideoDraggableFeature() {
 
 /////////////////////
 // Is mouse over it?
-bool VideoDraggableFeature::IsMouseOver(int x,int y) {
+bool VisualDraggableFeature::IsMouseOver(int x,int y) {
 	return false;
 }
 
 
 ////////////////
 // Draw feature
-void VideoDraggableFeature::Draw(bool highlighted) {
+void VisualDraggableFeature::Draw(bool highlighted) {
 }

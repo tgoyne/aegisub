@@ -39,56 +39,16 @@
 
 ///////////
 // Headers
-#include "gl_wrap.h"
-#include "video_draggable_feature.h"
-#include <vector>
-
-
-//////////////
-// Prototypes
-class VideoDisplay;
-class AssDialogue;
+#include "visual_tool.h"
 
 
 ////////////////////////
-// Visual handler class
-class VideoDisplayVisual : public OpenGLWrapper {
-	friend class VideoDisplay;
-
-private:
-	wxColour colour[4];
-
-	int mouseX,mouseY;
-	int startX,startY;
-	int curX,curY,curX2,curY2;
-	int origX,origY;
-	float curFloat1,startFloat1,origFloat1;
-	float curFloat2,startFloat2,origFloat2;
-	int lineOrgX,lineOrgY;
-
-	int mode;
-	int hold;
-	bool holding;
-
-	wxString mouseText;
-	AssDialogue *curSelection;
-	VideoDisplay *parent;
-
-	std::vector<VideoDraggableFeature> drags;
-
-	void GetLinePosition(AssDialogue *diag,int &x,int &y);
-	void GetLinePosition(AssDialogue *diag,int &x,int &y,int &orgx,int &orgy);
-	void GetLineRotation(AssDialogue *diag,float &rx,float &ry,float &rz);
-	void GetLineScale(AssDialogue *diag,float &scalX,float &scalY);
-	void GetLineClip(AssDialogue *diag,int &x1,int &y1,int &x2,int &y2);
-
-	void DrawOverlay();
-	void OnMouseEvent(wxMouseEvent &event);
-	void OnKeyEvent(wxKeyEvent &event);
-
+// Crosshair tool class
+class VisualToolCross : public VisualTool {
 public:
-	void SetMode(int mode);
+	VisualToolCross(VideoDisplay *parent);
+	~VisualToolCross();
 
-	VideoDisplayVisual(VideoDisplay *parent);
-	~VideoDisplayVisual();
+	void Update();
+	void Draw();
 };

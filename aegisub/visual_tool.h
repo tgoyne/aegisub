@@ -39,31 +39,47 @@
 
 ///////////
 // Headers
-#include "ass_dialogue.h"
+#include "video_display.h"
+#include "gl_wrap.h"
 
 
-////////////////
-// Feature type
-enum DraggableFeatureType {
-	DRAG_NONE,
-	DRAG_BIG_SQUARE,
-	DRAG_BIG_CIRCLE,
-	DRAG_SMALL_SQUARE,
-	DRAG_SMALL_CIRCLE
-};
+//////////////
+// Prototypes
+class VideoDisplay;
+class AssDialogue;
 
 
-/////////////////////
-// Drag-able feature
-class VideoDraggableFeature {
+////////////////////////
+// Visual handler class
+class VisualTool : public OpenGLWrapper {
+private:
+	VideoDisplay *parent;
+
+protected:
+	wxColour colour[4];
+
+	int w,h,sw,sh,mx,my;
+	int frame_n;
+
+	bool leftClick;
+	bool leftDClick;
+
+	void GetLinePosition(AssDialogue *diag,int &x,int &y);
+	void GetLinePosition(AssDialogue *diag,int &x,int &y,int &orgx,int &orgy);
+	void GetLineRotation(AssDialogue *diag,float &rx,float &ry,float &rz);
+	void GetLineScale(AssDialogue *diag,float &scalX,float &scalY);
+	void GetLineClip(AssDialogue *diag,int &x1,int &y1,int &x2,int &y2);
+	void FillPositionData();
+
+	VideoDisplay *GetParent() { return parent; }
+
 public:
-	DraggableFeatureType type;
-	int x,y;
-	int index;
-	AssDialogue *line;
+	int mouseX,mouseY;
 
-	bool IsMouseOver(int x,int y);
-	void Draw(bool highlighted);
+	void OnMouseEvent(wxMouseEvent &event);
+	virtual void Update()=0;
+	virtual void Draw()=0;
 
-	VideoDraggableFeature();
+	VisualTool(VideoDisplay *parent);
+	virtual ~VisualTool();
 };
