@@ -39,59 +39,25 @@
 
 ///////////
 // Headers
-#include "video_display.h"
-#include "gl_wrap.h"
+#include "visual_tool.h"
 
 
-//////////////
-// Prototypes
-class VideoDisplay;
-class AssDialogue;
-
-
-////////////////////////
-// Visual handler class
-class VisualTool : public OpenGLWrapper {
+/////////////////////////
+// Z Rotation tool class
+class VisualToolRotateZ : public VisualTool {
 private:
-	VideoDisplay *parent;
+	float curAngle,startAngle,origAngle;
+	int orgx,orgy,odx,ody;
+	float rx,ry;
 
-protected:
-	wxColour colour[4];
-
-	bool holding;
-	AssDialogue *curDiag;
-
-	int w,h,sw,sh,mx,my;
-	int frame_n;
-
-	bool leftClick;
-	bool leftDClick;
-	bool shiftDown;
-	bool ctrlDown;
-	bool altDown;
-
-	void GetLinePosition(AssDialogue *diag,int &x,int &y);
-	void GetLinePosition(AssDialogue *diag,int &x,int &y,int &orgx,int &orgy);
-	void GetLineRotation(AssDialogue *diag,float &rx,float &ry,float &rz);
-	void GetLineScale(AssDialogue *diag,float &scalX,float &scalY);
-	void GetLineClip(AssDialogue *diag,int &x1,int &y1,int &x2,int &y2);
-	void FillPositionData();
-
-	VideoDisplay *GetParent() { return parent; }
-
-	virtual AssDialogue *GetActiveDialogueLine();
-	virtual bool CanHold() { return false; }
-	virtual void InitializeHold() {}
-	virtual void UpdateHold() {}
-	virtual void CommitHold() {}
+	bool CanHold() { return true; }
+	void InitializeHold();
+	void UpdateHold();
+	void CommitHold();
 
 public:
-	int mouseX,mouseY;
+	VisualToolRotateZ(VideoDisplay *parent);
 
-	void OnMouseEvent(wxMouseEvent &event);
-	virtual void Update()=0;
-	virtual void Draw()=0;
-
-	VisualTool(VideoDisplay *parent);
-	virtual ~VisualTool();
+	void Update();
+	void Draw();
 };

@@ -45,13 +45,14 @@ private:
 	float r2,g2,b2,a2;
 	int lw;
 
-
 	static void Initialize();
 	static GLuint CreateStandardVertexShader();
 	static GLuint CreateYV12PixelShader();
 	static GLuint CreateShaderProgram(GLuint vertex,GLuint pixel);
 
 public:
+	OpenGLWrapper();
+
 	static wxMutex glMutex;
 
 	void SetLineColour(wxColour col,float alpha=1.0f,int width=1);
