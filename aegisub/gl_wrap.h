@@ -60,6 +60,7 @@ public:
 	void SetModeLine();
 	void SetModeFill();
 	void DrawLine(float x1,float y1,float x2,float y2);
+	void DrawDashedLine(float x1,float y1,float x2,float y2,float dashLen);
 	void DrawEllipse(float x,float y,float radiusX,float radiusY);
 	void DrawCircle(float x,float y,float radius) { DrawEllipse(x,y,radius,radius); }
 	void DrawRectangle(float x1,float y1,float x2,float y2);
