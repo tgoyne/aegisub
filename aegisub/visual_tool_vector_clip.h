@@ -39,51 +39,26 @@
 
 ///////////
 // Headers
-#include <wx/wxprec.h>
-#include <list>
-#include <vector>
+#include "visual_tool.h"
+#include "spline.h"
 
 
-///////////////
-// Curve types
-enum CurveType {
-	CURVE_INVALID,
-	CURVE_POINT,
-	CURVE_LINE,
-	CURVE_BICUBIC
-};
+//////////////////////////
+// Vector clip tool class
+class VisualToolVectorClip : public VisualTool {
+private:
+	Spline spline;
 
+	bool CanDrag() { return true; }
+	void PopulateFeatureList();
+	void UpdateDrag(VisualDraggableFeature &feature);
+	void CommitDrag(VisualDraggableFeature &feature);
 
-////////////////
-// Spline curve
-class SplineCurve {
+	void DoRefresh();
+
 public:
-	int x1,y1;
-	int x2,y2;
-	int x3,y3;
-	int x4,y4;
-	CurveType type;
+	VisualToolVectorClip(VideoDisplay *parent);
 
-	SplineCurve();
-};
-
-
-/////////////////////////
-// Spline managing class
-class Spline {
-public:
-	std::list<SplineCurve> curves;
-
-	Spline();
-
-	wxString EncodeToASS();
-	void DecodeFromASS(wxString str);
-
-	void AppendCurve(SplineCurve &curve);
-	void MovePoint(int curveIndex,int point,wxPoint pos);
-
-	void GetPointList(std::vector<wxPoint> &points);
-
-	wxPoint GetClosestPoint(wxPoint reference);
-	wxPoint GetClosestControlPoint(wxPoint reference);
+	void Update();
+	void Draw();
 };
