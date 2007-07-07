@@ -39,40 +39,27 @@
 
 ///////////
 // Headers
-#include "visual_tool.h"
-#include "spline.h"
+#include "vector2d.h"
 
 
-//////////////////////////
-// Vector clip tool class
-class VisualToolVectorClip : public VisualTool {
-private:
-	Spline spline;
-	wxToolBar *toolBar;
-	int mode;
-	int lastX,lastY;
+///////////////
+// Curve types
+enum CurveType {
+	CURVE_INVALID,
+	CURVE_POINT,
+	CURVE_LINE,
+	CURVE_BICUBIC
+};
 
-	void SetMode(int mode);
-	
-	bool CanHold() { return true; }
-	bool HoldEnabled();
-	void InitializeHold();
-	void UpdateHold();
-	void CommitHold();
 
-	bool CanDrag() { return true; }
-	bool DragEnabled();
-	void PopulateFeatureList();
-	void UpdateDrag(VisualDraggableFeature &feature);
-	void CommitDrag(VisualDraggableFeature &feature);
-	void ClickedFeature(VisualDraggableFeature &feature);
-
-	void DoRefresh();
-	void OnSubTool(wxCommandEvent &event);
-
+////////////////
+// Spline curve
+class SplineCurve {
 public:
-	VisualToolVectorClip(VideoDisplay *parent,wxToolBar *toolbar);
+	Vector2D p1,p2,p3,p4;
+	CurveType type;
 
-	void Update();
-	void Draw();
+	SplineCurve();
+	void Split(SplineCurve &c1,SplineCurve &c2,float t=0.5);
+	void Smooth(Vector2D prev,Vector2D next,float smooth=1.0f);
 };

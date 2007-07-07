@@ -34,8 +34,7 @@
 //
 
 
-#ifndef VIDEO_BOX_H
-#define VIDEO_BOX_H
+#pragma once
 
 
 ///////////
@@ -62,6 +61,7 @@ private:
 	void OnVideoToggleScroll(wxCommandEvent &event);
 
 	void OnModeChange(wxCommandEvent &event);
+	void OnSubTool(wxCommandEvent &event);
 	void OnToggleRealtime(wxCommandEvent &event);
 
 public:
@@ -102,5 +102,3 @@ enum {
 	Video_Mode_Vector_Clip,
 	Video_Mode_Realtime,
 };
-
-#endif
