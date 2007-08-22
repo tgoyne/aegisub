@@ -58,7 +58,7 @@ private:
 
 protected:
 	int channels;
-	__int64 num_samples;
+	__int64 num_samples; // for one channel, ie. number of PCM frames
 	int sample_rate;
 	int bytes_per_sample;
 
