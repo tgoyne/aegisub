@@ -45,6 +45,7 @@
 #include <wx/stackwalk.h>
 #include <fstream>
 #include "aegisublocale.h"
+#include "config.h"
 
 
 //////////////
@@ -63,7 +64,9 @@ private:
 public:
 	AegisubLocale locale;
 	FrameMain *frame;
+#ifdef WITH_AUTOMATION
 	Automation4::AutoloadScriptManager *global_scripts;
+#endif
 
 	static AegisubApp* Get() { return (AegisubApp*) wxTheApp; }
 	static void OpenURL(wxString url);
