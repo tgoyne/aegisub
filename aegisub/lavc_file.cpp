@@ -34,7 +34,7 @@
 //
 
 
-#include "config.h"
+
 #ifdef WITH_FFMPEG
 #include <wx/wxprec.h>
 #include <wx/filename.h>
