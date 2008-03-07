@@ -41,7 +41,7 @@
 
 ///////////
 // Headers
-#include "video_provider.h"
+#include "include/aegisub/video_provider.h"
 #include <wx/colour.h>
 
 
