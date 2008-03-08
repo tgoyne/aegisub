@@ -36,6 +36,8 @@
 #pragma once
 #include "format.h"
 #include "format_handler.h"
+#include "section.h"
+#include "section_entry_dialogue.h"
 
 namespace Aegilib {
 
@@ -44,8 +46,13 @@ namespace Aegilib {
 
 	// Advanced Substation Alpha format handler
 	class FormatHandlerASS : public FormatHandler {
+	private:
+		SectionEntry *MakeEntry(String data,String group,int version);
+		void ProcessGroup(String cur,String &curGroup,int &version);
+		Model &model;
+
 	public:
-		FormatHandlerASS(const Model &model);
+		FormatHandlerASS(Model &model);
 		~FormatHandlerASS();
 
 		void Load(wxInputStream &file,const String encoding);
@@ -55,8 +62,9 @@ namespace Aegilib {
 	class FormatASS : public Format {
 	public:
 		String GetName() const { return L"Advanced Substation Alpha"; }
-		String GetExtension() const { return L".ass"; }
-		FormatHandler* GetHandler(const Model &model) const { return new FormatHandlerASS(model); }
+		StringArray GetReadExtensions() const;
+		StringArray GetWriteExtensions() const;
+		FormatHandler* GetHandler(Model &model) const { return new FormatHandlerASS(model); }
 
 		bool CanStoreText() const { return true; }
 		bool CanUseTime() const { return true; }
@@ -64,6 +72,43 @@ namespace Aegilib {
 		bool HasStyles() const { return true; }
 		bool HasMargins() const { return true; }
 		bool HasActors() const { return true; }
+	};
+
+	// Dialogue
+	class DialogueASS : public SectionEntryDialogue {
+	private:
+		String text;
+		String style;
+		String effect;
+		String actor;
+		Time start,end;
+		int margin[4];
+		int layer;
+		bool comment;
+
+		bool Parse(String data,int version);
+		Time ParseTime(String data);
+
+	public:
+		// Constructors
+		DialogueASS() {}
+		DialogueASS(String data,int version);
+
+		// Capabilities
+		bool HasText() const { return true; }
+		bool HasTime() const { return true; }
+		bool HasStyle() const { return true; }
+		bool HasMargins() const { return true; }
+
+		// Read accessors
+		String GetText() const { return text; }
+		Time GetStartTime() const { return start; }
+		Time GetEndTime() const { return end; }
+
+		// Write acessors
+		void SetText(String setText) { text = setText; }
+		void SetStartTime(Time setStart) { start = setStart; }
+		void SetEndTime(Time setEnd) { end = setEnd; }
 	};
 
 };

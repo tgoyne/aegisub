@@ -33,45 +33,39 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#include <aegilib/aegilib.h>
-#include <wx/wfstream.h>
-#include <iostream>
-#include "text_file_reader.h"
-#include "text_file_writer.h"
+#pragma once
 
-int main () {
-	using namespace std;
-	using namespace Aegilib;
+namespace Aegilib {
 
-	cout << "Aegilib test program by amz.\n\n";
+	// Types
+	enum SectionEntryType {
+		SECTION_ENTRY_PLAIN,
+		SECTION_ENTRY_DIALOGUE,
+		SECTION_ENTRY_STYLE,
+		SECTION_ENTRY_FILE,
+		SECTION_ENTRY_RAW
+	};
 
-	try {
-		// Set up the lib
-		FormatManager::InitializeFormats();
+	// Prototypes
+	class SectionEntryPlain;
+	class SectionEntryDialogue;
+	class SectionEntryStyle;
+	class SectionEntryFile;
+	class SectionEntryRaw;
 
-		// Subtitles model
-		Model subs;
+	// Section entry class
+	class SectionEntry {
+	private:
 
-		// Load subtitles
-		cout << "Loading file... ";
-		String filename = L"subs_in.ass";
-		const Format *handler = FormatManager::GetFormatFromFilename(filename,true);
-		subs.LoadFile(wxFileInputStream(filename),handler,L"UTF-8");
-		cout << "Done.\n";
+	public:
+		virtual ~SectionEntry() {}
 
-		// Modify subtitles
-		cout << "Modifying file...";
-		cout << "Done.\n";
+		virtual SectionEntryType GetType() const =0;
+		virtual SectionEntryPlain *GetAsPlain() { return NULL; }
+		virtual SectionEntryDialogue *GetAsDialogue() { return NULL; }
+		virtual SectionEntryStyle *GetAsStyle() { return NULL; }
+		virtual SectionEntryFile *GetAsFile() { return NULL; }
+		virtual SectionEntryRaw *GetAsRaw() { return NULL; }
+	};
 
-		// Save subtitles
-		cout << "Saving file... ";
-		filename = L"subs_out.ass";
-		handler = FormatManager::GetFormatFromFilename(filename,false);
-		subs.SaveFile(wxFileOutputStream(filename),handler);
-		cout << "Done.\n";
-	}
-
-	catch (Exception &e) {
-		cout << "\n\nException: " << e.GetMessage().mb_str(wxConvUTF8) << endl << endl;
-	}
-}
+};
