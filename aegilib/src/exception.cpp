@@ -53,6 +53,10 @@ String Exception::GetMessage()
 		case Unknown: return L"Unknown.";
 		case No_Format_Handler: return L"Could not find a suitable format handler.";
 		case Invalid_Manipulator: return L"Invalid manipulator.";
+		case Section_Already_Exists: return L"The specified section already exists in this model.";
+		case Unknown_Format: return L"The specified file format is unknown.";
+		case Parse_Error: return L"Parse error.";
+		case Unsupported_Format_Feature: return L"This feature is not supported by this format.";
 	}
 	return L"Invalid code.";
 }

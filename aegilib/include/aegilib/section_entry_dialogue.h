@@ -33,45 +33,49 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#include <aegilib/aegilib.h>
-#include <wx/wfstream.h>
-#include <iostream>
-#include "text_file_reader.h"
-#include "text_file_writer.h"
 
-int main () {
-	using namespace std;
-	using namespace Aegilib;
+#pragma once
+#include "exception.h"
+#include "section_entry.h"
+#include "time.h"
 
-	cout << "Aegilib test program by amz.\n\n";
 
-	try {
-		// Set up the lib
-		FormatManager::InitializeFormats();
+namespace Aegilib {
 
-		// Subtitles model
-		Model subs;
+	// Dialogue class
+	class SectionEntryDialogue : public SectionEntry {
+	private:
+		void ThrowUnsupported() const { throw Exception(Exception::Unsupported_Format_Feature); }
 
-		// Load subtitles
-		cout << "Loading file... ";
-		String filename = L"subs_in.ass";
-		const Format *handler = FormatManager::GetFormatFromFilename(filename,true);
-		subs.LoadFile(wxFileInputStream(filename),handler,L"UTF-8");
-		cout << "Done.\n";
+	public:
+		// Destructor
+		virtual ~SectionEntryDialogue() {}
 
-		// Modify subtitles
-		cout << "Modifying file...";
-		cout << "Done.\n";
+		// Type
+		SectionEntryType GetType() const { return SECTION_ENTRY_DIALOGUE; }
+		SectionEntryDialogue *GetAsDialogue() { return this; }
 
-		// Save subtitles
-		cout << "Saving file... ";
-		filename = L"subs_out.ass";
-		handler = FormatManager::GetFormatFromFilename(filename,false);
-		subs.SaveFile(wxFileOutputStream(filename),handler);
-		cout << "Done.\n";
-	}
+		// Capabilities
+		virtual bool HasText() const { return false; }
+		virtual bool HasImage() const { return false; }
+		virtual bool HasTime() const { return false; }
+		virtual bool HasFrame() const { return false; }
+		virtual bool HasStyle() const { return false; }
+		virtual bool HasMargins() const { return false; }
 
-	catch (Exception &e) {
-		cout << "\n\nException: " << e.GetMessage().mb_str(wxConvUTF8) << endl << endl;
-	}
-}
+		// Read accessors
+		virtual String GetText() const { ThrowUnsupported(); return L""; }
+		virtual Time GetStartTime() const { ThrowUnsupported(); return 0; }
+		virtual Time GetEndTime() const { ThrowUnsupported(); return 0; }
+		virtual int GetStartFrame() const { ThrowUnsupported(); return 0; }
+		virtual int GetEndFrame() const { ThrowUnsupported(); return 0; }
+
+		// Write acessors
+		virtual void SetText(String text) { (void) text; ThrowUnsupported(); }
+		virtual void SetStartTime(Time start) { (void) start; ThrowUnsupported(); }
+		virtual void SetEndTime(Time end) { (void) end; ThrowUnsupported(); }
+		virtual void SetStartFrame(int start) { (void) start; ThrowUnsupported(); }
+		virtual void SetEndFrame(int end) { (void) end; ThrowUnsupported(); }
+	};
+
+};

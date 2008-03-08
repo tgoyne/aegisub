@@ -33,45 +33,27 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#include <aegilib/aegilib.h>
-#include <wx/wfstream.h>
-#include <iostream>
-#include "text_file_reader.h"
-#include "text_file_writer.h"
+#pragma once
+#include "aegistring.h"
+#include "section_entry.h"
+#include <list>
 
-int main () {
-	using namespace std;
-	using namespace Aegilib;
+namespace Aegilib {
 
-	cout << "Aegilib test program by amz.\n\n";
+	// Section class
+	class Section {
+	private:
+		std::list<SectionEntry*> entries;
+		String name;
 
-	try {
-		// Set up the lib
-		FormatManager::InitializeFormats();
+	public:
+		Section(String name);
+		~Section();
 
-		// Subtitles model
-		Model subs;
+		String GetName() const { return name; }
+		String SetName(String newName) { name = newName; }
 
-		// Load subtitles
-		cout << "Loading file... ";
-		String filename = L"subs_in.ass";
-		const Format *handler = FormatManager::GetFormatFromFilename(filename,true);
-		subs.LoadFile(wxFileInputStream(filename),handler,L"UTF-8");
-		cout << "Done.\n";
+		void AddEntry(SectionEntry *entry);
+	};
 
-		// Modify subtitles
-		cout << "Modifying file...";
-		cout << "Done.\n";
-
-		// Save subtitles
-		cout << "Saving file... ";
-		filename = L"subs_out.ass";
-		handler = FormatManager::GetFormatFromFilename(filename,false);
-		subs.SaveFile(wxFileOutputStream(filename),handler);
-		cout << "Done.\n";
-	}
-
-	catch (Exception &e) {
-		cout << "\n\nException: " << e.GetMessage().mb_str(wxConvUTF8) << endl << endl;
-	}
-}
+};
