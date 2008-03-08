@@ -34,6 +34,7 @@
 //
 
 #pragma once
+#include "aegistring.h"
 
 namespace Aegilib {
 
@@ -45,6 +46,12 @@ namespace Aegilib {
 	public:
 		Time() { ms = 0; }
 		Time(int ms) { (void)ms; }
+
+		void SetMS(int milliseconds) { ms = milliseconds; }
+		int GetMS() { return ms; }
+
+		String GetString(int ms_precision,int h_precision);
+		void Parse(String data);
 	};
 
 };
