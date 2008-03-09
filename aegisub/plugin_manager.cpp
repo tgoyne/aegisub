@@ -43,7 +43,7 @@
 #include "subtitles_provider_manager.h"
 #include "spellchecker_manager.h"
 #ifdef WITH_AUTO4_LUA
-#include "auto4_lua.h"
+#include "auto4_lua_factory.h"
 #endif
 #ifdef WITH_PERL
 #include "auto4_perl.h"
