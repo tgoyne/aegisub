@@ -282,7 +282,8 @@ aegisub_SOURCES = \
 	visual_tool_rotatez.cpp \
 	visual_tool_scale.cpp \
 	visual_tool_vector_clip.cpp \
-	MatroskaParser.c
+	MatroskaParser.c \
+	macosx/bevelButton.cpp
 
 noinst_HEADERS = \
 	boost/assert.hpp \
