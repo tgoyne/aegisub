@@ -51,6 +51,9 @@
 #ifdef WITH_AUTO3
 #include "auto4_auto3.h"
 #endif
+#ifdef WITH_RUBY
+#include "auto4_ruby_factory.h"
+#endif
 
 
 ///////////////
@@ -86,6 +89,9 @@ void PluginManager::RegisterBuiltInPlugins() {
 #endif
 #ifdef WITH_AUTO3
 		new Automation4::Auto3ScriptFactory();
+#endif
+#ifdef WITH_RUBY
+		new Automation4::RubyScriptFactory();
 #endif
 	}
 
