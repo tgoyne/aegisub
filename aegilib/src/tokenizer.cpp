@@ -33,33 +33,77 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
+#include "tokenizer.h"
+#include "exception.h"
+#include <wx/tokenzr.h>
+using namespace Aegilib;
 
-#include "aegistring.h"
+///////////////
+// Constructor
+Tokenizer::Tokenizer(String string,String token)
+{
+	tkn = new wxStringTokenizer(string,token,wxTOKEN_RET_EMPTY_ALL);
+}
+Tokenizer::~Tokenizer()
+{
+	delete tkn;
+}
 
-namespace Aegilib {
 
-	// Exception class
-	class Exception {
-	public:
-		enum ExceptionList {
-			Unknown,
-			No_Format_Handler,
-			Invalid_Manipulator,
-			Section_Already_Exists,
-			Unknown_Format,
-			Parse_Error,
-			Unsupported_Format_Feature,
-			Invalid_Token
-		};
+////////////
+// Has more
+bool Tokenizer::HasMore()
+{
+	return tkn->HasMoreTokens();
+}
 
-		Exception(ExceptionList code);
 
-		String GetMessage();
-		int GetCode();
+////////////////
+// Get position
+int Tokenizer::GetPosition()
+{
+	return (int)tkn->GetPosition();
+}
 
-	private:
-		ExceptionList code;
-	};
 
-};
+/////////////
+// Get token
+String Tokenizer::GetString()
+{
+	return tkn->GetNextToken();
+}
+int Tokenizer::GetInt()
+{
+	long value;
+	wxString temp = tkn->GetNextToken();
+	temp.ToLong(&value);
+	return (int) value;
+}
+long Tokenizer::GetLong()
+{
+	long value;
+	wxString temp = tkn->GetNextToken();
+	temp.ToLong(&value);
+	return value;
+}
+float Tokenizer::GetFloat()
+{
+	double value;
+	wxString temp = tkn->GetNextToken();
+	temp.ToDouble(&value);
+	return (float) value;
+}
+double Tokenizer::GetDouble()
+{
+	double value;
+	wxString temp = tkn->GetNextToken();
+	temp.ToDouble(&value);
+	return value;
+}
+bool Tokenizer::GetBool()
+{
+	long value;
+	wxString temp = tkn->GetNextToken();
+	temp.ToLong(&value);
+	return value != 0;
+}

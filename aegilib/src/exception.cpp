@@ -57,6 +57,7 @@ String Exception::GetMessage()
 		case Unknown_Format: return L"The specified file format is unknown.";
 		case Parse_Error: return L"Parse error.";
 		case Unsupported_Format_Feature: return L"This feature is not supported by this format.";
+		case Invalid_Token: return L"Invalid type for this token.";
 	}
 	return L"Invalid code.";
 }

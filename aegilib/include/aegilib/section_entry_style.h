@@ -33,33 +33,35 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
 
-#include "aegistring.h"
+#pragma once
+#include "exception.h"
+#include "colour.h"
+#include "section_entry.h"
+
 
 namespace Aegilib {
 
-	// Exception class
-	class Exception {
-	public:
-		enum ExceptionList {
-			Unknown,
-			No_Format_Handler,
-			Invalid_Manipulator,
-			Section_Already_Exists,
-			Unknown_Format,
-			Parse_Error,
-			Unsupported_Format_Feature,
-			Invalid_Token
-		};
-
-		Exception(ExceptionList code);
-
-		String GetMessage();
-		int GetCode();
-
+	// Style class
+	class SectionEntryStyle : public SectionEntry {
 	private:
-		ExceptionList code;
+		const static bool dodgeWarning = true;
+		void ThrowUnsupported() const { if (dodgeWarning) throw Exception(Exception::Unsupported_Format_Feature); }
+
+	public:
+		// Destructor
+		virtual ~SectionEntryStyle() {}
+
+		// Type
+		SectionEntryType GetType() const { return SECTION_ENTRY_STYLE; }
+		SectionEntryStyle *GetAsStyle() { return this; }
+
+		// Read accessors
+		virtual String GetName() const=0;
+		virtual String GetFontName() const { ThrowUnsupported(); return L""; }
+		virtual float GetFontSize() const { ThrowUnsupported(); return 0.0f; }
+		virtual Colour GetColour(int n) const { (void) n; ThrowUnsupported(); return Colour(); }
+		virtual int GetMargin(int n) const { (void) n; ThrowUnsupported(); return 0; }
 	};
 
 };

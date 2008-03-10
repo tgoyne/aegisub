@@ -34,32 +34,35 @@
 //
 
 #pragma once
-
 #include "aegistring.h"
 
 namespace Aegilib {
 
-	// Exception class
-	class Exception {
-	public:
-		enum ExceptionList {
-			Unknown,
-			No_Format_Handler,
-			Invalid_Manipulator,
-			Section_Already_Exists,
-			Unknown_Format,
-			Parse_Error,
-			Unsupported_Format_Feature,
-			Invalid_Token
-		};
-
-		Exception(ExceptionList code);
-
-		String GetMessage();
-		int GetCode();
-
+	// Colour class
+	class Colour {
 	private:
-		ExceptionList code;
+		unsigned char r, g, b, a;
+
+	public:
+		Colour ();
+		Colour (unsigned char red,unsigned char green,unsigned char blue,unsigned char alpha=0);
+		Colour (int red,int green,int blue,int alpha=0);
+
+		void SetRed(unsigned char red) { r = red; }
+		void SetGreen(unsigned char green) { g = green; }
+		void SetBlue(unsigned char blue) { b = blue; }
+		void SetAlpha(unsigned char alpha) { a = alpha; }
+		void SetRed(int red);
+		void SetGreen(int green);
+		void SetBlue(int blue);
+		void SetAlpha(int alpha);
+
+		unsigned char GetRed() const { return r; }
+		unsigned char GetGreen() const { return g; }
+		unsigned char GetBlue() const { return b; }
+		unsigned char GetAlpha() const { return a; }
+
+		void Parse(String str,bool reverse);
 	};
 
 };
