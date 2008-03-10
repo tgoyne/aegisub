@@ -33,33 +33,76 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
 
-#include "aegistring.h"
+#include "aegilib.h"
+using namespace Aegilib;
 
-namespace Aegilib {
 
-	// Exception class
-	class Exception {
-	public:
-		enum ExceptionList {
-			Unknown,
-			No_Format_Handler,
-			Invalid_Manipulator,
-			Section_Already_Exists,
-			Unknown_Format,
-			Parse_Error,
-			Unsupported_Format_Feature,
-			Invalid_Token
-		};
+////////////////
+// Constructors
+Colour::Colour ()
+{
+	r = g = b = a = 0;
+}
+Colour::Colour (unsigned char red,unsigned char green,unsigned char blue,unsigned char alpha)
+{
+	r = red;
+	g = green;
+	b = blue;
+	a = alpha;
+}
+Colour::Colour (int red,int green,int blue,int alpha)
+{
+	SetRed(red);
+	SetGreen(green);
+	SetBlue(blue);
+	SetAlpha(alpha);
+}
 
-		Exception(ExceptionList code);
 
-		String GetMessage();
-		int GetCode();
+////////////////////////
+// Set colour component
+void Colour::SetRed(int red) { r = (unsigned char) MID(0,red,255); }
+void Colour::SetGreen(int green) { g = (unsigned char) MID(0,green,255); }
+void Colour::SetBlue(int blue) { b = (unsigned char) MID(0,blue,255); }
+void Colour::SetAlpha(int alpha) { a = (unsigned char) MID(0,alpha,255); }
 
-	private:
-		ExceptionList code;
-	};
 
-};
+//////////////
+// Parse text
+void Colour::Parse(String value,bool reverse)
+{
+	// Prepare
+	unsigned char c;
+	char ostr[12];
+	ostr[11]=0;
+	unsigned long outval;
+	int oindex=11;
+	bool ishex=false;
+
+	// Determines whether it is hexadecimal or decimal
+	for(int i=(int)value.Len()-1;i>=0&&oindex>=0;i--) {
+		c=(char) value[i];
+		if (isxdigit(c) || c=='-') {
+			ostr[--oindex] = c;
+			if (c>='A') ishex = true;
+		}
+		else if (c == 'H' || c == 'h') ishex = true;
+	}
+
+	// Convert to decimal
+	outval=strtoul(ostr+oindex,0,ishex?16:10);
+
+	// Split components
+	b = (unsigned char)(outval		& 0xFF);
+	g = (unsigned char)((outval>>8)	& 0xFF);
+	r = (unsigned char)((outval>>16)& 0xFF);
+	a = (unsigned char)((outval>>24)& 0xFF);
+
+	// Reverse
+	if (reverse) {
+		unsigned char aux = r;
+		r = b;
+		b = aux;
+	}
+}

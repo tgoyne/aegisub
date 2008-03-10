@@ -34,32 +34,31 @@
 //
 
 #pragma once
-
 #include "aegistring.h"
 
+// Prototypes
+class wxStringTokenizer;
+
 namespace Aegilib {
-
-	// Exception class
-	class Exception {
-	public:
-		enum ExceptionList {
-			Unknown,
-			No_Format_Handler,
-			Invalid_Manipulator,
-			Section_Already_Exists,
-			Unknown_Format,
-			Parse_Error,
-			Unsupported_Format_Feature,
-			Invalid_Token
-		};
-
-		Exception(ExceptionList code);
-
-		String GetMessage();
-		int GetCode();
-
+	
+	// Tokenizer class
+	class Tokenizer {
 	private:
-		ExceptionList code;
+		wxStringTokenizer *tkn;
+
+	public:
+		Tokenizer(String string,String token);
+		~Tokenizer();
+
+		bool HasMore();
+		int GetPosition();
+
+		String GetString();
+		int GetInt();
+		long GetLong();
+		float GetFloat();
+		double GetDouble();
+		bool GetBool();
 	};
 
 };
