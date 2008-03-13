@@ -42,11 +42,10 @@ using namespace Aegilib;
 // Constructor
 Tokenizer::Tokenizer(String string,String token)
 {
-	tkn = new wxStringTokenizer(string,token,wxTOKEN_RET_EMPTY_ALL);
+	tkn = shared_ptr<wxStringTokenizer> (new wxStringTokenizer(string,token,wxTOKEN_RET_EMPTY_ALL));
 }
 Tokenizer::~Tokenizer()
 {
-	delete tkn;
 }
 
 
