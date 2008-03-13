@@ -33,22 +33,25 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#include "action.h"
-using namespace Aegilib;
+#pragma once
 
+//////////////////////////////////////////
+// Include the Technical Report 1 headers
+// This is necessary because some compilers put them on different places
 
-///////////////////////
-// Default constructor
-Action::Action()
-{
-}
+#include <tr1/memory>
+#include <tr1/array>
 
+namespace Aegilib {
+	using std::tr1::shared_ptr;
+	using std::tr1::weak_ptr;
+	using std::tr1::array;
+	using std::tr1::dynamic_pointer_cast;
+	using std::tr1::static_pointer_cast;
 
-//////////////////////////////
-// Initialization constructor
-Action::Action(ActionType _type,shared_ptr<void> _data,int _par1)
-{
-	type = _type;
-	data = _data;
-	par1 = _par1;
-}
+	// Null deleter for use with shared_ptr
+	class NullDeleter {
+	public:
+		void operator()(void const *) const	{ }
+	};
+};
