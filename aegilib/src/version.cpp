@@ -33,42 +33,50 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#include <aegilib/aegilib.h>
-#include <wx/wfstream.h>
-#include <iostream>
-#include "text_file_reader.h"
-#include "text_file_writer.h"
 
-int main () {
-	using namespace std;
-	using namespace Aegilib;
+#include "version.h"
+#include "tr1.h"
+using namespace Aegilib;
 
-	cout << "Aegilib test program by amz.\n\n";
 
-	try {
-		// Set up the lib
-		FormatManager::InitializeFormats();
-		Aegilib::SetHostApplicationName(L"Aegilib test program");
+////////////////
+// Library data
+String Aegilib::GetLibraryName()
+{
+	return _T("Aegilib");
+}
+String Aegilib::GetLibraryVersionString()
+{
+	return _T("Aegilib v0.x - EXPERIMENTAL");
+}
+String Aegilib::GetLibraryURL()
+{
+	return _T("http://www.aegisub.net");
+}
 
-		// Subtitles model
-		Model subs;
 
-		// Load subtitles
-		cout << "Loading file... ";
-		subs.LoadFile(L"subs_in.ass",L"UTF-8");
-		cout << "Done.\n";
+/////////////////////////
+// Host application data
+static shared_ptr<String> hostName;
+static shared_ptr<String> hostURL;
 
-		// Modify subtitles
-		cout << "Modifying file...";
-		cout << "Done.\n";
-
-		// Save subtitles
-		cout << "Saving file... ";
-		subs.SaveFile(L"subs_out.ass",L"UTF-8");
-		cout << "Done.\n";
-	}
-
-	catch (Exception &e) {
-		cout << "\n\nException: " << e.GetMessage().mb_str(wxConvUTF8) << endl << endl;
-	}
+void Aegilib::SetHostApplicationName(const String name)
+{
+	if (!hostName) hostName = shared_ptr<String> (new String());
+	*hostName = name;
+}
+void Aegilib::SetHostApplicationURL(const String url)
+{
+	if (!hostURL) hostName = shared_ptr<String> (new String());
+	*hostURL = url;
+}
+String Aegilib::GetHostApplicationName()
+{
+	if (hostName) return *hostName;
+	return L"unknown application";
+}
+String Aegilib::GetHostApplicationURL()
+{
+	if (hostURL) return *hostURL;
+	return L"";
 }
