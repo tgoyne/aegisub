@@ -27,7 +27,7 @@
 //
 // -----------------------------------------------------------------------------
 //
-// AEGISUB/AEGILIB
+// AEGISUB/GORGONSUB
 //
 // Website: http://www.aegisub.net
 // Contact: mailto:amz@aegisub.net
@@ -40,7 +40,7 @@
 #include "view.h"
 #include "controller.h"
 #include "notification.h"
-#include "aegistring.h"
+#include "gorgonstring.h"
 #include "format.h"
 #include "format_handler.h"
 #include "format_manager.h"
@@ -48,7 +48,7 @@
 #include "section.h"
 #include "section_entry_dialogue.h"
 #include "section_entry_style.h"
-#include "aegitime.h"
+#include "gorgontime.h"
 #include "colour.h"
 #include "utils.h"
 #include "version.h"
