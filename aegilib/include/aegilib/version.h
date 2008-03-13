@@ -33,42 +33,23 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#include <aegilib/aegilib.h>
-#include <wx/wfstream.h>
-#include <iostream>
-#include "text_file_reader.h"
-#include "text_file_writer.h"
 
-int main () {
-	using namespace std;
-	using namespace Aegilib;
+#pragma once
+#include "aegistring.h"
 
-	cout << "Aegilib test program by amz.\n\n";
+////////////////////
+// Helper functions
+namespace Aegilib {
 
-	try {
-		// Set up the lib
-		FormatManager::InitializeFormats();
-		Aegilib::SetHostApplicationName(L"Aegilib test program");
+	// Version
+	String GetLibraryName();
+	String GetLibraryVersionString();
+	String GetLibraryURL();
 
-		// Subtitles model
-		Model subs;
+	// Host application
+	void SetHostApplicationName(const String name);
+	void SetHostApplicationURL(const String name);
+	String GetHostApplicationName();
+	String GetHostApplicationURL();
 
-		// Load subtitles
-		cout << "Loading file... ";
-		subs.LoadFile(L"subs_in.ass",L"UTF-8");
-		cout << "Done.\n";
-
-		// Modify subtitles
-		cout << "Modifying file...";
-		cout << "Done.\n";
-
-		// Save subtitles
-		cout << "Saving file... ";
-		subs.SaveFile(L"subs_out.ass",L"UTF-8");
-		cout << "Done.\n";
-	}
-
-	catch (Exception &e) {
-		cout << "\n\nException: " << e.GetMessage().mb_str(wxConvUTF8) << endl << endl;
-	}
-}
+};
