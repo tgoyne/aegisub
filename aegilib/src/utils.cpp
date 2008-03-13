@@ -33,36 +33,17 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
-#include "aegistring.h"
-#include "section_entry.h"
-#include <list>
-#include <map>
 
-namespace Aegilib {
+#include "utils.h"
+using namespace Aegilib;
 
-	// Section class
-	class Section {
-	private:
-		std::list<SectionEntry*> entries;
-		std::map<String,String> properties;
-		String name;
 
-	public:
-		Section(String name);
-		~Section();
-
-		const String& GetName() const { return name; }
-		String SetName(const String& newName) { name = newName; }
-		
-		void SetProperty(const String &key,const String &value);
-		void UnsetProperty(const String &key);
-		String GetProperty(const String &key) const;
-		bool HasProperty(const String &key) const;
-		size_t PropertyCount() const;
-		String GetPropertyName(size_t index) const;
-
-		void AddEntry(SectionEntry *entry);
-	};
-
-};
+//////////////////////////////////
+// Convert a string to an integer
+int Aegilib::StringToInt(const String &str)
+{
+	if (!str.IsNumber()) return 0;
+	long temp;
+	str.ToLong(&temp);
+	return (int) temp;
+}
