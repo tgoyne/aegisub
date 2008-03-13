@@ -33,36 +33,43 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
-#include "aegistring.h"
-#include "section_entry.h"
-#include <list>
-#include <map>
 
+#pragma once
+#include "aegilib.h"
+
+
+/////////////
+// Templates
+
+// Returns the largest of two values
+template <typename T>
+T Max(T a,T b)
+{
+	if (b < a) return a;
+	return b;
+}
+
+// Returns the smallest of two values
+template <typename T>
+T Min(T a,T b)
+{
+	if (a < b) return a;
+	return b;
+}
+
+// Returns b, but limiting it to the interval [a,c]
+template <typename T>
+T Mid(T a,T b,T c)
+{
+	return Min(Max(a,b),c);
+}
+
+
+////////////////////
+// Helper functions
 namespace Aegilib {
 
-	// Section class
-	class Section {
-	private:
-		std::list<SectionEntry*> entries;
-		std::map<String,String> properties;
-		String name;
-
-	public:
-		Section(String name);
-		~Section();
-
-		const String& GetName() const { return name; }
-		String SetName(const String& newName) { name = newName; }
-		
-		void SetProperty(const String &key,const String &value);
-		void UnsetProperty(const String &key);
-		String GetProperty(const String &key) const;
-		bool HasProperty(const String &key) const;
-		size_t PropertyCount() const;
-		String GetPropertyName(size_t index) const;
-
-		void AddEntry(SectionEntry *entry);
-	};
+	// Convert a string to an integer
+	int StringToInt(const String &str);
 
 };
