@@ -27,7 +27,7 @@
 //
 // -----------------------------------------------------------------------------
 //
-// AEGISUB/AEGILIB
+// AEGISUB/GORGONSUB
 //
 // Website: http://www.aegisub.net
 // Contact: mailto:amz@aegisub.net
@@ -38,7 +38,7 @@
 #include <wx/string.h>
 #include <vector>
 
-namespace Aegilib {
+namespace Gorgonsub {
 
 	// Define the string type used throughout this library
 	//typedef std::basic_string<wchar_t> String;
