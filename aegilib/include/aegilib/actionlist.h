@@ -37,13 +37,17 @@
 #include <list>
 #include "action.h"
 #include "gorgonstring.h"
+#include "section_entry.h"
 
 namespace Gorgonsub {
 
-	// Manipulator class
-	class Manipulator {
+	// Prototypes
+	class Controller;
+
+	// ActionList class
+	class ActionList {
 		friend class Model;
-		friend class std::list<Manipulator>;
+		friend class Controller;
 
 	private:
 		String actionName;
@@ -51,14 +55,18 @@ namespace Gorgonsub {
 		std::list<Action> actions;
 		bool valid;
 
-		Manipulator();
+		ActionList();
+		ActionList(Model &model,const String actionName);
+		void Start(const String actionName);
 
 	public:
-		Manipulator(Model &model,String actionName);
-		~Manipulator();
+		~ActionList();
 
 		void AddAction(const Action &action);
-		void Flush();
+		void Finish();
+
+		void InsertLine(SectionEntryPtr line,int position=-1,const String section=L"");
 	};
+	typedef shared_ptr<ActionList> ActionListPtr;
 
 };

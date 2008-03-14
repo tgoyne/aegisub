@@ -39,38 +39,55 @@ using namespace Gorgonsub;
 
 ///////////////
 // Constructor
-Manipulator::Manipulator(Model &_model,String _actionName)
+Controller::Controller(Model &_model)
 : model(_model)
 {
-	actionName = _actionName;
-	valid = true;
+}
+
+
+/////////////////////////
+// Create an action list
+ActionListPtr Controller::CreateActionList(const String title)
+{
+	return ActionListPtr (new ActionList(model,title));
+}
+
+
+///////////////
+// Load a file
+void Controller::LoadFile(const String filename,const String encoding)
+{
+	const FormatPtr handler = FormatManager::GetFormatFromFilename(filename,true);
+	wxFileInputStream stream(filename);
+	model.Load(stream,handler,encoding);
+}
+
+
+///////////////
+// Save a file
+void Controller::SaveFile(const String filename,const String encoding)
+{
+	const FormatPtr handler = FormatManager::GetFormatFromFilename(filename,true);
+	wxFileOutputStream stream(filename);
+	model.Save(stream,handler,encoding);
 }
 
 
 //////////////
-// Destructor
-Manipulator::~Manipulator()
+// Get format
+const FormatPtr Controller::GetFormat() const
 {
-	Flush();
+	return model.GetFormat();
 }
 
 
-//////////////////////////////
-// Add an action to the queue
-void Manipulator::AddAction(const Action &action)
+//////////////////
+// Create entries
+SectionEntryDialoguePtr Controller::CreateDialogue()
 {
-	if (!valid) throw Exception(Exception::Invalid_Manipulator);
-	actions.push_back(action);
+	return GetFormat()->CreateDialogue();
 }
-
-
-////////////////////////////////
-// Flush the queue to the model
-void Manipulator::Flush()
+SectionEntryStylePtr Controller::CreateStyle()
 {
-	if (valid) {
-		model.ProcessActionList(*this,false);
-		actions.clear();
-		valid = false;
-	}
+	return GetFormat()->CreateStyle();
 }

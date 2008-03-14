@@ -44,7 +44,7 @@
 #include "format.h"
 #include "format_handler.h"
 #include "format_manager.h"
-#include "manipulator.h"
+#include "actionlist.h"
 #include "section.h"
 #include "section_entry_dialogue.h"
 #include "section_entry_style.h"
