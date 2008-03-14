@@ -33,63 +33,61 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
-#include <list>
-#include <vector>
-#include <wx/wfstream.h>
-#include "actionlist.h"
-#include "section.h"
+#include "Gorgonsub.h"
+using namespace Gorgonsub;
 
-namespace Gorgonsub {
 
-	// Prototypes
-	class View;
-	typedef shared_ptr<View> ViewPtr;
-	class Notification;
-	class Format;
-	
-	// Model class
-	// Stores the subtitle data
-	class Model {
-		friend class FormatHandler;
-		friend class ActionList;
-		friend class Controller;
+///////////////
+// Constructor
+ActionList::ActionList(Model &_model,String _actionName)
+: model(_model)
+{
+	Start(_actionName);
+}
 
-		typedef std::list<ViewPtr> ViewList;
-		typedef std::list<ActionListPtr> ActionStack;
-		typedef shared_ptr<Format> FormatPtr;
 
-	private:
-		std::vector<SectionPtr> sections;
-		ActionStack undoStack;
-		ActionStack redoStack;
-		ViewList listeners;
-		bool readOnly;
-		FormatPtr format;
-		
-		void ProcessActionList(const ActionList &actionList,bool insertInStack);
-		void DoAction(const Action &action);
-		ActionListPtr CreateAntiActionList(const ActionListPtr &manipulator);
+//////////////
+// Destructor
+ActionList::~ActionList()
+{
+}
 
-		bool CanUndo(const String owner=L"") const;
-		bool CanRedo(const String owner=L"") const;
-		bool Undo(const String owner=L"");
-		bool Redo(const String owner=L"");
 
-		void DispatchNotifications(const Notification &notification) const;
+//////////////////////////////
+// Add an action to the queue
+void ActionList::AddAction(const Action &action)
+{
+	if (!valid) throw Exception(Exception::Invalid_ActionList);
+	actions.push_back(action);
+}
 
-		void AddSection(String name);
-		SectionPtr GetSection(String name) const;
-		SectionPtr GetSectionByIndex(size_t index) const;
-		size_t GetSectionCount() const;
 
-		void Clear();
-		void Load(wxInputStream &input,const FormatPtr format=FormatPtr(),const String encoding=L"");
-		void Save(wxOutputStream &output,const FormatPtr format=FormatPtr(),const String encoding=L"UTF-8");
+/////////////////////////////
+// Starts performing actions
+void ActionList::Start(const String name)
+{
+	if (valid) Finish();
+	actionName = name;
+	valid = true;
+}
 
-	public:
-		const FormatPtr GetFormat() const { return format; }
-		void AddListener(ViewPtr listener);
-	};
 
-};
+////////////////////////
+// Ends the action list
+void ActionList::Finish()
+{
+	if (valid) {
+		model.ProcessActionList(*this,false);
+		actions.clear();
+		valid = false;
+	}
+}
+
+
+//////////////////////////////////
+// Create an "insert line" action
+void ActionList::InsertLine(SectionEntryPtr line,int position,const String section)
+{
+	Action action = Action(ACTION_INSERT,line,section,position);
+	AddAction(action);
+}
