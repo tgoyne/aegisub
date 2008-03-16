@@ -64,6 +64,9 @@ namespace Gorgonsub {
 	public:
 		~ActionList();
 
+		String GetName() const { return actionName; }
+		String GetOwner() const { return owner; }
+
 		void AddAction(const ActionPtr action);
 		void Finish();
 
