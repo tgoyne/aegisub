@@ -45,7 +45,7 @@ namespace Gorgonsub {
 	class DeltaCoder {
 	public:
 		virtual ~DeltaCoder() {}
-		virtual VoidPtr EncodeDelta(VoidPtr from,VoidPtr to) const = 0;
+		virtual VoidPtr EncodeDelta(VoidPtr from,VoidPtr to,bool withTextFields=true) const = 0;
 		virtual VoidPtr EncodeReverseDelta(VoidPtr delta,VoidPtr object) const = 0;
 		virtual void ApplyDelta(VoidPtr delta,VoidPtr object) const = 0;
 	};

@@ -34,20 +34,47 @@
 //
 
 #pragma once
-#include "deltacoder.h"
+#include <vector>
 
 namespace Gorgonsub {
 
-	// Delta coder
-	class DialogueASS;
-	class DialogueASSDeltaCoder : public DeltaCoder {
+	// Range class
+	class Range {
 	private:
-		void GetDelta(int mask,char *dst,shared_ptr<DialogueASS> to) const;
+		size_t start,end;
 
 	public:
-		VoidPtr EncodeDelta(VoidPtr from,VoidPtr to,bool withTextFields=true) const;
-		VoidPtr EncodeReverseDelta(VoidPtr from,VoidPtr to) const;
-		void ApplyDelta(VoidPtr delta,VoidPtr object) const;
+		Range() : start(0), end(0) {}
+		Range(size_t _start,size_t _end) : start(_start), end(_end) {}
+
+		size_t GetLine(size_t n) const;
+		size_t GetSize() const { return end-start; }
+		size_t GetStart() const { return start; }
+		size_t GetEnd() const { return end; }
+	};
+
+	// Selection class
+	class Selection {
+	private:
+		std::vector<Range> ranges;
+		size_t count;
+
+	public:
+		Selection();
+
+		void AddLine(size_t line) { AddRange(Range(line,line+1)); }
+		void AddRange(const Range &range);
+		void RemoveLine(size_t line) { RemoveRange(Range(line,line+1)); }
+		void RemoveRange(const Range &range);
+		void AddSelection (const Selection &param);
+		void RemoveSelection (const Selection &param);
+
+		size_t GetCount() const { return count; }
+		size_t GetRanges() const { return ranges.size(); }
+		size_t GetLine(size_t n) const;
+		size_t GetLineInRange(size_t n,size_t range) const { return ranges.at(range).GetLine(n); }
+		bool IsContiguous() const { return GetRanges() <= 1; }
+
 	};
 
 }
