@@ -33,21 +33,63 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
-#include "deltacoder.h"
+#include "selection.h"
+using namespace Gorgonsub;
 
-namespace Gorgonsub {
 
-	// Delta coder
-	class DialogueASS;
-	class DialogueASSDeltaCoder : public DeltaCoder {
-	private:
-		void GetDelta(int mask,char *dst,shared_ptr<DialogueASS> to) const;
-
-	public:
-		VoidPtr EncodeDelta(VoidPtr from,VoidPtr to,bool withTextFields=true) const;
-		VoidPtr EncodeReverseDelta(VoidPtr from,VoidPtr to) const;
-		void ApplyDelta(VoidPtr delta,VoidPtr object) const;
-	};
-
+///////////////
+// Constructor
+Selection::Selection()
+: count(0)
+{
 }
+
+
+////////////////
+// Adds a range
+void Selection::AddRange(const Range &range)
+{
+	// TODO
+	(void) range;
+}
+
+
+///////////////////
+// Removes a range
+void Selection::RemoveRange(const Range &range)
+{
+	// TODO
+	(void) range;
+}
+
+
+//////////////////
+// Get a specific
+size_t Selection::GetLine(size_t n) const
+{
+	// Find the nth line
+	size_t cur = 0;
+	size_t len = ranges.size();
+	for (size_t i=0;i<len;i++) {
+		cur += ranges[i].GetSize();
+		if (cur > n) return ranges[i].GetLine(n-ranges[i].GetStart());
+	}
+	return ~0UL;
+}
+
+
+////////////////////////////
+// Append another selection
+void Selection::AddSelection (const Selection &param)
+{
+	(void) param;
+}
+
+
+//////////////////////////////
+// Subtract another selection
+void Selection::RemoveSelection (const Selection &param)
+{
+	(void) param;
+}
+
