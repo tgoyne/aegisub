@@ -27,22 +27,41 @@
 //
 // -----------------------------------------------------------------------------
 //
-// AEGISUB/GORGONSUB
+// AEGISUB/ATHENASUB
 //
 // Website: http://www.aegisub.net
 // Contact: mailto:amz@aegisub.net
 //
 
 #pragma once
+#include "athenastring.h"
+#include "utils.h"
 
-#include <wx/string.h>
-#include <vector>
+namespace Athenasub {
 
-namespace Gorgonsub {
+	// Time class
+	class Time {
+	private:
+		int ms;
 
-	// Define the string type used throughout this library
-	//typedef std::basic_string<wchar_t> String;
-	typedef wxString String;
-	typedef std::vector<String> StringArray;
+	public:
+		Time() { ms = 0; }
+		Time(int _ms) { ms = _ms; }
+
+		void SetMS(int milliseconds) { ms = milliseconds; }
+		int GetMS() const { return ms; }
+
+		String GetString(int ms_precision,int h_precision) const;
+		void Parse(const String &data);
+
+		Time operator + (const int &par) const { return Max<int>(0,ms+par); }
+		Time operator - (const int &par) const { return Max<int>(0,ms-par); }
+		bool operator == (const Time &par) const { return ms == par.ms; }
+		bool operator != (const Time &par) const { return ms != par.ms; }
+		bool operator < (const Time &par) const { return ms < par.ms; }
+		bool operator > (const Time &par) const { return ms > par.ms; }
+		bool operator <= (const Time &par) const { return ms <= par.ms; }
+		bool operator >= (const Time &par) const { return ms >= par.ms; }
+	};
 
 }
