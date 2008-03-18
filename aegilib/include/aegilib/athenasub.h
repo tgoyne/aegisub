@@ -27,41 +27,33 @@
 //
 // -----------------------------------------------------------------------------
 //
-// AEGISUB/GORGONSUB
+// AEGISUB/ATHENASUB
 //
 // Website: http://www.aegisub.net
 // Contact: mailto:amz@aegisub.net
 //
 
 #pragma once
-#include "gorgonstring.h"
+
+#ifndef UNICODE
+#error "This library requires unicode support."
+#endif
+
+#include "tr1.h"
+#include "exception.h"
+#include "model.h"
+#include "view.h"
+#include "controller.h"
+#include "notification.h"
+#include "athenastring.h"
+#include "format.h"
+#include "format_handler.h"
+#include "format_manager.h"
+#include "actionlist.h"
+#include "section.h"
+#include "section_entry_dialogue.h"
+#include "section_entry_style.h"
+#include "athenatime.h"
+#include "colour.h"
 #include "utils.h"
-
-namespace Gorgonsub {
-
-	// Time class
-	class Time {
-	private:
-		int ms;
-
-	public:
-		Time() { ms = 0; }
-		Time(int _ms) { ms = _ms; }
-
-		void SetMS(int milliseconds) { ms = milliseconds; }
-		int GetMS() const { return ms; }
-
-		String GetString(int ms_precision,int h_precision) const;
-		void Parse(const String &data);
-
-		Time operator + (const int &par) const { return Max<int>(0,ms+par); }
-		Time operator - (const int &par) const { return Max<int>(0,ms-par); }
-		bool operator == (const Time &par) const { return ms == par.ms; }
-		bool operator != (const Time &par) const { return ms != par.ms; }
-		bool operator < (const Time &par) const { return ms < par.ms; }
-		bool operator > (const Time &par) const { return ms > par.ms; }
-		bool operator <= (const Time &par) const { return ms <= par.ms; }
-		bool operator >= (const Time &par) const { return ms >= par.ms; }
-	};
-
-}
+#include "version.h"
