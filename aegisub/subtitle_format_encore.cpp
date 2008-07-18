@@ -87,13 +87,7 @@ void EncoreSubtitleFormat::WriteFile(wxString _filename,wxString encoding) {
 		AssDialogue *current = AssEntry::GetAsDialogue(*cur);
 		if (current && !current->Comment) {
 			// Time stamps
-			i++;
-			AssTime time = current->Start;
-			int f = int(time.GetTimeMiliseconds() * fps / 1000.0 + 0.5);
-			wxString timeStamps = wxString::Format(_T("%i %02i:%02i:%02i:%02i "),i,time.GetTimeHours(),time.GetTimeMinutes(),time.GetTimeSeconds(),f);
-			time = current->End;
-			f = int(time.GetTimeMiliseconds() * fps / 1000.0 + 0.5);
-			timeStamps += wxString::Format(_T("%02i:%02i:%02i:%02i "),time.GetTimeHours(),time.GetTimeMinutes(),time.GetTimeSeconds(),f);
+			wxString timeStamps = wxString::Format(_T("%i "),++i) + current->Start.GetSMPTE(fps) + _T(" ") + current->End.GetSMPTE(fps);
 
 			// Convert : to ; if it's NTSC
 			if (fps > 26.0) timeStamps.Replace(_T(":"),_T(";"));

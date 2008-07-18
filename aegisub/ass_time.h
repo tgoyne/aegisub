@@ -66,6 +66,7 @@ public:
 	void ParseSRT(const wxString text);	// Sets value to text-form time, in SRT format
 	wxString GetASSFormated(bool ms=false); // Returns the ASS representation of time
 	wxString GetSRTFormated();			// Returns the SRT representation of time
+	wxString GetSMPTE(double fps);		// Returns the SMPTE timecodes for the given frame rate
 };
 
 // Comparison operators
