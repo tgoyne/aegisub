@@ -33,31 +33,14 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
+#ifdef ATHENA_DLL
+#ifdef ATHENA_EXPORTS
+#define ATHENA_API __declspec(dllexport)
+#else
+#define ATHENA_API __declspec(dllimport)
+#endif
+#else
+#define ATHENA_API
+#endif
 
-//////////////////////////////////////////
-// Include the Technical Report 1 headers
-// This is necessary because some compilers put them on different places
-
-#include <memory>
-#include <array>
-
-namespace Athenasub {
-	using std::tr1::shared_ptr;
-	using std::tr1::weak_ptr;
-	using std::tr1::array;
-	using std::tr1::dynamic_pointer_cast;
-	using std::tr1::static_pointer_cast;
-
-	// Null deleter for use with shared_ptr
-	class NullDeleter {
-	public:
-		void operator()(void const *) const	{ }
-	};
-
-	// Array deleter for use with shared_ptr and new[]
-	class ArrayDeleter {
-	public:
-		void operator()(void const *p) const { delete[] p; }
-	};
-}
+#pragma warning(disable: 4251)
