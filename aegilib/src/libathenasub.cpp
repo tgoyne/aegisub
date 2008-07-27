@@ -33,31 +33,22 @@
 // Contact: mailto:amz@aegisub.net
 //
 
-#pragma once
+#include "athenasub.h"
+using namespace Athenasub;
 
-//////////////////////////////////////////
-// Include the Technical Report 1 headers
-// This is necessary because some compilers put them on different places
 
-#include <memory>
-#include <array>
+extern "C" LibAthenaSub* CreateLibAthenasub(const char* hostName) {
+	return new LibAthenaSub(hostName);
+}
 
-namespace Athenasub {
-	using std::tr1::shared_ptr;
-	using std::tr1::weak_ptr;
-	using std::tr1::array;
-	using std::tr1::dynamic_pointer_cast;
-	using std::tr1::static_pointer_cast;
 
-	// Null deleter for use with shared_ptr
-	class NullDeleter {
-	public:
-		void operator()(void const *) const	{ }
-	};
+LibAthenaSub::LibAthenaSub(const char* hostName) {
+	(void) hostName;
+	Athenasub::SetHostApplicationName(String(hostName,wxConvUTF8));
+	FormatManager::InitializeFormats();
+}
 
-	// Array deleter for use with shared_ptr and new[]
-	class ArrayDeleter {
-	public:
-		void operator()(void const *p) const { delete[] p; }
-	};
+
+ModelPtr LibAthenaSub::CreateModel() {
+	return ModelPtr(new Model());
 }

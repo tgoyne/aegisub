@@ -36,6 +36,7 @@
 
 #pragma once
 #include "athenastring.h"
+#include "api.h"
 
 ////////////////////
 // Helper functions

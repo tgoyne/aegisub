@@ -35,29 +35,20 @@
 
 #pragma once
 
-//////////////////////////////////////////
-// Include the Technical Report 1 headers
-// This is necessary because some compilers put them on different places
-
-#include <memory>
-#include <array>
+#include "tr1.h"
 
 namespace Athenasub {
-	using std::tr1::shared_ptr;
-	using std::tr1::weak_ptr;
-	using std::tr1::array;
-	using std::tr1::dynamic_pointer_cast;
-	using std::tr1::static_pointer_cast;
 
-	// Null deleter for use with shared_ptr
-	class NullDeleter {
+	class Model;
+	typedef shared_ptr<Model> ModelPtr;
+
+	class LibAthenaSub {
 	public:
-		void operator()(void const *) const	{ }
+		LibAthenaSub(const char* hostName);
+
+		ModelPtr CreateModel();
 	};
 
-	// Array deleter for use with shared_ptr and new[]
-	class ArrayDeleter {
-	public:
-		void operator()(void const *p) const { delete[] p; }
-	};
 }
+
+extern "C" Athenasub::LibAthenaSub* CreateLibAthenasub(const char* hostName);
