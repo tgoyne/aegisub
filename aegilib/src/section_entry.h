@@ -34,36 +34,18 @@
 //
 
 #pragma once
-#include "athenastring.h"
+#include "athenasub.h"
+
 
 namespace Athenasub {
 
-	// Colour class
-	class Colour {
-	private:
-		unsigned char r, g, b, a;
-
+	// Section plain-text entry
+	class CPlainText : public IEntry {
 	public:
-		Colour ();
-		Colour (unsigned char red,unsigned char green,unsigned char blue,unsigned char alpha=0);
-		Colour (int red,int green,int blue,int alpha=0);
-
-		void SetRed(unsigned char red) { r = red; }
-		void SetGreen(unsigned char green) { g = green; }
-		void SetBlue(unsigned char blue) { b = blue; }
-		void SetAlpha(unsigned char alpha) { a = alpha; }
-		void SetRed(int red);
-		void SetGreen(int green);
-		void SetBlue(int blue);
-		void SetAlpha(int alpha);
-
-		unsigned char GetRed() const { return r; }
-		unsigned char GetGreen() const { return g; }
-		unsigned char GetBlue() const { return b; }
-		unsigned char GetAlpha() const { return a; }
-
-		void Parse(String str,bool reverse);
-		String GetVBHex(bool withAlpha=false,bool withHeader=true,bool withFooter=true) const;
+		SectionEntryType GetType() const { return SECTION_ENTRY_PLAIN; }
+		virtual ~CPlainText() {}
+		virtual String GetText() const =0;
+		virtual void SetText(const String &_data) =0;
 	};
 
 }

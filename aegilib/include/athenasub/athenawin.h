@@ -34,36 +34,15 @@
 //
 
 #pragma once
-#include <vector>
-#include "range.h"
+
+#include "athenasub.h"
+#include <windows.h>
+
+typedef Athenasub::ILibAthenaSub* (__stdcall *CreateLibAthenasubPtr)(const char*);
 
 namespace Athenasub {
-
-	// Selection class
-	class Selection {
-	private:
-		std::vector<Range> ranges;
-		size_t count;
-		void UpdateCount();
-
-	public:
-		Selection();
-
-		void AddLine(size_t line) { AddRange(Range(line,line+1)); }
-		void AddRange(const Range &range);
-		void RemoveLine(size_t line) { RemoveRange(Range(line,line+1)); }
-		void RemoveRange(const Range &range);
-		void AddSelection (const Selection &param);
-		void RemoveSelection (const Selection &param);
-		void NormalizeRanges ();
-
-		size_t GetCount() const { return count; }
-		size_t GetRanges() const { return ranges.size(); }
-		size_t GetLine(size_t n) const;
-		size_t GetLineInRange(size_t n,size_t range) const { return ranges.at(range).GetLine(n); }
-		size_t GetLinesInRange(size_t range) const { return ranges.at(range).GetSize(); }
-		bool IsContiguous() const { return GetRanges() <= 1; }
-
-	};
-
+	inline LibAthenaSub Create(HMODULE module,const char* hostName) {
+		CreateLibAthenasubPtr CreateLib = (CreateLibAthenasubPtr)GetProcAddress(module,"CreateLibAthenaSub");
+		return LibAthenaSub(CreateLib(hostName));
+	}
 }

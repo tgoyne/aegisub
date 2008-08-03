@@ -34,26 +34,50 @@
 //
 
 #pragma once
-#include "format.h"
+#include <list>
+#include "action.h"
+#include "athenastring.h"
+#include "section_entry.h"
+#include "selection.h"
 #include "api.h"
+#include "model.h"
+#include "interfaces.h"
 
 namespace Athenasub {
 
-	// Format manager class
-	class FormatManager {
+	// Prototypes
+	class CController;
+
+	// ActionList class
+	class CActionList : public IActionList {
+		friend class CModel;
+		friend class CController;
+
 	private:
-		static std::vector<const FormatPtr> formats;
-		FormatManager() {}
+		String actionName;
+		String owner;
+		Model model;
+		std::list<Action> actions;
+		bool valid;
+		bool undoAble;
+
+		CActionList(Model model,const String actionName,const String owner,bool undoAble);
+		void Start(const String actionName);
+		void AddActionStart(const Action action);
 
 	public:
-		static void AddFormat(const FormatPtr format);
-		static void InitializeFormats();
-		static void ClearFormats();
+		virtual ~CActionList();
 
-		static int GetFormatCount();
-		static const FormatPtr GetFormatByIndex(const int index);
-		static const FormatPtr GetFormatFromFilename(const String &filename,bool read);
-		static const FormatPtr GetFormatFromName(const String &name);
+		virtual String GetName() const { return actionName; }
+		virtual String GetOwner() const { return owner; }
+
+		virtual void AddAction(const Action action);
+		virtual void Finish();
+
+		virtual void InsertLine(Entry line,int position=-1,const String section=L"");
+		virtual void RemoveLine(int position,const String section);
+		virtual Entry ModifyLine(int position,const String section);
+		virtual std::vector<Entry> ModifyLines(Selection selection,const String section);
 	};
 
 }

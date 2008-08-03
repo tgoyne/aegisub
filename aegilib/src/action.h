@@ -34,70 +34,73 @@
 //
 
 #pragma once
-#include <list>
-#include <vector>
-#include <wx/wfstream.h>
-#include "actionlist.h"
-#include "section.h"
-#include "api.h"
+#include "athenastring.h"
+#include "selection.h"
+#include "interfaces.h"
 
 namespace Athenasub {
 
-	// Prototypes
-	class View;
-	typedef shared_ptr<View> ViewPtr;
-	class Notification;
-	class Format;
-	
-	// Model class
-	// Stores the subtitle data
-	class Model {
-		friend class FormatHandler;
-		friend class ActionList;
-		friend class Controller;
-		friend class Action;
-
-		typedef std::list<ViewPtr> ViewList;
-		typedef std::list<ActionListPtr> ActionStack;
-		typedef shared_ptr<Format> FormatPtr;
-		typedef shared_ptr<Controller> ControllerPtr;
-
+	// Insert line
+	class ActionInsert : public IAction {
 	private:
-		std::vector<SectionPtr> sections;
-		ActionStack undoStack;
-		ActionStack redoStack;
-		ViewList listeners;
-		bool readOnly;
-		FormatPtr format;
-
-		void ProcessActionList(const ActionList &actionList,int type=0);
-
-		String GetUndoMessage(const String owner=L"") const;
-		String GetRedoMessage(const String owner=L"") const;
-		bool CanUndo(const String owner=L"") const;
-		bool CanRedo(const String owner=L"") const;
-		void Undo(const String owner=L"");
-		void Redo(const String owner=L"");
-		void ActivateStack(ActionStack &stack,bool isUndo,const String &owner);
-
-		void DispatchNotifications(const Notification &notification) const;
-
-		void AddSection(String name);
-		SectionPtr GetSection(String name) const;
-		SectionPtr GetSectionByIndex(size_t index) const;
-		size_t GetSectionCount() const;
-
-		void Clear();
-		void Load(wxInputStream &input,const FormatPtr format=FormatPtr(),const String encoding=L"");
-		void Save(wxOutputStream &output,const FormatPtr format=FormatPtr(),const String encoding=L"UTF-8");
+		Entry entry;
+		const String section;
+		int lineNumber;
 
 	public:
-		ControllerPtr CreateController();
+		ActionInsert(Entry entry,int line,const String &section);
+		~ActionInsert() {}
 
-		const FormatPtr GetFormat() const { return format; }
-		void AddListener(ViewPtr listener);
+		Action GetAntiAction(ConstModel model) const;
+		void Execute(Model model);
 	};
 
-	typedef shared_ptr<Model> ModelPtr;
+	// Remove line
+	class ActionRemove : public IAction {
+	private:
+		const String section;
+		int lineNumber;
 
+	public:
+		ActionRemove(int line,const String &section);
+		~ActionRemove() {}
+
+		Action GetAntiAction(ConstModel model) const;
+		void Execute(Model model);
+	};
+
+	// Modify line
+	class ActionModify : public IAction {
+	private:
+		Entry entry;
+		VoidPtr delta;
+		const String section;
+		int lineNumber;
+		bool noTextFields;
+
+	public:
+		ActionModify(Entry entry,int line,const String &section,bool noTextFields);
+		ActionModify(shared_ptr<void> delta,int line,const String &section);
+		~ActionModify() {}
+
+		Action GetAntiAction(ConstModel model) const;
+		void Execute(Model model);
+	};
+
+	// Modify several lines
+	class ActionModifyBatch : public IAction {
+	private:
+		std::vector<Entry> entries;
+		std::vector<VoidPtr> deltas;
+		Selection selection;
+		const String section;
+		bool noTextFields;
+
+	public:
+		ActionModifyBatch(std::vector<Entry> entries,std::vector<VoidPtr> deltas,Selection selection,const String &section,bool noTextFields);
+		~ActionModifyBatch() {}
+
+		Action GetAntiAction(ConstModel model) const;
+		void Execute(Model model);
+	};
 }

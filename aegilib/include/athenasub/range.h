@@ -34,21 +34,28 @@
 //
 
 #pragma once
-
-#include "tr1.h"
+//#include "exception.h"
+#include "interfaces.h"
 
 namespace Athenasub {
 
-	class Model;
-	typedef shared_ptr<Model> ModelPtr;
+	// Range class
+	class Range {
+	private:
+		size_t start,end;
 
-	class LibAthenaSub {
 	public:
-		LibAthenaSub(const char* hostName);
+		Range() : start(0), end(0) {}
+		Range(size_t _start,size_t _end) : start(_start), end(_end) {}
 
-		ModelPtr CreateModel();
+		size_t GetLine(size_t n) const {
+			if (start+n < end) return start+n;
+			//else THROW_ATHENA_EXCEPTION(Exception::Out_Of_Range);
+			// TODO: fixme
+			throw 0;
+		}
+		size_t GetSize() const { return end-start; }
+		size_t GetStart() const { return start; }
+		size_t GetEnd() const { return end; }
 	};
-
 }
-
-extern "C" Athenasub::LibAthenaSub* CreateLibAthenasub(const char* hostName);

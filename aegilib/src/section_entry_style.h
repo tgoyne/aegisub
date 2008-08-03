@@ -33,26 +33,34 @@
 // Contact: mailto:amz@aegisub.net
 //
 
+
 #pragma once
-#include "exception.h"
+#include "athenasub.h"
+#include "colour.h"
+
 
 namespace Athenasub {
 
-	// Range class
-	class Range {
+	// Style class
+	class CStyle : public IStyle {
 	private:
-		size_t start,end;
+		static const bool dodgeWarning = true;
+		void ThrowUnsupported() const { if (dodgeWarning) THROW_ATHENA_EXCEPTION(Exception::Unsupported_Format_Feature); }
 
 	public:
-		Range() : start(0), end(0) {}
-		Range(size_t _start,size_t _end) : start(_start), end(_end) {}
+		// Destructor
+		virtual ~CStyle() {}
 
-		size_t GetLine(size_t n) const {
-			if (start+n < end) return start+n;
-			else THROW_ATHENA_EXCEPTION(Exception::Out_Of_Range);
-		}
-		size_t GetSize() const { return end-start; }
-		size_t GetStart() const { return start; }
-		size_t GetEnd() const { return end; }
+		// Type
+		SectionEntryType GetType() const { return SECTION_ENTRY_STYLE; }
+		Style GetAsStyle() { return Style(this); }
+
+		// Read accessors
+		virtual String GetName() const=0;
+		virtual String GetFontName() const { ThrowUnsupported(); return L""; }
+		virtual float GetFontSize() const { ThrowUnsupported(); return 0.0f; }
+		//virtual IColour& GetColour(int n) const { (void) n; ThrowUnsupported(); return Colour(); }
+		virtual int GetMargin(int n) const { (void) n; ThrowUnsupported(); return 0; }
 	};
+
 }

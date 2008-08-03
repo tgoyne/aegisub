@@ -34,21 +34,39 @@
 //
 
 #pragma once
-#include "tr1.h"
+#include "athenasub.h"
 
 namespace Athenasub {
+	
+	// Controller class
+	class CController : public IController {
+		friend class CModel;
 
-	// Void pointer prototyle
-	typedef shared_ptr<void> VoidPtr;
+	private:
+		Model model;
+		CController (Model model);
 
-	// Deltacoder interface
-	class DeltaCoder {
 	public:
-		virtual ~DeltaCoder() {}
-		virtual VoidPtr EncodeDelta(VoidPtr from,VoidPtr to,bool withTextFields=true) const = 0;
-		virtual VoidPtr EncodeReverseDelta(VoidPtr delta,VoidPtr object) const = 0;
-		virtual void ApplyDelta(VoidPtr delta,VoidPtr object) const = 0;
+		virtual ActionList CreateActionList(const String title,const String owner=L"",bool undoAble=true);
+		virtual Selection CreateSelection();
+
+		virtual void LoadFile(const String filename,const String encoding=L"");
+		virtual void SaveFile(const String filename,const String encoding=L"UTF-8");
+
+		virtual bool CanUndo(const String owner=L"") const;
+		virtual bool CanRedo(const String owner=L"") const;
+		virtual void Undo(const String owner=L"");
+		virtual void Redo(const String owner=L"");
+
+		virtual Dialogue CreateDialogue() const;
+		virtual Style CreateStyle() const;
+
+		virtual ConstDialogue GetDialogue(size_t n) const;
+		virtual ConstStyle GetStyle(size_t n) const;
+		virtual ConstStyle GetStyle(String name) const;
+		virtual ConstEntry GetEntry(size_t n,String section) const;
+
+		virtual const Format GetFormat() const;
 	};
-	typedef shared_ptr<DeltaCoder> DeltaCoderPtr;
 
 }
