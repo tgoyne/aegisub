@@ -34,46 +34,17 @@
 //
 
 #pragma once
-#include "athenastring.h"
+
 #include "tr1.h"
-#include "format.h"
-#include "api.h"
+#include "interfaces.h"
 
 namespace Athenasub {
-	
-	// Prototypes
-	class Model;
-	class ActionList;
-	typedef shared_ptr<ActionList> ActionListPtr;
 
-	// Controller class
-	class Controller {
-	private:
-		Model &model;
-
+	class CLibAthenaSub : public ILibAthenaSub {
 	public:
-		Controller (Model &model);
-		ActionListPtr CreateActionList(const String title,const String owner=L"",bool undoAble=true);
+		CLibAthenaSub(const char* hostName);
 
-		void LoadFile(const String filename,const String encoding=L"");
-		void SaveFile(const String filename,const String encoding=L"UTF-8");
-
-		bool CanUndo(const String owner=L"") const;
-		bool CanRedo(const String owner=L"") const;
-		void Undo(const String owner=L"");
-		void Redo(const String owner=L"");
-
-		DialoguePtr CreateDialogue() const;
-		StylePtr CreateStyle() const;
-
-		DialogueConstPtr GetDialogue(size_t n) const;
-		DialogueConstPtr GetStyle(size_t n) const;
-		StyleConstPtr GetStyle(String name) const;
-		EntryConstPtr GetEntry(size_t n,String section) const;
-
-		const FormatPtr GetFormat() const;
+		Model CreateModel();
 	};
-
-	typedef shared_ptr<Controller> ControllerPtr;
 
 }

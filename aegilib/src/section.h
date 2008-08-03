@@ -34,26 +34,24 @@
 //
 
 #pragma once
-#include "athenastring.h"
+#include "athenasub.h"
 #include "section_entry.h"
-#include "tr1.h"
-#include "api.h"
 #include <list>
 #include <map>
 
 namespace Athenasub {
 
 	// Section class
-	class Section {
+	class CSection : public ISection {
 	private:
-		std::vector<EntryPtr> entries;
+		std::vector<Entry> entries;
 		std::map<String,String> properties;
-		std::map<String,EntryPtr> index;
+		std::map<String,Entry> index;
 		String name;
 
 	public:
-		Section(String name);
-		~Section() {}
+		CSection(String name);
+		~CSection() {}
 
 		// Section name
 		void SetName(const String& newName) { name = newName; }
@@ -68,16 +66,16 @@ namespace Athenasub {
 		String GetPropertyName(size_t index) const;
 
 		// Indexed
-		EntryPtr GetFromIndex(String key) const;
+		Entry GetFromIndex(String key) const;
 
 		// Entries
-		void AddEntry(EntryPtr entry,int pos=-1);
+		void AddEntry(Entry entry,int pos=-1);
 		void RemoveEntryByIndex(size_t index);
-		void RemoveEntry(EntryPtr entry);
-		EntryPtr GetEntry(size_t index) const;
-		EntryPtr& GetEntryRef(size_t index);
+		void RemoveEntry(Entry entry);
+		Entry GetEntry(size_t index) const;
+		Entry& GetEntryRef(size_t index) const;
 		size_t GetEntryCount() const;
 	};
-	typedef shared_ptr<Section> SectionPtr;
+	typedef shared_ptr<CSection> SectionPtr;
 
 }

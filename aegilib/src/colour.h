@@ -34,33 +34,36 @@
 //
 
 #pragma once
-#include "athenastring.h"
-#include "model.h"
-#include "tr1.h"
+#include "athenasub.h"
 
 namespace Athenasub {
 
-	// Format handler interface
-	class FormatHandler {
+	// Colour class
+	class CColour : public IColour {
 	private:
-		Model &model;
-
-	protected:
-		virtual ~FormatHandler() {}
-
-		Model &GetModel() const { return model; }
-
-		void AddSection(String name) { model.AddSection(name); }
-		SectionPtr GetSection(String name) const { return model.GetSection(name); }
-		SectionPtr GetSectionByIndex(size_t index) const { return model.GetSectionByIndex(index); }
-		size_t GetSectionCount() const { return model.GetSectionCount(); }
+		unsigned char r, g, b, a;
 
 	public:
-		FormatHandler(Model &_model) : model(_model) {}
+		CColour ();
+		CColour (unsigned char red,unsigned char green,unsigned char blue,unsigned char alpha=0);
+		CColour (int red,int green,int blue,int alpha=0);
 
-		virtual void Load(wxInputStream &file,const String encoding) = 0;
-		virtual void Save(wxOutputStream &file,const String encoding) = 0;
+		void SetRed(unsigned char red) { r = red; }
+		void SetGreen(unsigned char green) { g = green; }
+		void SetBlue(unsigned char blue) { b = blue; }
+		void SetAlpha(unsigned char alpha) { a = alpha; }
+		void SetRed(int red);
+		void SetGreen(int green);
+		void SetBlue(int blue);
+		void SetAlpha(int alpha);
+
+		int GetRed() const { return r; }
+		int GetGreen() const { return g; }
+		int GetBlue() const { return b; }
+		int GetAlpha() const { return a; }
+
+		void Parse(String str,bool reverse);
+		String GetVBHex(bool withAlpha=false,bool withHeader=true,bool withFooter=true) const;
 	};
-	typedef shared_ptr<FormatHandler> FormatHandlerPtr;
 
 }

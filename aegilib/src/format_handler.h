@@ -34,27 +34,32 @@
 //
 
 #pragma once
-
-#ifndef UNICODE
-#error "This library requires unicode support."
-#endif
-
-#include "tr1.h"
-#include "exception.h"
-#include "libathenasub.h"
+#include "athenasub.h"
 #include "model.h"
-#include "view.h"
-#include "controller.h"
-#include "notification.h"
-#include "athenastring.h"
-#include "format.h"
-#include "format_handler.h"
-#include "format_manager.h"
-#include "actionlist.h"
-#include "section.h"
-#include "section_entry_dialogue.h"
-#include "section_entry_style.h"
-#include "athenatime.h"
-#include "colour.h"
-#include "utils.h"
-#include "version.h"
+#include "tr1.h"
+
+namespace Athenasub {
+
+	// Format handler interface
+	class CFormatHandler : public IFormatHandler {
+	private:
+		Model model;
+
+	protected:
+		virtual ~CFormatHandler() {}
+
+		Model GetModel() const { return model; }
+
+		void AddSection(String name) { model->AddSection(name); }
+		Section GetSection(String name) const { return model->GetSection(name); }
+		Section GetSectionByIndex(size_t index) const { return model->GetSectionByIndex(index); }
+		size_t GetSectionCount() const { return model->GetSectionCount(); }
+
+	public:
+		CFormatHandler(Model _model) : model(_model) {}
+
+		virtual void Load(wxInputStream &file,const String encoding) = 0;
+		virtual void Save(wxOutputStream &file,const String encoding) = 0;
+	};
+
+}

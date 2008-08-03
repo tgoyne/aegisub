@@ -34,34 +34,37 @@
 //
 
 #pragma once
-#include "athenastring.h"
-#include "utils.h"
+#include <vector>
+#include "athenasub.h"
 
 namespace Athenasub {
 
-	// Time class
-	class Time {
+	// Selection class
+	class CSelection : public ISelection {
 	private:
-		int ms;
+		std::vector<Range> ranges;
+		size_t count;
+		void UpdateCount();
+		CSelection();
 
 	public:
-		Time() { ms = 0; }
-		Time(int _ms) { ms = _ms; }
+		virtual ~CSelection() {}
 
-		void SetMS(int milliseconds) { ms = milliseconds; }
-		int GetMS() const { return ms; }
+		virtual void AddLine(size_t line) { AddRange(Range(line,line+1)); }
+		virtual void AddRange(const Range &range);
+		virtual void RemoveLine(size_t line) { RemoveRange(Range(line,line+1)); }
+		virtual void RemoveRange(const Range &range);
+		virtual void AddSelection (const Selection &param);
+		virtual void RemoveSelection (const Selection &param);
+		virtual void NormalizeRanges ();
 
-		String GetString(int ms_precision,int h_precision) const;
-		void Parse(const String &data);
+		virtual size_t GetCount() const { return count; }
+		virtual size_t GetRanges() const { return ranges.size(); }
+		virtual size_t GetLine(size_t n) const;
+		virtual size_t GetLineInRange(size_t n,size_t range) const { return ranges.at(range).GetLine(n); }
+		virtual size_t GetLinesInRange(size_t range) const { return ranges.at(range).GetSize(); }
+		virtual bool IsContiguous() const { return GetRanges() <= 1; }
 
-		Time operator + (const int &par) const { return Max<int>(0,ms+par); }
-		Time operator - (const int &par) const { return Max<int>(0,ms-par); }
-		bool operator == (const Time &par) const { return ms == par.ms; }
-		bool operator != (const Time &par) const { return ms != par.ms; }
-		bool operator < (const Time &par) const { return ms < par.ms; }
-		bool operator > (const Time &par) const { return ms > par.ms; }
-		bool operator <= (const Time &par) const { return ms <= par.ms; }
-		bool operator >= (const Time &par) const { return ms >= par.ms; }
 	};
 
 }
