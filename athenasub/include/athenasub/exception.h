@@ -66,8 +66,8 @@ namespace Athenasub {
 		int GetCode() { return code; }
 
 	private:
-		static const char* GetMessageChar(int code);
-		static const char* GetMessageFile(int code,const char *file,long line);
+		static std::string GetMessageChar(int code);
+		static std::string GetMessageFile(int code,const char *file,long line);
 
 		ExceptionList code;
 	};
