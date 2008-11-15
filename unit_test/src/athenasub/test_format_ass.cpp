@@ -33,30 +33,42 @@
 // Contact: mailto:zeratul@cellosoft.com
 //
 
-#include <cppunit/extensions/TestFactoryRegistry.h>
-#include <cppunit/ui/text/TestRunner.h>
-#include "athenasub/athenasub_suite.h"
-#include "suites.h"
-
-
-#ifdef _MSC_VER
-#ifdef _DEBUG
-#pragma comment(lib,"cppunitd.lib")
-#else
-#pragma comment(lib,"cppunit.lib")
-#endif
-#endif
-
-
-int main()
-{
-	CppUnit::TextUi::TestRunner runner;
-
+#include "../suites.h"
+#include "../utils.h"
 #if ATHENASUB_TEST == 1
-	runner.addTest(CppUnit::TestFactoryRegistry::getRegistry(AegisubSuites::athenasub()).makeTest());
-#endif
-	runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());
 
-	bool result = runner.run("",false);
-	return result ? 0 : 1;
-}
+#include <iostream>
+#include <cppunit/TestFixture.h>
+#include <cppunit/extensions/HelperMacros.h>
+#include "athenasub/athenasub.h"
+#include "formats/format_ass.h"
+using namespace Athenasub;
+
+
+class AthenasubFormatASSTest : public CppUnit::TestFixture {
+	CPPUNIT_TEST_SUITE(AthenasubFormatASSTest);
+	CPPUNIT_TEST(testDialogueParse);
+	CPPUNIT_TEST_SUITE_END();
+
+private:
+
+public:
+	void setUp()
+	{
+	}
+
+	void tearDown()
+	{
+	}
+
+	void testDialogueParse()
+	{
+		DialogueASS diag;
+		DialogueASS refDiag;
+		CPPUNIT_ASSERT_NO_THROW(refDiag = DialogueASS("Dialogue: 3,1:23:45.67,2:34:56.78,style name,actor name,0001,0020,3300,effect field,Text, why halo thar?",1));
+	}
+};
+
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AthenasubFormatASSTest,AegisubSuites::athenasub());
+
+#endif

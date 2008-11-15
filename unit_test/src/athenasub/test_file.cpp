@@ -54,22 +54,30 @@ class AthenasubFileTest : public CppUnit::TestFixture {
 private:
 	LibAthenaSub lib;
 	String fileFolder;
+	Model subs;
+	Controller controller;
 
 public:
-	void setUp()
+	AthenasubFileTest()
 	{
 		fileFolder = "test_files/";
 		lib = Athenasub::Create("AthenasubTest");
 	}
 
+	void setUp()
+	{
+		subs = lib->CreateModel();
+		controller = subs->CreateController();
+	}
+
 	void tearDown()
 	{
+		subs = Model();
+		controller = Controller();
 	}
 
 	void testLoad()
 	{
-		Model subs = lib->CreateModel();
-		Controller controller = subs->CreateController();
 		CPPUNIT_ASSERT_NO_THROW(controller->LoadFile(fileFolder+"in_test1.ass","UTF-8"));
 		ConstModel csubs = subs;
 		CPPUNIT_ASSERT(csubs->GetSectionCount() == 3);
@@ -81,17 +89,14 @@ public:
 
 	void testSave()
 	{
-		Model subs = lib->CreateModel();
-		Controller controller = subs->CreateController();
-		controller->LoadFile(fileFolder+"in_test1.ass","UTF-8");
+		CPPUNIT_ASSERT_NO_THROW(controller->LoadFile(fileFolder+"in_test1.ass","UTF-8"));
 		CPPUNIT_ASSERT_NO_THROW(controller->SaveFile(fileFolder+"out_test1.ass","UTF-8"));
 	}
 
 	void testStableRewrite()
 	{
-		Model subs = lib->CreateModel();
-		Controller controller = subs->CreateController();
-		controller->LoadFile(fileFolder+"out_test1.ass","UTF-8");
+		CPPUNIT_ASSERT_NO_THROW(controller->LoadFile(fileFolder+"out_test1.ass","UTF-8"));
+		CPPUNIT_ASSERT(subs->GetSectionCount() == 3);
 		CPPUNIT_ASSERT_NO_THROW(controller->SaveFile(fileFolder+"out_test2.ass","UTF-8"));
 		CPPUNIT_ASSERT(AreFilesIdentical(fileFolder+"out_test1.ass",fileFolder+"out_test2.ass"));
 		CPPUNIT_ASSERT(AreFilesIdentical(fileFolder+"in_test1.ass",fileFolder+"out_test1.ass") == false);
