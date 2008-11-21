@@ -27,35 +27,27 @@
 //
 // -----------------------------------------------------------------------------
 //
-// AEGISUB/ATHENASUB
+// AEGISUB
 //
-// Website: http://www.aegisub.net
-// Contact: mailto:amz@aegisub.net
+// Website: http://aegisub.cellosoft.com
+// Contact: mailto:zeratul@cellosoft.com
 //
 
-#pragma once
-#include "athenasub.h"
 
-namespace Athenasub {
+#include "writer.h"
+#include "text_writer.h"
+#include <wx/wfstream.h>
+using namespace Athenasub;
 
-	class Reader;
 
-	// Format manager class
-	class FormatManager {
-	private:
-		static std::vector<Format> formats;
-		FormatManager() {}
+Writer::Writer(String filename,String encoding)
+{
+	stream = shared_ptr<wxFFileOutputStream>(new wxFFileOutputStream(filename.GetWxString()));
+	text = TextWriter::GetWriter(*stream,encoding);
+}
 
-	public:
-		static void AddFormat(Format format);
-		static void InitializeFormats();
-		static void ClearFormats();
 
-		static int GetFormatCount();
-		static Format GetFormatByIndex(const int index);
-		static Format GetFormatFromFilename(const String &filename,bool read);
-		static Format GetFormatFromName(const String &name);
-		static std::vector<Format> GetCompatibleFormatList(Reader &reader);
-	};
-
+shared_ptr<TextWriter> Writer::GetTextWriter()
+{
+	return text;
 }
