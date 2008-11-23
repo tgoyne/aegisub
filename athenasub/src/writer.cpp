@@ -40,21 +40,25 @@
 using namespace Athenasub;
 
 
-Writer::Writer(String filename,String encoding)
+CWriter::CWriter(String filename,String encoding)
 {
 	stream = shared_ptr<wxFFileOutputStream>(new wxFFileOutputStream(filename.GetWxString()));
 	text = TextWriter::GetWriter(*stream,encoding);
 }
 
 
-Writer::~Writer()
+CWriter::~CWriter()
 {
 	text = shared_ptr<TextWriter>();
 	stream = shared_ptr<wxFFileOutputStream>();
 }
 
-
-shared_ptr<TextWriter> Writer::GetTextWriter()
+void CWriter::WriteLineToFile(String line,bool addLineBreak)
 {
-	return text;
+	text->WriteLineToFile(line,addLineBreak);
+}
+
+void CWriter::Flush()
+{
+	text->Flush();
 }
