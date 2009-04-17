@@ -21,9 +21,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
+			InheritedPropertySheets="..\build\aegisub_vs2008\libraries_outdirs.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -64,7 +63,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="../lib/univcset_d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -84,9 +82,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="4"
+			InheritedPropertySheets="..\build\aegisub_vs2008\libraries_outdirs.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -128,7 +125,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="../lib/univcset_d_x64.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -148,9 +144,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
+			InheritedPropertySheets="..\build\aegisub_vs2008\libraries_outdirs.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -189,7 +184,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="../lib/univcset.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -209,9 +203,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="4"
+			InheritedPropertySheets="..\build\aegisub_vs2008\libraries_outdirs.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -251,7 +244,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="../lib/univcset_x64.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
