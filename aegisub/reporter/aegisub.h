@@ -33,4 +33,3 @@ public:
 	void Config(wxString config);
 	wxString Read(wxString key);
 };
-
