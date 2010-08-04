@@ -7,8 +7,12 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef HAVE_SYS_MMAN_H
+#  include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>
@@ -28,6 +32,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <numeric>
 #include <map>
 #include <sstream>

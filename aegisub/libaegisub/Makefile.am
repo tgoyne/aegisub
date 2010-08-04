@@ -36,10 +36,11 @@ libaegisub_3_0_la_SOURCES = \
 	common/log.cpp \
 	common/validator.cpp \
 	common/vfr.cpp \
-	unix/util.cpp \
-	unix/io.cpp \
 	unix/access.cpp \
-	unix/log.cpp
+	unix/io.cpp \
+	unix/log.cpp \
+	unix/mmap.cpp \
+	unix/util.cpp 
 
 if BUILD_DARWIN
 libaegisub_3_0_la_SOURCES += \

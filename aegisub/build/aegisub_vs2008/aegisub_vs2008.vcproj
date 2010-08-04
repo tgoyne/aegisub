@@ -468,6 +468,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\audio_provider_background.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\audio_provider_background.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\audio_provider_convert.cpp"
 				>
 			</File>

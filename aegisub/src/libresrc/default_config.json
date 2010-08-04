@@ -29,7 +29,7 @@
 				"Location" : "default",
 				"Name" : "audio%02i.tmp"
 			},
-			"Type" : 1
+			"Type" : 3
 		},
 		"Display Height" : 200,
 		"Display" : {

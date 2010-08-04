@@ -305,6 +305,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\libaegisub\windows\mmap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\libaegisub\windows\util.cpp"
 				>
 			</File>
@@ -354,6 +358,10 @@
 			</File>
 			<File
 				RelativePath="..\..\libaegisub\include\libaegisub\log.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libaegisub\include\libaegisub\mmap.h"
 				>
 			</File>
 			<File

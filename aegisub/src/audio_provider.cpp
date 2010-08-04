@@ -51,6 +51,7 @@
 #include "audio_provider_hd.h"
 #include "audio_provider_pcm.h"
 #include "audio_provider_ram.h"
+#include "audio_provider_background.h"
 #include "compat.h"
 #include "main.h"
 
@@ -237,6 +238,8 @@ AudioProvider *AudioProviderFactory::GetProvider(wxString filename, int cache) {
 
 	// Convert to HD
 	if (cache == 2) return new HDAudioProvider(provider);
+
+	if (cache == 3) return new BGAudioProvider(provider);
 
 	throw AudioOpenError("Unknown caching method");
 }

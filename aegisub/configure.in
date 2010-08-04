@@ -341,7 +341,10 @@ AX_OPENMP([], [with_openmp="no"])
 AM_CONDITIONAL([HAVE_OPENMP], [test "$with_openmp" != "no"])
 AC_SUBST(OPENMP_CXXFLAGS)
 
+AC_CHECK_HEADERS([sys/mman.h])
 AC_CHECK_HEADERS([sys/time.h])
+
+AC_CHECK_FUNCS([mmap2])
 
 
 ##############################

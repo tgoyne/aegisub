@@ -189,6 +189,7 @@ aegisub_3_0_SOURCES = \
 	audio_provider_convert.cpp \
 	audio_provider_downmix.cpp \
 	audio_provider_hd.cpp \
+	audio_provider_background.cpp \
 	audio_provider_pcm.cpp \
 	audio_provider_ram.cpp \
 	audio_renderer.cpp \

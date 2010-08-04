@@ -17,6 +17,7 @@ run_SOURCES = \
 		libaegisub_cajun.cpp \
 		libaegisub_iconv.cpp \
 		libaegisub_line_iterator.cpp \
+		libaegisub_mmap.cpp \
 		libaegisub_mru.cpp \
 		libaegisub_util.cpp \
 		libaegisub_vfr.cpp
