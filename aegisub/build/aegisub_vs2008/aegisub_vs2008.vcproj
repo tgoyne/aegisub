@@ -27,6 +27,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="if not exist &quot;..\..\src\config\config_windows.h&quot; (copy &quot;..\..\src\config\config_windows0.h&quot; &quot;..\..\src\config\config_windows.h&quot;)&#x0D;&#x0A;..\svn-revision.py&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -42,7 +43,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/MP"
+				AdditionalOptions="/MP /Zm120"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;NOMINMAX;__STDC_FORMAT_MACROS"
 				MinimalRebuild="true"
 				UsePrecompiledHeader="2"
@@ -93,6 +94,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="if not exist &quot;..\..\src\config\config_windows.h&quot; (copy &quot;..\..\src\config\config_windows0.h&quot; &quot;..\..\src\config\config_windows.h&quot;)&#x0D;&#x0A;..\svn-revision.py&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -160,6 +162,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="if not exist &quot;..\..\src\config\config_windows.h&quot; (copy &quot;..\..\src\config\config_windows0.h&quot; &quot;..\..\src\config\config_windows.h&quot;)&#x0D;&#x0A;..\svn-revision.py&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -229,6 +232,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="if not exist &quot;..\..\src\config\config_windows.h&quot; (copy &quot;..\..\src\config\config_windows0.h&quot; &quot;..\..\src\config\config_windows.h&quot;)&#x0D;&#x0A;..\svn-revision.py&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -425,6 +429,14 @@
 			</File>
 			<File
 				RelativePath="..\..\src\audio_player_openal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\audio_player_oss.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\audio_player_oss.h"
 				>
 			</File>
 			<File
