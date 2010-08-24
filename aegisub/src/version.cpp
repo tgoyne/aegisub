@@ -132,11 +132,7 @@ struct VersionInfoStruct {
 		VersionNumber = _T("3.0.0");
 #else
 		IsRelease = false;
-		VersionNumber = _T("r") _T_int(BUILD_SVN_REVISION)
-# ifdef BUILD_SVN_LOCALMODS
-			_T("M")
-# endif
-			;
+		VersionNumber = BUILD_VERSION_STR;
 #endif
 
 		if (IsRelease)
