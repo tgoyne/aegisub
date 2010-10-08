@@ -752,13 +752,13 @@ namespace Automation4 {
 		GetFeatureFunction(2);  // 2 = validation function
 
 		// prepare function call
-		LuaAssFile *subsobj = new LuaAssFile(L, subs, false, false);
-		(void) subsobj;
+		LuaAssFile *subsobj = new LuaAssFile(L, subs, false);
 		CreateIntegerArray(selected); // selected items
 		lua_pushinteger(L, -1); // active line
 
 		// do call
 		int err = lua_pcall(L, 3, 1, 0);
+		subsobj->ProcessingComplete();
 		bool result;
 		if (err) {
 			wxString errmsg(lua_tostring(L, -1), wxConvUTF8);
@@ -787,8 +787,7 @@ namespace Automation4 {
 		GetFeatureFunction(1); // 1 = processing function
 
 		// prepare function call
-		LuaAssFile *subsobj = new LuaAssFile(L, subs, true, true);
-		(void) subsobj;
+		LuaAssFile *subsobj = new LuaAssFile(L, subs, true);
 		CreateIntegerArray(selected); // selected items
 		lua_pushinteger(L, -1); // active line
 
@@ -801,9 +800,9 @@ namespace Automation4 {
 		LuaThreadedCall call(L, 3, 1);
 
 		ps->ShowModal();
-		wxThread::ExitCode code = call.Wait();
-		(void) code; // ignore
-		//if (code) ThrowError();
+		call.Wait();
+
+		subsobj->ProcessingComplete(name);
 
 		// top of stack will be selected lines array, if any was returned
 		if (lua_istable(L, -1)) {
@@ -895,7 +894,7 @@ namespace Automation4 {
 
 		// prepare function call
 		// subtitles (undo doesn't make sense in exported subs, in fact it'll totally break the undo system)
-		LuaAssFile *subsobj = new LuaAssFile(L, subs, true/*allow modifications*/, false/*disallow undo*/);
+		LuaAssFile *subsobj = new LuaAssFile(L, subs, true/*allow modifications*/);
 		assert(lua_isuserdata(L, -1));
 		stackcheck.check_stack(2);
 		// config
@@ -919,14 +918,11 @@ namespace Automation4 {
 		LuaThreadedCall call(L, 2, 0);
 
 		ps->ShowModal();
-		wxThread::ExitCode code = call.Wait();
-		(void) code;
-		//if (code) ThrowError();
+		call.Wait();
 
 		stackcheck.check_stack(0);
 
-		// Just ensure that subsobj survives until here
-		(void) subsobj;
+		subsobj->ProcessingComplete();
 
 		delete ps;
 	}
@@ -945,13 +941,13 @@ namespace Automation4 {
 
 		// prepare function call
 		// subtitles (don't allow any modifications during dialog creation, ideally the subs aren't even accessed)
-		LuaAssFile *subsobj = new LuaAssFile(L, AssFile::top, false/*allow modifications*/, false/*disallow undo*/);
-		(void) subsobj;
+		LuaAssFile *subsobj = new LuaAssFile(L, AssFile::top, false/*allow modifications*/);
 		// stored options
 		lua_newtable(L); // TODO, nothing for now
 
 		// do call
 		int err = lua_pcall(L, 2, 1, 0);
+		subsobj->ProcessingComplete();
 		if (err) {
 			wxString errmsg(lua_tostring(L, -1), wxConvUTF8);
 			wxLogWarning(_T("Runtime error in Lua macro validation function:\n%s"), errmsg.c_str());

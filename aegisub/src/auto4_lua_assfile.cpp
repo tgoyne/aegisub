@@ -604,6 +604,7 @@ namespace Automation4 {
 
 		LuaAssFile *laf = GetObjPointer(L, 1);
 		laf->CheckAllowModify();
+		laf->is_modified = true;
 
 		int n = lua_tointeger(L, 2);
 
@@ -668,7 +669,7 @@ namespace Automation4 {
 		LuaAssFile *laf = GetObjPointer(L, lua_upvalueindex(1));
 
 		laf->CheckAllowModify();
-		
+
 		// get number of items to delete
 		int itemcount = lua_gettop(L);
 		std::vector<int> ids;
@@ -690,6 +691,8 @@ namespace Automation4 {
 			ids.push_back(n-1); // make C-style line ids
 			--itemcount;
 		}
+		laf->is_modified = true;
+
 		std::sort(ids.begin(), ids.end());
 
 		// now delete the id's backwards
@@ -728,6 +731,8 @@ namespace Automation4 {
 			return 0;
 		}
 
+		laf->is_modified = true;
+
 		int a = lua_tointeger(L, 1), b = lua_tointeger(L, 2);
 
 		if (a < 1) a = 1;
@@ -765,7 +770,8 @@ namespace Automation4 {
 		LuaAssFile *laf = GetObjPointer(L, lua_upvalueindex(1));
 
 		laf->CheckAllowModify();
-		
+		laf->is_modified = true;
+
 		int n = lua_gettop(L);
 
 		if (laf->last_entry_ptr != laf->ass->Line.begin()) {
@@ -809,6 +815,8 @@ namespace Automation4 {
 			return 0;
 		}
 
+		laf->is_modified = true;
+
 		int n = lua_gettop(L);
 
 		laf->GetAssEntry(int(lua_tonumber(L, 1)-1));
@@ -832,7 +840,8 @@ namespace Automation4 {
 	int LuaAssFile::ObjectGarbageCollect(lua_State *L)
 	{
 		LuaAssFile *laf = GetObjPointer(L, 1);
-		delete laf;
+		laf->references--;
+		if (!laf->references) delete laf;
 		LOG_D("automation/lua") << "Garbage collected LuaAssFile";
 		return 0;
 	}
@@ -1002,20 +1011,6 @@ namespace Automation4 {
 	///
 	int LuaAssFile::LuaSetUndoPoint(lua_State *L)
 	{
-		LuaAssFile *laf = GetObjPointer(L, lua_upvalueindex(1));
-		if (!laf->can_set_undo) {
-			lua_pushstring(L, "Attempt to set an undo point in a context without undo-support.");
-			lua_error(L);
-			return 0;
-		}
-
-		wxString description;
-		if (lua_isstring(L, 1)) {
-			description = wxString(lua_tostring(L, 1), wxConvUTF8);
-			lua_pop(L, 1);
-		}
-		laf->ass->Commit(description);
-
 		return 0;
 	}
 
@@ -1033,6 +1028,19 @@ namespace Automation4 {
 	}
 
 
+	void LuaAssFile::ProcessingComplete(wxString const& undo_description)
+	{
+		if (is_modified && !undo_description.empty()) {
+			ass->Commit(undo_description);
+			can_modify = false;
+		}
+		references--;
+		if (!references) delete this;
+	}
+
+
+
+
 	/// @brief DOCME
 	///
 	LuaAssFile::~LuaAssFile()
@@ -1044,13 +1052,12 @@ namespace Automation4 {
 	/// @param _L            
 	/// @param _ass          
 	/// @param _can_modify   
-	/// @param _can_set_undo 
 	///
-	LuaAssFile::LuaAssFile(lua_State *_L, AssFile *_ass, bool _can_modify, bool _can_set_undo)
+	LuaAssFile::LuaAssFile(lua_State *_L, AssFile *_ass, bool _can_modify)
 		: ass(_ass)
 		, L(_L)
 		, can_modify(_can_modify)
-		, can_set_undo(_can_set_undo)
+		, references(2)
 	{
 		// prepare cursor
 		last_entry_ptr = ass->Line.begin();

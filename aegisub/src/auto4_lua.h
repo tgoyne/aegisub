@@ -56,8 +56,6 @@ namespace Automation4 {
 	/// @class LuaAssFile
 	/// @brief Object wrapping an AssFile object for modification through Lua
 	class LuaAssFile {
-	private:
-
 		/// Pointer to file being modified
 		AssFile *ass;
 
@@ -68,9 +66,12 @@ namespace Automation4 {
 		/// Is the feature this object is created for read-only?
 		bool can_modify;
 
-		/// Are we allowed to set undo points in the feature?
-		bool can_set_undo;
-		void CheckAllowModify(); // throws an error if modification is disallowed
+		/// Has the ass file been modified by the script?
+		bool is_modified;
+		/// throws an error if modification is disallowed
+		void CheckAllowModify();
+
+		int references;
 
 
 		/// Cursor for last access into file
@@ -98,10 +99,19 @@ namespace Automation4 {
 
 		~LuaAssFile();
 	public:
-		static void AssEntryToLua(lua_State *L, AssEntry *e); // makes a Lua representation of AssEntry and places on the top of the stack
-		static AssEntry *LuaToAssEntry(lua_State *L); // assumes a Lua representation of AssEntry on the top of the stack, and creates an AssEntry object of it
+		/// makes a Lua representation of AssEntry and places on the top of the stack
+		static void AssEntryToLua(lua_State *L, AssEntry *e);
+		/// assumes a Lua representation of AssEntry on the top of the stack, and creates an AssEntry object of it
+		static AssEntry *LuaToAssEntry(lua_State *L);
 
-		LuaAssFile(lua_State *_L, AssFile *_ass, bool _can_modify, bool _can_set_undo);
+		/// @brief Signal that the script using this file is now done running
+		/// @param set_undo Description to use for the undo point if the file
+		///                 was modified. If no description is supplied, an undo
+		///                 point will never be set
+		void ProcessingComplete(wxString const& undo_description = "");
+
+		LuaAssFile(lua_State *_L, AssFile *_ass, bool _can_modify);
+
 	};
 
 

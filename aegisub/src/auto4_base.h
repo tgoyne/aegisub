@@ -109,10 +109,10 @@ namespace Automation4 {
 		/// DOCME
 		ScriptFeatureClass featureclass;
 
+	protected:
 		/// DOCME
 		wxString name;
 
-	protected:
 		Feature(ScriptFeatureClass _featureclass, const wxString &_name);
 
 	public:
