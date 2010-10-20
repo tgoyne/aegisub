@@ -133,11 +133,11 @@
 ///////////////
 // Font Config
 #ifdef WITH_FONTCONFIG
-#pragma comment(lib,"libfontconfig.lib")
+//#pragma comment(lib,"libfontconfig.lib")
 #endif
 
 #ifdef WITH_LIBASS
-#pragma comment(lib, "libass.lib")
+//#pragma comment(lib, "libass.lib")
 #endif
 
 
