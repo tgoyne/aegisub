@@ -1,4 +1,4 @@
-// Copyright (c) 2007, Rodrigo Braz Monteiro
+// Copyright (c) 2010, Thomas Goyne <plorkyeran@aegisub.org>
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,201 +34,156 @@
 /// @ingroup font_collector
 ///
 
-
-////////////
-// Includes
-
 #include "config.h"
 
-#ifndef AGI_PRE
-#include <wx/tokenzr.h>
-#endif
+#include "ass_dialogue.h"
+#include "ass_override.h"
+#include "ass_style.h"
 
-#ifdef WITH_FONTCONFIG
-#include "font_file_lister_fontconfig.h"
-#define FontListerClass FontConfigFontFileLister
-#elif defined(WITH_FREETYPE2)
+#ifdef WITH_FREETYPE2
 #include "font_file_lister_freetype.h"
 #define FontListerClass FreetypeFontFileLister
 #else
 #include "font_file_lister.h"
 #endif
 
-#include "standard_paths.h"
-#include "text_file_reader.h"
-#include "text_file_writer.h"
+namespace std { using namespace std::tr1; }
+using namespace std::placeholders;
 
-/// DOCME
-FontFileLister *FontFileLister::instance = NULL;
-
-/// @brief Constructor 
-///
-FontFileLister::FontFileLister() {
-}
-
-
-
-/// @brief Destructor 
-///
-FontFileLister::~FontFileLister() {
-}
-
-
-
-/// @brief Get instance 
-///
-void FontFileLister::GetInstance() {
+std::vector<wxString> FontFileLister::GetFontPaths(std::list<AssEntry*> const& file, std::tr1::function<void (wxString, int)> status) {
+	/// @todo make this choosable at runtime
 #ifdef FontListerClass
-	if (!instance) instance = new FontListerClass();
+	FontFileLister *inst = new FontListerClass(status);
+	return inst->Run(file);
+#else
+	return std::vector<wxString>();
 #endif
 }
 
+void FontFileLister::ProcessDialogueLine(AssDialogue *line) {
+	if (line->Comment) return;
 
+	line->ParseASSTags();
+	bool text = false;
+	StyleInfo style = styles[line->Style];
+	StyleInfo initial = style;
 
-/// @brief Redirect statics to the instance 
-/// @param facename 
-/// @return 
-///
-wxArrayString FontFileLister::GetFilesWithFace(wxString facename) {
-	GetInstance();
-	if (instance)
-		return instance->DoGetFilesWithFace(facename);
-	else {
-		wxArrayString ret;
-		return ret;
-	}
-}
+	for (size_t i = 0; i < line->Blocks.size(); ++i) {
+		if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride *>(line->Blocks[i])) {
+			for (size_t j = 0; j < ovr->Tags.size(); ++j) {
+				AssOverrideTag *tag = ovr->Tags[j];
+				StyleInfo newStyle = style;
+				wxString name = tag->Name;
 
-/// @brief DOCME
-///
-void FontFileLister::Initialize() {
-	GetInstance();
-	if (instance) instance->DoInitialize();
-}
-
-/// @brief DOCME
-///
-void FontFileLister::ClearData() {
-	GetInstance();
-	if (instance) instance->DoClearData();
-}
-
-
-
-/// @brief Get list of files that match a specific face 
-/// @param facename 
-/// @return 
-///
-wxArrayString FontFileLister::CacheGetFilesWithFace(wxString facename) {
-	FontMap::iterator iter = fontTable.find(facename);
-	if (iter != fontTable.end()) return iter->second;
-	else {
-		iter = fontTable.find(_T("*")+facename);
-		if (iter != fontTable.end()) return iter->second;
-		return wxArrayString();
-	}
-}
-
-
-
-/// @brief Clear data 
-///
-void FontFileLister::ClearCache() {
-	fontFiles.clear();
-	fontTable.clear();
-}
-
-
-
-/// @brief Add font 
-/// @param filename 
-/// @param facename 
-/// @return 
-///
-void FontFileLister::AddFont(wxString filename,wxString facename) {
-	// See if it's a valid facename
-	facename.Trim(true).Trim(false);
-	if (facename.IsEmpty()) return;
-	if (facename.Lower().StartsWith(_T("copyright "))) return;
-
-	// Add filename to general list
-	if (fontFiles.Index(filename) == wxNOT_FOUND) {
-		fontFiles.Add(filename);
-	}
-
-	// Add filename to mapping of this face
-	wxArrayString &arr = fontTable[facename];
-	if (arr.Index(filename) == wxNOT_FOUND) arr.Add(filename);
-}
-
-
-
-/// @brief Check if a filename is cached 
-/// @param filename 
-/// @return 
-///
-bool FontFileLister::IsFilenameCached(wxString filename) {
-	return fontFiles.Index(filename) != wxNOT_FOUND;
-}
-
-
-
-/// @brief Save cache 
-///
-void FontFileLister::SaveCache() {
-	try {
-		// Open file
-		TextFileWriter file(StandardPaths::DecodePath(_T("?user/fontscache.dat")));
-
-		// For each face...
-		for (FontMap::iterator iter = fontTable.begin();iter!=fontTable.end();iter++) {
-			// Write face name
-			wxString line = iter->first + _T("?");
-			size_t len = iter->second.Count();
-
-			// Write file names
-			for (size_t i=0;i<len;i++) {
-				line += iter->second[i];
-				if (i != len-1) line += _T("|");
-			}
-
-			// Write line
-			file.WriteLineToFile(line);
-		}
-	}
-	catch (...) {
-	}
-}
-
-
-
-/// @brief Load cache 
-///
-void FontFileLister::LoadCache() {
-	try {
-		// Load cache
-		TextFileReader file(StandardPaths::DecodePath(_T("?user/fontscache.dat")));
-
-		// Read each line
-		while (file.HasMoreLines()) {
-			// Read line
-			wxString line = file.ReadLineFromFile();
-			int pos = line.Find(_T('?'));
-
-			// Get face name
-			wxString face = line.Left(pos);
-			if (face.IsEmpty()) continue;
-
-			// Get files
-			wxStringTokenizer tkn(line.Mid(pos+1),_T("|"));
-			while (tkn.HasMoreTokens()) {
-				wxString file = tkn.GetNextToken();
-				if (!file.IsEmpty()) {
-					AddFont(file,face);
+				if (name == L"\\r") {
+					newStyle = styles[tag->Params[0]->Get(line->Style)];
 				}
+				if (name == L"\\b") {
+					newStyle.bold = tag->Params[0]->Get(initial.bold);
+				}
+				else if (name == L"\\i") {
+					newStyle.italic = tag->Params[0]->Get(initial.italic);
+				}
+				else if (name == L"\\fn") {
+					newStyle.facename = tag->Params[0]->Get(initial.facename);
+				}
+				else {
+					continue;
+				}
+				if (text) {
+					dialogueChunks.push_back(style);
+					text = false;
+				}
+				style = newStyle;
 			}
 		}
+		else if (AssDialogueBlockPlain *txt = dynamic_cast<AssDialogueBlockPlain *>(line->Blocks[i])) {
+			text = text || !txt->GetText().empty();
+		}
+		// Do nothing with drawing blocks
 	}
-	catch (...) {
+	if (text) {
+		dialogueChunks.push_back(style);
 	}
+	line->ClearBlocks();
+}
+
+void FontFileLister::ProcessChunk(StyleInfo const& style) {
+	if (results.find(style) != results.end()) return;
+
+	wxString path = GetFontPath(style.facename, style.bold, style.italic);
+	results[style] = path;
+
+	if (path.empty()) {
+		statusCallback(wxString::Format("Could not find font '%s'\n", style.facename), 2);
+	}
+	else {
+		statusCallback(wxString::Format("Found '%s' at '%s'\n", style.facename, path), 0);
+	}
+}
+
+
+std::vector<wxString> FontFileLister::Run(std::list<AssEntry*> const& file) {
+	statusCallback(_("Parsing file\n"), 0);
+	for (std::list<AssEntry*>::const_iterator cur = file.begin(); cur != file.end(); ++cur) {
+		switch ((*cur)->GetType()) {
+			case ENTRY_STYLE: {
+				AssStyle *style = static_cast<AssStyle*>(*cur);
+				StyleInfo info;
+				info.facename = style->font;
+				info.bold     = style->bold;
+				info.italic   = style->italic;
+				styles[style->name] = info;
+				break;
+			}
+			case ENTRY_DIALOGUE:
+				ProcessDialogueLine(static_cast<AssDialogue*>(*cur));
+				break;
+			default: break;
+		}
+	}
+
+	if (dialogueChunks.empty()) {
+		statusCallback(_("No non-empty dialogue lines found"), 2);
+		return std::vector<wxString>();
+	}
+
+	statusCallback(_("Searching for font files\n"), 0);
+	std::for_each(dialogueChunks.begin(), dialogueChunks.end(), std::bind(&FontFileLister::ProcessChunk, this, _1));
+	statusCallback(_("Done\n\n"), 0);
+
+	std::vector<wxString> paths;
+	paths.reserve(results.size());
+	int missing = 0;
+	for (std::map<StyleInfo, wxString>::const_iterator cur = results.begin(); cur != results.end(); ++cur) {
+		if (cur->second.empty()) {
+			++missing;
+		}
+		else {
+			paths.push_back(cur->second);
+		}
+	}
+
+	if (missing == 0) {
+		statusCallback(_("All fonts found.\n"), 1);
+	}
+	else {
+		statusCallback(wxString::Format(_("%d fonts could not be found.\n"), missing), 2);
+	}
+
+	return paths;
+}
+
+bool FontFileLister::StyleInfo::operator<(StyleInfo const& rgt) const {
+#define CMP(field) \
+	if (field < rgt.field) return true; \
+	if (field > rgt.field) return false
+
+	CMP(facename);
+	CMP(bold);
+	CMP(italic);
+
+#undef CMP
+
+	return false;
 }
