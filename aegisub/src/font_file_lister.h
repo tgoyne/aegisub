@@ -1,4 +1,4 @@
-// Copyright (c) 2007, Rodrigo Braz Monteiro
+// Copyright (c) 2010, Thomas Goyne <plorkyeran@aegisub.org>
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,71 +34,57 @@
 /// @ingroup font_collector
 ///
 
-
-////////////
-// Includes
 #ifndef AGI_PRE
-#include <map>
+#include <list>
+#include <tr1/functional>
 
-#include <wx/arrstr.h>
 #include <wx/string.h>
 #endif
 
-#ifdef WITH_FREETYPE2
-/// DOCME
-typedef struct FT_LibraryRec_ *FT_Library;
-#endif
+class AssEntry;
+class AssDialogue;
 
-/// DOCME
-typedef std::map<wxString,wxArrayString> FontMap;
-
-
-
-/// DOCME
 /// @class FontFileLister
-/// @brief DOCME
-///
-/// DOCME
+/// @brief Font lister base class
 class FontFileLister {
-private:
+	struct StyleInfo {
+		wxString facename;
+		int bold;
+		bool italic;
+		bool operator<(StyleInfo const& rgt) const;
+	};
 
-	/// DOCME
-	static FontFileLister *instance;
-	static void GetInstance();
+	/// A (non-unique) list of each combination of styles used in the file
+	std::list<StyleInfo> dialogueChunks;
+	/// Style name -> ASS style definition
+	std::map<wxString, StyleInfo> styles;
+	/// Style -> Path to font, or empty string if the font could not be found
+	std::map<StyleInfo, wxString> results;
 
-	/// DOCME
-	FontMap fontTable;
+	void ProcessDialogueLine(AssDialogue *line);
+	void ProcessChunk(StyleInfo const& style);
+	std::vector<wxString> Run(std::list<AssEntry*> const& file);
 
-	/// DOCME
-	wxArrayString fontFiles;
+	/// @brief Get the path to the font with the given styles
+	/// @param facename Name of font face
+	/// @param bold ASS font weight
+	/// @param italic Italic?
+	/// @return Path to the matching font file
+	///
+	/// This is only non-abstract due to a bug in the version of boost::bind
+	/// used for std::tr1::bind in MSVC, and should always be overridden
+	virtual wxString GetFontPath(wxString const& facename, int bold, bool italic) { return ""; };
 
 protected:
+	/// Message callback provider by caller
+	std::tr1::function<void (wxString, int)> statusCallback;
 
-	/// @brief DOCME
-	/// @param facename 
-	/// @return 
-	///
-	virtual wxArrayString DoGetFilesWithFace(wxString facename) { return CacheGetFilesWithFace(facename); }
-	virtual void DoInitialize()=0;
-
-	/// @brief DOCME
-	///
-	virtual void DoClearData() { ClearCache(); }
-
-	FontFileLister();
-	virtual ~FontFileLister();
-
-	wxArrayString CacheGetFilesWithFace(wxString facename);
-	bool IsFilenameCached(wxString filename);
-	void AddFont(wxString filename,wxString facename);
-	void SaveCache();
-	void LoadCache();
-	void ClearCache();
+	FontFileLister(std::tr1::function<void (wxString, int)> statusCallback) : statusCallback(statusCallback) { }
 
 public:
-	static wxArrayString GetFilesWithFace(wxString facename);
-	static void Initialize();
-	static void ClearData();
+	/// @brief Get a list of the locations of all font files used in the file
+	/// @param file Lines in the subtitle file to check
+	/// @param status Callback function for messages
+	/// @return List of paths to fonts
+	static std::vector<wxString> GetFontPaths(std::list<AssEntry*> const& file, std::tr1::function<void (wxString, int)> status);
 };
-
-

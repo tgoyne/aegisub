@@ -46,60 +46,49 @@
 class AssFile;
 class AssOverrideParameter;
 class DialogFontsCollector;
+class FontFileLister;
 class FrameMain;
-class wxZipOutputStream;
 class ScintillaTextCtrl;
+class wxZipOutputStream;
 
 /// DOCME
 /// @class FontsCollectorThread
-/// @brief DOCME
-///
-/// DOCME
+/// @brief Worker thread for the font collector dialog
 class FontsCollectorThread : public wxThread {
-	/// DOCME
-	AssFile *subs;
+	AssFile *subs; ///< Subtitle file to process
+	wxString destination; ///< Path to write fonts to for modes 2 and 3
+	DialogFontsCollector *collector; ///< Parent dialog
+	int oper; ///< 0: check fonts only; 1: copy to folder; 2: copy to zip
 
-	/// DOCME
-	AssStyle *curStyle;
+	std::set<wxString> fontPaths; ///< Paths of needed fonts found by the lister
+	std::set<wxString> missingFonts; ///< Names of fonts which could not be found
 
-	/// DOCME
-	wxString destination;
+	/// @brief Callback with path information from the lister
+	/// @param name Name of font found (or not found)
+	/// @param path Path to font, or empty if it could not be found
+	void FontFound(wxString const& name, wxString const& path);
 
-	/// DOCME
-	DialogFontsCollector *collector;
-
-	/// DOCME
-	wxZipOutputStream *zip;
-
-	/// DOCME
-	int curLine;
-
-	/// DOCME
-	wxString destFolder;
-
-
-	/// DOCME
-	static FontsCollectorThread *instance;
-
-
-	/// DOCME
-	wxArrayString fonts;
-
-	bool ProcessFont(wxString fontname);
-	int CopyFont(wxString filename);
-	bool ArchiveFont(wxString filename);
-	bool AttachFont(wxString filename);
-
+	/// @brief Do the font collection
 	void Collect();
-	void AddFont(wxString fontname,int mode);
-	void CollectFontData();
+
+	/// @brief Copy a found font to the target folder
+	/// @param filename Font to copy
+	/// @return 0: failed; 1: succeeded; 2: already present
+	int CopyFont(wxString const& filename);
+	/// @brief Copy a found font to the target archive
+	/// @param filename Font to copy
+	/// @param zip Target zip archive
+	/// @return Did it succeed
+	bool ArchiveFont(wxString const& filename, wxZipOutputStream &zip);
+
+	/// @brief Tell the dialog to add text to the textbox
+	/// @param text Text to add
+	/// @param colour 0: neutral; 1: success; 2: error
 	void AppendText(wxString text,int colour=0);
 
-public:
-	FontsCollectorThread(AssFile *subs,wxString destination,DialogFontsCollector *collector);
 	wxThread::ExitCode Entry();
-
-	static void GetFonts (wxString tagName,int par_n,AssOverrideParameter *param,void *usr);
+public:
+	FontsCollectorThread(AssFile *subs, wxString destination, int oper, DialogFontsCollector *collector);
 };
 
 /// DOCME
@@ -137,7 +126,7 @@ class DialogFontsCollector : public wxDialog {
 	FrameMain *main;
 
 	void OnStart(wxCommandEvent &event);
-	void OnClose(wxCommandEvent &event);
+	void OnClose(wxCommandEvent &event) { EndModal(0); }
 	void OnBrowse(wxCommandEvent &event);
 	void OnRadio(wxCommandEvent &event);
 	void OnAddText(wxCommandEvent &event);
@@ -149,8 +138,6 @@ public:
 
 	DECLARE_EVENT_TABLE()
 };
-
-
 
 /// DOCME
 struct ColourString {

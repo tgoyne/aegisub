@@ -38,73 +38,147 @@
 
 #ifdef WITH_FONTCONFIG
 #include "font_file_lister_fontconfig.h"
-#include "charset_conv.h"
+
+FontConfigFontFileLister::FontConfigFontFileLister(std::tr1::function<void (wxString, int)> cb)
+: FontFileLister(cb)
+, config(FcInitLoadConfig(), FcConfigDestroy)
+{
+	statusCallback(_("Updating font cache\n"), 0);
+	FcConfigBuildFonts(config);
+}
 
 
+FontConfigFontFileLister::~FontConfigFontFileLister() {
+}
 
-/// @brief Get files that contain the face 
-/// @param facename 
-/// @return 
-///
-wxArrayString FontConfigFontFileLister::DoGetFilesWithFace(wxString facename) {
-	wxArrayString results;
+/* The following code is based heavily on ass_fontconfig.c from libass
+ *
+ * Copyright (C) 2006 Evgeniy Stepanov <eugeni.stepanov@gmail.com>
+ */
 
-	// Code stolen from asa
-	FcPattern *final, *tmp1, *tmp2;
-	FcResult res;
-	FcChar8 *filename,*gotfamily;
-	int fontindex;
-	char buffer[1024];
-	strcpy(buffer,facename.mb_str(wxConvUTF8));
+FcFontSet *FontConfigFontFileLister::MatchFullname(const char *family, int weight, int slant) {
+	FcFontSet *sets[2];
+	FcFontSet *result = FcFontSetCreate();
+	int nsets = 0;
 
-	// Get data from fconfig or something
-	tmp1 = FcPatternBuild(NULL,FC_FAMILY, FcTypeString,buffer,NULL);
-	if (!tmp1) return results;
-	tmp2 = FcFontRenderPrepare(fontconf, tmp1, aux);
-	FcPatternDestroy(tmp1);
-	FcDefaultSubstitute(tmp2);
-	FcConfigSubstitute(fontconf, tmp2, FcMatchPattern);
-	final = FcFontMatch(fontconf, tmp2, &res);
-	FcPatternDestroy(tmp2);
-	if (!final) return results;
-	if (FcPatternGetString(final, FC_FILE, 0, &filename) == FcResultMatch && FcPatternGetInteger(final, FC_INDEX, 0, &fontindex) == FcResultMatch) {
-		FcPatternGetString(final, FC_FAMILY, fontindex, &gotfamily);
-		if (strcmp((const char*)gotfamily,buffer) == 0) {
-			results.Add(wxString((char*) filename));
+	if ((sets[nsets] = FcConfigGetFonts(config, FcSetSystem)))
+		nsets++;
+	if ((sets[nsets] = FcConfigGetFonts(config, FcSetApplication)))
+		nsets++;
+
+	// Run over font sets and patterns and try to match against full name
+	for (int i = 0; i < nsets; i++) {
+		FcFontSet *set = sets[i];
+		for (int fi = 0; fi < set->nfont; fi++) {
+			FcPattern *pat = set->fonts[fi];
+			char *fullname;
+			int pi = 0, at;
+			FcBool ol;
+			while (FcPatternGetString(pat, FC_FULLNAME, pi++, (FcChar8 **)&fullname) == FcResultMatch) {
+				if (FcPatternGetBool(pat, FC_OUTLINE, 0, &ol) != FcResultMatch || ol != FcTrue)
+					continue;
+				if (FcPatternGetInteger(pat, FC_SLANT, 0, &at) != FcResultMatch || at < slant)
+					continue;
+				if (FcPatternGetInteger(pat, FC_WEIGHT, 0, &at) != FcResultMatch || at < weight)
+					continue;
+				if (_stricmp(fullname, family) == 0) {
+					FcFontSetAdd(result, FcPatternDuplicate(pat));
+					break;
+				}
+			}
 		}
 	}
-	FcPatternDestroy(final);
 
-	return results;
+	return result;
 }
 
+wxString FontConfigFontFileLister::GetFontPath(wxString const& facename, int bold, bool italic) {
+	wxCharBuffer family_buffer = facename.utf8_str();
+	const char *family = family_buffer.data();
+	if (family[0] == '@') ++family;
 
+	int weight = bold == 0 ? 80 :
+	             bold == 1 ? 200 :
+	                         bold;
+	int slant  = italic ? 110 : 0;
 
-/// @brief Constructor 
-///
-FontConfigFontFileLister::FontConfigFontFileLister()
-: fontconf(0), aux(0)
-{
+	scoped<FcPattern*> pat(FcPatternCreate(), FcPatternDestroy);
+	if (!pat) return "";
+
+	FcPatternAddString(pat, FC_FAMILY, (const FcChar8 *)family);
+
+	// In SSA/ASS fonts are sometimes referenced by their "full name",
+	// which is usually a concatenation of family name and font
+	// style (ex. Ottawa Bold). Full name is available from
+	// FontConfig pattern element FC_FULLNAME, but it is never
+	// used for font matching.
+	// Therefore, I'm removing words from the end of the name one
+	// by one, and adding shortened names to the pattern. It seems
+	// that the first value (full name in this case) has
+	// precedence in matching.
+	// An alternative approach could be to reimplement FcFontSort
+	// using FC_FULLNAME instead of FC_FAMILY.
+	int family_cnt = 1;
+	{
+		char *s = _strdup(family);
+		char *p = s + strlen(s);
+		while (--p > s)
+			if (*p == ' ' || *p == '-') {
+				*p = '\0';
+				FcPatternAddString(pat, FC_FAMILY, (const FcChar8 *) s);
+				++family_cnt;
+			}
+		free(s);
+	}
+
+	FcPatternAddBool(pat, FC_OUTLINE, true);
+	FcPatternAddInteger(pat, FC_SLANT, slant);
+	FcPatternAddInteger(pat, FC_WEIGHT, weight);
+
+	FcDefaultSubstitute(pat);
+
+	if (!FcConfigSubstitute(config, pat, FcMatchPattern)) return "";
+
+	FcResult result;
+	scoped<FcFontSet*> fsorted(FcFontSort(config, pat, true, NULL, &result), FcFontSetDestroy);
+	scoped<FcFontSet*> ffullname(MatchFullname(family, weight, slant), FcFontSetDestroy);
+	if (!fsorted || !ffullname) return "";
+
+	scoped<FcFontSet*> fset(FcFontSetCreate(), FcFontSetDestroy);
+	for (int curf = 0; curf < ffullname->nfont; ++curf) {
+		FcPattern *curp = ffullname->fonts[curf];
+		FcPatternReference(curp);
+		FcFontSetAdd(fset, curp);
+	}
+	for (int curf = 0; curf < fsorted->nfont; ++curf) {
+		FcPattern *curp = fsorted->fonts[curf];
+		FcPatternReference(curp);
+		FcFontSetAdd(fset, curp);
+	}
+
+	int curf;
+	for (curf = 0; curf < fset->nfont; ++curf) {
+		FcBool outline;
+		FcResult result = FcPatternGetBool(fset->fonts[curf], FC_OUTLINE, 0, &outline);
+		if (result == FcResultMatch && outline) break;
+	}
+
+	if (curf >= fset->nfont) return "";
+
+	// Remove all extra family names from original pattern.
+	// After this, FcFontRenderPrepare will select the most relevant family
+	// name in case there are more than one of them.
+	for (; family_cnt > 1; --family_cnt)
+		FcPatternRemove(pat, FC_FAMILY, family_cnt - 1);
+
+	scoped<FcPattern*> rpat(FcFontRenderPrepare(config, pat, fset->fonts[curf]), FcPatternDestroy);
+	if (!rpat) return "";
+
+	FcChar8 *file;
+	result = FcPatternGetString(rpat, FC_FILE, 0, &file);
+	if(result == FcResultMatch) {
+		return (const char *)file;
+	}
+	return "";
 }
-
-
-
-/// @brief Initialize 
-///
-void FontConfigFontFileLister::DoInitialize() {
-	fontconf = FcInitLoadConfigAndFonts();
-	aux = FcPatternCreate();
-}
-
-
-
-/// @brief Clean up 
-///
-void FontConfigFontFileLister::DoClearData() {
-	if (aux) FcPatternDestroy(aux);
-#ifdef HAVE_FCFINI
-	FcFini();
-#endif
-}
-
 #endif
