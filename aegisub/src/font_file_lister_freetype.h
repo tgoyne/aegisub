@@ -34,18 +34,10 @@
 /// @ingroup font_collector
 ///
 
-
-
-
-////////////
-// Includes
 #include "font_file_lister.h"
-
 
 /// DOCME
 typedef struct FT_LibraryRec_ *FT_Library;
-
-
 
 /// DOCME
 /// @class FreetypeFontFileLister
@@ -53,15 +45,12 @@ typedef struct FT_LibraryRec_ *FT_Library;
 ///
 /// DOCME
 class FreetypeFontFileLister : public FontFileLister {
-	friend class FontFileLister;
-private:
-
 	/// DOCME
 	FT_Library ft2lib;
 
-	void DoInitialize();
-
-	FreetypeFontFileLister();
+	wxString GetFontPath(wxString const& facename, int bold, bool italic);
+public:
+	FreetypeFontFileLister(std::tr1::function<void (wxString, int)> cb);
 	~FreetypeFontFileLister();
 };
 

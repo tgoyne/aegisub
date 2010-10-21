@@ -63,8 +63,8 @@ class FontConfigFontFileLister : public FontFileLister {
 	/// @return font set
 	FcFontSet *MatchFullname(const char *family, int weight, int slant);
 
-public:
 	wxString GetFontPath(wxString const& facename, int bold, bool italic);
+public:
 	FontConfigFontFileLister(std::tr1::function<void (wxString, int)> cb);
 	~FontConfigFontFileLister();
 };

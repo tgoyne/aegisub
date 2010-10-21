@@ -40,24 +40,14 @@
 #include "ass_override.h"
 #include "ass_style.h"
 
-#ifdef WITH_FREETYPE2
-#include "font_file_lister_freetype.h"
-#define FontListerClass FreetypeFontFileLister
-#else
-#include "font_file_lister.h"
-#endif
+#include "font_file_lister_fontconfig.h"
 
 namespace std { using namespace std::tr1; }
 using namespace std::placeholders;
 
 std::vector<wxString> FontFileLister::GetFontPaths(std::list<AssEntry*> const& file, std::tr1::function<void (wxString, int)> status) {
-	/// @todo make this choosable at runtime
-#ifdef FontListerClass
-	FontFileLister *inst = new FontListerClass(status);
+	FontFileLister *inst = new FontConfigFontFileLister(status);
 	return inst->Run(file);
-#else
-	return std::vector<wxString>();
-#endif
 }
 
 void FontFileLister::ProcessDialogueLine(AssDialogue *line) {
