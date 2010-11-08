@@ -114,22 +114,6 @@
 #pragma comment(lib, "dxguid.lib")
 #endif
 
-
-/////////////
-// FreeType2
-#ifdef WITH_FREETYPE2
-#ifdef _DEBUG
-#ifdef FT2_LIB_DEBUG
-#pragma comment(lib,FT2_LIB_DEBUG)
-#endif
-#else
-#ifdef FT2_LIB_RELEASE
-#pragma comment(lib,FT2_LIB_RELEASE)
-#endif
-#endif
-#endif
-
-
 ///////////////
 // Font Config
 #ifdef WITH_FONTCONFIG

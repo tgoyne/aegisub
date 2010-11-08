@@ -20,9 +20,9 @@ AM_CXXFLAGS += -DAEGISUB -D__STDC_FORMAT_MACROS -Iinclude -I../libffms/include -
 
 bin_PROGRAMS = aegisub-3.0
 aegisub_3_0_LDADD = libresrc/libresrc.a -L../libaegisub -laegisub-3.0
-aegisub_3_0_CPPFLAGS = @FREETYPE_CFLAGS@
+aegisub_3_0_CPPFLAGS = 
 aegisub_3_0_LDFLAGS = @DEBUG_FLAGS@ @PROFILE_FLAGS@ @GL_LIBS@ @PTHREAD_LIBS@ @WX_LIBS@ @CCMALLOC_LDFLAGS@ @EFENCE_LDFLAGS@
-LIBS += @FREETYPE_LIBS@ @FONTCONFIG_LIBS@ @CCMALLOC_LIBS@
+LIBS += @FONTCONFIG_LIBS@ @CCMALLOC_LIBS@
 
 if PRECOMPILED_HEADER
 # This doesn't depend on Makefile on purpose, you should already know what you're doing when using this.
@@ -126,13 +126,6 @@ aegisub_3_0_LDFLAGS += @HUNSPELL_LIBS@
 aegisub_3_0_LDADD += libmisc_hunspell.a
 endif
 
-if FONTLISTER_FREETYPE
-  FONT_LISTER = font_file_lister_freetype.cpp
-endif
-
-if FONTLISTER_FONTCONFIG
-  FONT_LISTER = font_file_lister_fontconfig.cpp
-endif
 
 noinst_LIBRARIES += libmisc_universalchardet.a
 libmisc_universalchardet_a_SOURCES = charset_detect.cpp text_file_reader.cpp
@@ -144,7 +137,7 @@ aegisub_3_0_LDADD += libmisc_universalchardet.a ../universalchardet/libuniversal
 EXTRA_aegisub_3_0_SOURCES = \
 	$(precompiled_header) \
 	font_file_lister.cpp \
-	$(FONT_LISTER) \
+	font_file_lister_fontconfig.cpp \
 	audio_player_dsound.cpp \
 	audio_player_dsound2.cpp \
 	audio_player_portaudio.cpp \
@@ -168,7 +161,7 @@ aegisub_3_0_SOURCES = \
 	$(HUNSPELL) \
 	$(LIBASS) \
 	font_file_lister.cpp \
-	$(FONT_LISTER) \
+	font_file_lister_fontconfig.cpp \
 	MatroskaParser.c \
 	aegisublocale.cpp \
 	ass_attachment.cpp \
