@@ -219,15 +219,15 @@ void FrameMain::InitToolbar () {
 	Toolbar = CreateToolBar(wxTB_FLAT | wxTB_HORIZONTAL,-1,_T("Toolbar"));
 
 	// Subtitle control buttons
-	Toolbar->AddTool(Menu_File_New_Subtitles,_("New"),GETIMAGE(new_toolbutton_24),_("New subtitles"));
-	Toolbar->AddTool(Menu_File_Open_Subtitles,_("Open"),GETIMAGE(open_toolbutton_24),_("Open subtitles"));
-	Toolbar->AddTool(Menu_File_Save_Subtitles,_("Save"),GETIMAGE(save_toolbutton_24),_("Save subtitles"));
+	Toolbar->AddTool(Menu_File_New_Subtitles,_("New"),GETIMAGE(new_toolbutton_16),_("New subtitles"));
+	Toolbar->AddTool(Menu_File_Open_Subtitles,_("Open"),GETIMAGE(open_toolbutton_16),_("Open subtitles"));
+	Toolbar->AddTool(Menu_File_Save_Subtitles,_("Save"),GETIMAGE(save_toolbutton_16),_("Save subtitles"));
 	Toolbar->AddSeparator();
 
 	// Video zoom controls
-	Toolbar->AddTool(Menu_Video_JumpTo,_("Jump To..."),GETIMAGE(jumpto_button_24),wxNullBitmap,wxITEM_NORMAL,_("Jump video to time/frame"));
-	Toolbar->AddTool(Menu_Video_Zoom_In,_("Zoom in"),GETIMAGE(zoom_in_button_24),wxNullBitmap,wxITEM_NORMAL,_("Zoom video in"));
-	Toolbar->AddTool(Menu_Video_Zoom_Out,_("Zoom out"),GETIMAGE(zoom_out_button_24),wxNullBitmap,wxITEM_NORMAL,_("Zoom video out"));
+	Toolbar->AddTool(Menu_Video_JumpTo,_("Jump To..."),GETIMAGE(jumpto_button_16),wxNullBitmap,wxITEM_NORMAL,_("Jump video to time/frame"));
+	Toolbar->AddTool(Menu_Video_Zoom_In,_("Zoom in"),GETIMAGE(zoom_in_button_16),wxNullBitmap,wxITEM_NORMAL,_("Zoom video in"));
+	Toolbar->AddTool(Menu_Video_Zoom_Out,_("Zoom out"),GETIMAGE(zoom_out_button_16),wxNullBitmap,wxITEM_NORMAL,_("Zoom video out"));
 	wxArrayString choices;
 	for (int i=1;i<=24;i++) {
 		wxString toAdd = wxString::Format(_T("%i"),int(i*12.5));
@@ -240,45 +240,45 @@ void FrameMain::InitToolbar () {
 	Toolbar->AddSeparator();
 
 	// More video buttons
-	Toolbar->AddTool(Menu_Subs_Snap_Video_To_Start,_("Jump video to start"),GETIMAGE(video_to_substart_24),_("Jumps the video to the start frame of current subtitle"));
-	Toolbar->AddTool(Menu_Subs_Snap_Video_To_End,_("Jump video to end"),GETIMAGE(video_to_subend_24),_("Jumps the video to the end frame of current subtitle"));
-	Toolbar->AddTool(Menu_Subs_Snap_Start_To_Video,_("Snap start to video"),GETIMAGE(substart_to_video_24),_("Set start of selected subtitles to current video frame"));
-	Toolbar->AddTool(Menu_Subs_Snap_End_To_Video,_("Snap end to video"),GETIMAGE(subend_to_video_24),_("Set end of selected subtitles to current video frame"));
-	Toolbar->AddTool(Menu_Video_Select_Visible,_("Select visible"),GETIMAGE(select_visible_button_24),_("Selects all lines that are currently visible on video frame"));
-	Toolbar->AddTool(Menu_Video_Snap_To_Scene,_("Snap subtitles to scene"),GETIMAGE(snap_subs_to_scene_24),_("Snap selected subtitles so they match current scene start/end"));
-	Toolbar->AddTool(Menu_Video_Shift_To_Frame,_("Shift subtitles to frame"),GETIMAGE(shift_to_frame_24),_("Shift selected subtitles so first selected starts at this frame"));
+	Toolbar->AddTool(Menu_Subs_Snap_Video_To_Start,_("Jump video to start"),GETIMAGE(video_to_substart_16),_("Jumps the video to the start frame of current subtitle"));
+	Toolbar->AddTool(Menu_Subs_Snap_Video_To_End,_("Jump video to end"),GETIMAGE(video_to_subend_16),_("Jumps the video to the end frame of current subtitle"));
+	Toolbar->AddTool(Menu_Subs_Snap_Start_To_Video,_("Snap start to video"),GETIMAGE(substart_to_video_16),_("Set start of selected subtitles to current video frame"));
+	Toolbar->AddTool(Menu_Subs_Snap_End_To_Video,_("Snap end to video"),GETIMAGE(subend_to_video_16),_("Set end of selected subtitles to current video frame"));
+	Toolbar->AddTool(Menu_Video_Select_Visible,_("Select visible"),GETIMAGE(select_visible_button_16),_("Selects all lines that are currently visible on video frame"));
+	Toolbar->AddTool(Menu_Video_Snap_To_Scene,_("Snap subtitles to scene"),GETIMAGE(snap_subs_to_scene_16),_("Snap selected subtitles so they match current scene start/end"));
+	Toolbar->AddTool(Menu_Video_Shift_To_Frame,_("Shift subtitles to frame"),GETIMAGE(shift_to_frame_16),_("Shift selected subtitles so first selected starts at this frame"));
 	Toolbar->AddSeparator();
 
 	// Property stuff
-	Toolbar->AddTool(Menu_Tools_Styles_Manager,_("Styles Manager"),GETIMAGE(style_toolbutton_24),_("Open Styles Manager"));
-	Toolbar->AddTool(Menu_Tools_Properties,_("Properties"),GETIMAGE(properties_toolbutton_24),_("Open Properties"));
-	Toolbar->AddTool(Menu_Tools_Attachments,_("Attachments"),GETIMAGE(attach_button_24),_("Open Attachment List"));
-	Toolbar->AddTool(Menu_Tools_Fonts_Collector,_("Fonts Collector"),GETIMAGE(font_collector_button_24),_("Open Fonts Collector"));
+	Toolbar->AddTool(Menu_Tools_Styles_Manager,_("Styles Manager"),GETIMAGE(style_toolbutton_16),_("Open Styles Manager"));
+	Toolbar->AddTool(Menu_Tools_Properties,_("Properties"),GETIMAGE(properties_toolbutton_16),_("Open Properties"));
+	Toolbar->AddTool(Menu_Tools_Attachments,_("Attachments"),GETIMAGE(attach_button_16),_("Open Attachment List"));
+	Toolbar->AddTool(Menu_Tools_Fonts_Collector,_("Fonts Collector"),GETIMAGE(font_collector_button_16),_("Open Fonts Collector"));
 	Toolbar->AddSeparator();
 
 	// Automation
 #ifdef WITH_AUTOMATION
-	Toolbar->AddTool(Menu_Tools_Automation,_("Automation"),GETIMAGE(automation_toolbutton_24),_("Open Automation manager"));
+	Toolbar->AddTool(Menu_Tools_Automation,_("Automation"),GETIMAGE(automation_toolbutton_16),_("Open Automation manager"));
 	Toolbar->AddSeparator();
 #endif
 
 	// Tools
 	if (HasASSDraw()) {
-		Toolbar->AddTool(Menu_Tools_ASSDraw,_T("ASSDraw3"),GETIMAGE(assdraw_24),_("Launches ai-chan's \"ASSDraw3\" tool for vector drawing."));
+		Toolbar->AddTool(Menu_Tools_ASSDraw,_T("ASSDraw3"),GETIMAGE(assdraw_16),_("Launches ai-chan's \"ASSDraw3\" tool for vector drawing."));
 		Toolbar->AddSeparator();
 	}
-	Toolbar->AddTool(Menu_Edit_Shift,_("Shift Times"),GETIMAGE(shift_times_toolbutton_24),_("Open Shift Times Dialogue"));
-	Toolbar->AddTool(Menu_Tools_Styling,_("Styling Assistant"),GETIMAGE(styling_toolbutton_24),_("Open Styling Assistant"));
-	Toolbar->AddTool(Menu_Tools_Translation,_("Translation Assistant"),GETIMAGE(translation_toolbutton_24),_("Open Translation Assistant"));
-	Toolbar->AddTool(Menu_Tools_Resample,_("Resample"),GETIMAGE(resample_toolbutton_24),_("Resample Script Resolution"));
-	Toolbar->AddTool(Menu_Tools_Timing_Processor,_("Timing Post-Processor"),GETIMAGE(timing_processor_toolbutton_24),_("Open Timing Post-processor dialog"));
-	Toolbar->AddTool(Menu_Tools_Kanji_Timer,_("Kanji Timer"),GETIMAGE(kara_timing_copier_24),_("Open Kanji Timer dialog"));
-	Toolbar->AddTool(Menu_Tools_SpellCheck,_("Spell Checker"),GETIMAGE(spellcheck_toolbutton_24),_("Open Spell checker"));
+	Toolbar->AddTool(Menu_Edit_Shift,_("Shift Times"),GETIMAGE(shift_times_toolbutton_16),_("Open Shift Times Dialogue"));
+	Toolbar->AddTool(Menu_Tools_Styling,_("Styling Assistant"),GETIMAGE(styling_toolbutton_16),_("Open Styling Assistant"));
+	Toolbar->AddTool(Menu_Tools_Translation,_("Translation Assistant"),GETIMAGE(translation_toolbutton_16),_("Open Translation Assistant"));
+	Toolbar->AddTool(Menu_Tools_Resample,_("Resample"),GETIMAGE(resample_toolbutton_16),_("Resample Script Resolution"));
+	Toolbar->AddTool(Menu_Tools_Timing_Processor,_("Timing Post-Processor"),GETIMAGE(timing_processor_toolbutton_16),_("Open Timing Post-processor dialog"));
+	Toolbar->AddTool(Menu_Tools_Kanji_Timer,_("Kanji Timer"),GETIMAGE(kara_timing_copier_16),_("Open Kanji Timer dialog"));
+	Toolbar->AddTool(Menu_Tools_SpellCheck,_("Spell Checker"),GETIMAGE(spellcheck_toolbutton_16),_("Open Spell checker"));
 	Toolbar->AddSeparator();
 
 	// Options
-	Toolbar->AddTool(Menu_Tools_Options,_("Options"),GETIMAGE(options_button_24),_("Configure Aegisub"));
-	Toolbar->AddTool(Grid_Toggle_Tags,_("Cycle Tag Hidding Mode"),GETIMAGE(toggle_tag_hiding_24),_("Cycle through tag-hiding modes"));
+	Toolbar->AddTool(Menu_Tools_Options,_("Options"),GETIMAGE(options_button_16),_("Configure Aegisub"));
+	Toolbar->AddTool(Grid_Toggle_Tags,_("Cycle Tag Hidding Mode"),GETIMAGE(toggle_tag_hiding_16),_("Cycle through tag-hiding modes"));
 
 	// Update
 	Toolbar->Realize();
