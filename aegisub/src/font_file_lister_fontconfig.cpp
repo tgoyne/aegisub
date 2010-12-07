@@ -39,6 +39,10 @@
 #ifdef WITH_FONTCONFIG
 #include "font_file_lister_fontconfig.h"
 
+#ifndef strcasecmp
+#define strcasecmp _stricmp
+#endif
+
 FontConfigFontFileLister::FontConfigFontFileLister(std::tr1::function<void (wxString, int)> cb)
 : FontFileLister(cb)
 , config(FcInitLoadConfig(), FcConfigDestroy)
@@ -81,7 +85,7 @@ FcFontSet *FontConfigFontFileLister::MatchFullname(const char *family, int weigh
 					continue;
 				if (FcPatternGetInteger(pat, FC_WEIGHT, 0, &at) != FcResultMatch || at < weight)
 					continue;
-				if (_stricmp(fullname, family) == 0) {
+				if (strcasecmp(fullname, family) == 0) {
 					FcFontSetAdd(result, FcPatternDuplicate(pat));
 					break;
 				}
@@ -174,11 +178,23 @@ wxString FontConfigFontFileLister::GetFontPath(wxString const& facename, int bol
 	scoped<FcPattern*> rpat(FcFontRenderPrepare(config, pat, fset->fonts[curf]), FcPatternDestroy);
 	if (!rpat) return "";
 
+	FcChar8 *r_family;
+	result = FcPatternGetString(rpat, FC_FAMILY, 0, &r_family);
+	if (result != FcResultMatch)
+		return "";
+
+	FcChar8 *r_fullname;
+	result = FcPatternGetString(rpat, FC_FULLNAME, 0, &r_fullname);
+	if (result != FcResultMatch)
+		return "";
+
+	if (strcasecmp((const char *)r_family, family) && strcasecmp((const char *)r_fullname, family))
+		return "";
+
 	FcChar8 *file;
 	result = FcPatternGetString(rpat, FC_FILE, 0, &file);
-	if(result == FcResultMatch) {
-		return (const char *)file;
-	}
-	return "";
+	if(result != FcResultMatch) return "";
+
+	return (const char *)file;
 }
 #endif
