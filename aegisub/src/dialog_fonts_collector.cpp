@@ -34,9 +34,6 @@
 /// @ingroup tools_ui font_collector
 ///
 
-
-////////////
-// Includes
 #include "config.h"
 
 #ifndef AGI_PRE
@@ -63,6 +60,7 @@
 #include "main.h"
 #include "scintilla_text_ctrl.h"
 #include "selection_controller.h"
+#include "standard_paths.h"
 #include "utils.h"
 
 enum {
@@ -101,11 +99,14 @@ DialogFontsCollector::DialogFontsCollector(wxWindow *parent, AssFile *ass)
 	wxArrayString choices;
 	choices.Add(_("Check fonts for availability"));
 	choices.Add(_("Copy fonts to folder"));
+	choices.Add(_("Copy fonts to subtitle file's folder"));
 	choices.Add(_("Copy fonts to zipped archive"));
 	CollectAction = new wxRadioBox(this,RADIO_BOX, "Action",wxDefaultPosition,wxDefaultSize,choices,1);
 	size_t lastAction = OPT_GET("Tool/Fonts Collector/Action")->GetInt();
 	if (lastAction >= choices.GetCount()) lastAction = 0;
 	CollectAction->SetSelection(lastAction);
+	if (ass->filename.empty())
+		CollectAction->Enable(2, false);
 
 	// Log box
 	LogBox = new ScintillaTextCtrl(this,-1,"",wxDefaultPosition,wxSize(300,210));
@@ -163,8 +164,20 @@ void DialogFontsCollector::OnStart(wxCommandEvent &event) {
 	LogBox->ClearAll();
 	LogBox->SetReadOnly(true);
 
-	// Action being done
+	wxString dest;
 	int action = CollectAction->GetSelection();
+	OPT_SET("Tool/Fonts Collector/Action")->SetInt(action);
+	if (action > 0) {
+		if (action == 2) {
+			action = 1;
+			dest = "?script";
+		}
+		else {
+			if (action == 3) action = 2;
+			dest = DestBox->GetValue();
+		}
+		dest = StandardPaths::DecodePath(dest);
+		wxFileName folder = dest;
 
 		if (action != 2) {
 			if (dest.Last() != '/' && dest.Last() != '\\') {
@@ -181,31 +194,19 @@ void DialogFontsCollector::OnStart(wxCommandEvent &event) {
 				return;
 			}
 		}
-	}
-
-	// Check if we have a valid archive name
-	if (action == 2) {
-		if (isFolder || folder.GetName().IsEmpty() || folder.GetExt() != _T("zip")) {
+		else if (folder.IsDir() || folder.GetName().empty()) {
 			wxMessageBox(_("Invalid path for .zip file."), _("Error"), wxICON_EXCLAMATION | wxOK);
 			return;
 		}
 	}
 
 	// Start thread
-	wxThread *worker = new FontsCollectorThread(subs, foldername, action, this);
+	wxThread *worker = new FontsCollectorThread(subs, dest, action, this);
 	worker->Create();
 	worker->Run();
 
-	// Set options
-	if (action == 1 || action == 2) {
-		wxString dest = foldername;
-		wxFileName filename(subs->filename);
-		if (filename.GetPath() == dest) {
-			dest = _T("?script");
-		}
+	if (action > 0)
 		OPT_SET("Path/Fonts Collector Destination")->SetString(STD_STR(dest));
-	}
-	OPT_SET("Tool/Fonts Collector/Action")->SetInt(action);
 
 	// Set buttons
 	StartButton->Enable(false);
@@ -218,8 +219,7 @@ void DialogFontsCollector::OnStart(wxCommandEvent &event) {
 }
 
 void DialogFontsCollector::OnBrowse(wxCommandEvent &event) {
-	// Chose file name
-	if (CollectAction->GetSelection()==2) {
+	if (CollectAction->GetSelection() == 3) {
 		wxFileName fname(DestBox->GetValue());
 		wxString dest = wxFileSelector(_("Select archive file name"),DestBox->GetValue(),fname.GetFullName(),".zip",_("Zip Archives (*.zip)|*.zip"),wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 		if (!dest.empty()) {
@@ -239,7 +239,6 @@ void DialogFontsCollector::OnBrowse(wxCommandEvent &event) {
 void DialogFontsCollector::OnRadio(wxCommandEvent &event) {
 	int value = event.GetInt();
 
-	// Enable buttons
 	CloseButton->Enable(true);
 	StartButton->Enable(true);
 	CollectAction->Enable(true);
@@ -251,7 +250,7 @@ void DialogFontsCollector::OnRadio(wxCommandEvent &event) {
 	}
 
 	// Check or attach
-	if (value == 0 || value == 3) {
+	if (value == 0 || value == 2) {
 		DestBox->Enable(false);
 		BrowseButton->Enable(false);
 		DestLabel->Enable(false);
@@ -289,13 +288,13 @@ void DialogFontsCollector::OnRadio(wxCommandEvent &event) {
 }
 
 void DialogFontsCollector::OnAddText(wxCommandEvent &event) {
-	ColourString *str = (ColourString*) event.GetClientData();
+	std::pair<int, wxString> *str = (std::pair<int, wxString>*) event.GetClientData();
 	LogBox->SetReadOnly(false);
 	int pos = LogBox->GetReverseUnicodePosition(LogBox->GetLength());
-	LogBox->AppendText(str->text);
-	if (str->colour) {
+	LogBox->AppendText(str->second);
+	if (str->first) {
 		LogBox->StartUnicodeStyling(pos,31);
-		LogBox->SetUnicodeStyling(pos,str->text.Length(),str->colour);
+		LogBox->SetUnicodeStyling(pos,str->second.Length(),str->first);
 	}
 	delete str;
 	LogBox->GotoPos(pos);
@@ -410,10 +409,7 @@ bool FontsCollectorThread::ArchiveFont(wxString const& filename, wxZipOutputStre
 }
 
 void FontsCollectorThread::AppendText(wxString text, int colour) {
-	ColourString *str = new ColourString;
-	str->text = text;
-	str->colour = colour;
 	wxCommandEvent event(EVT_ADD_TEXT, 0);
-	event.SetClientData(str);
+	event.SetClientData(new std::pair<int, wxString>(colour, text));
 	collector->AddPendingEvent(event);
 }

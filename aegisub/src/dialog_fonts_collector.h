@@ -137,13 +137,3 @@ public:
 
 	DECLARE_EVENT_TABLE()
 };
-
-/// DOCME
-struct ColourString {
-
-	/// DOCME
-	wxString text;
-
-	/// DOCME
-	int colour;
-};
