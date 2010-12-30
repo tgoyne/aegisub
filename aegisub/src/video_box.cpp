@@ -112,7 +112,7 @@ VideoBox::VideoBox(wxWindow *parent, bool isDetached, wxComboBox *zoomBox)
 	visualToolBar->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
 
 	// Display
-	videoDisplay = new VideoDisplay(this,videoSlider,VideoPosition,VideoSubsPos,zoomBox,videoPage,-1,wxDefaultPosition,wxDefaultSize,wxSUNKEN_BORDER);
+	videoDisplay = new VideoDisplay(this,videoSlider,VideoPosition,VideoSubsPos,zoomBox,videoPage,-1,wxDefaultPosition,wxDefaultSize,0);
 	VideoContext::Get()->AddDisplay(videoDisplay);
 
 	// Set display
