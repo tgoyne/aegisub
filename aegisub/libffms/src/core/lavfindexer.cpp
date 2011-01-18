@@ -45,23 +45,23 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 	TrackIndices->Decoder = FFMS_SOURCE_LAVF;
 
 	for (unsigned int i = 0; i < FormatContext->nb_streams; i++) {
-		TrackIndices->push_back(FFMS_Track((int64_t)FormatContext->streams[i]->time_base.num * 1000, 
+		TrackIndices->push_back(FFMS_Track((int64_t)FormatContext->streams[i]->time_base.num * 1000,
 			FormatContext->streams[i]->time_base.den,
 			static_cast<FFMS_TrackType>(FormatContext->streams[i]->codec->codec_type)));
 
-		if (static_cast<FFMS_TrackType>(FormatContext->streams[i]->codec->codec_type) == FFMS_TYPE_VIDEO &&
-			(VideoContexts[i].Parser = av_parser_init(FormatContext->streams[i]->codec->codec_id))) {
-
+		if (FormatContext->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
 			AVCodec *VideoCodec = avcodec_find_decoder(FormatContext->streams[i]->codec->codec_id);
 			if (VideoCodec == NULL)	
 				throw FFMS_Exception(FFMS_ERROR_CODEC, FFMS_ERROR_UNSUPPORTED,
 					"Video codec not found");
 
-			if (avcodec_open(FormatContext->streams[i]->codec, VideoCodec) < 0)	
+			if (avcodec_open(FormatContext->streams[i]->codec, VideoCodec) < 0)
 				throw FFMS_Exception(FFMS_ERROR_CODEC, FFMS_ERROR_DECODING,
 					"Could not open video codec");
 
 			VideoContexts[i].CodecContext = FormatContext->streams[i]->codec;
+			VideoContexts[i].Parser = av_parser_init(FormatContext->streams[i]->codec->codec_id);
+			if (VideoContexts[i].Parser)
 			VideoContexts[i].Parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
 		}
 
@@ -121,7 +121,7 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 			if (VideoContexts[Packet.stream_index].Parser) {
 				av_parser_parse2(VideoContexts[Packet.stream_index].Parser, VideoContexts[Packet.stream_index].CodecContext, &OB, &OBSize, Packet.data, Packet.size, Packet.pts, Packet.dts, Packet.pos);
 				RepeatPict = VideoContexts[Packet.stream_index].Parser->repeat_pict;
-			}
+		}
 
 			(*TrackIndices)[Packet.stream_index].push_back(TFrameInfo::VideoFrameInfo(LastValidTS[Packet.stream_index], RepeatPict, (Packet.flags & AV_PKT_FLAG_KEY) ? 1 : 0));
 		} else if (FormatContext->streams[Packet.stream_index]->codec->codec_type == CODEC_TYPE_AUDIO && (IndexMask & (1 << Packet.stream_index))) {
@@ -140,7 +140,7 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 				LastValidTS[Packet.stream_index] = Packet.dts;
 			if (LastValidTS[Packet.stream_index] == ffms_av_nopts_value)
 				throw FFMS_Exception(FFMS_ERROR_INDEXING, FFMS_ERROR_PARSER,
-					"Invalid initial pts and dts");
+				"Invalid initial pts and dts");
 			//
 
 			bool first = true;
@@ -165,13 +165,13 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 						break;
 					}
 				}
-				
+
 				if (first) {
 					LastNumChannels		= AudioCodecContext->channels;
 					LastSampleRate		= AudioCodecContext->sample_rate;
 					LastSampleFormat	= AudioCodecContext->sample_fmt;
 					first = false;
-				}
+			}
 
 				if (LastNumChannels != AudioCodecContext->channels || LastSampleRate != AudioCodecContext->sample_rate
 					|| LastSampleFormat != AudioCodecContext->sample_fmt) {
@@ -183,7 +183,7 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 						<< " Sample format: " << GetLAVCSampleFormatName(LastSampleFormat) << " -> "
 						<< GetLAVCSampleFormatName(AudioCodecContext->sample_fmt);
 					throw FFMS_Exception(FFMS_ERROR_UNSUPPORTED, FFMS_ERROR_DECODING, buf.str());
-				}
+		}
 
 				if (Ret > 0) {
 					TempPacket.size -= Ret;
@@ -195,7 +195,7 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 
 				if (DumpMask & (1 << Packet.stream_index))
 					WriteAudio(AudioContexts[Packet.stream_index], TrackIndices.get(), Packet.stream_index, dbsize);
-			}
+		}
 
 			(*TrackIndices)[Packet.stream_index].push_back(TFrameInfo::AudioFrameInfo(LastValidTS[Packet.stream_index], StartSample,
 				static_cast<unsigned int>(AudioContexts[Packet.stream_index].CurrentSample - StartSample), (Packet.flags & AV_PKT_FLAG_KEY) ? 1 : 0));

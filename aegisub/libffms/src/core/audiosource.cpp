@@ -31,17 +31,17 @@ TAudioBlock::TAudioBlock(int64_t Start, int64_t Samples, uint8_t *SrcData, size_
 
 TAudioBlock::~TAudioBlock() {
 	delete[] Data;
-}
+	}
 
 TAudioCache::TAudioCache() {
 	MaxCacheBlocks = 0;
 	BytesPerSample = 0;
-}
+		}
 
 TAudioCache::~TAudioCache() {
 	for (TAudioCache::iterator it=begin(); it != end(); it++)
 		delete *it;
-}
+	}
 
 void TAudioCache::Initialize(int BytesPerSample, int MaxCacheBlocks) {
 	this->BytesPerSample = BytesPerSample;
@@ -55,8 +55,8 @@ void TAudioCache::CacheBlock(int64_t Start, int64_t Samples, uint8_t *SrcData) {
 				delete *it;
 				erase(it);
 				break;
-			}
-		}
+	}
+}
 
 		push_front(new TAudioBlock(Start, Samples, SrcData, static_cast<size_t>(Samples * BytesPerSample)));
 		if (static_cast<int>(size()) >= MaxCacheBlocks) {
@@ -80,18 +80,30 @@ int64_t TAudioCache::FillRequest(int64_t Start, int64_t Samples, uint8_t *Dst) {
 		if (CopySamples > 0) {
 			memcpy(Dst + DstOffset * BytesPerSample, (*it)->Data + SrcOffset * BytesPerSample, static_cast<size_t>(CopySamples * BytesPerSample));
 			UsedBlocks.push_back(*it);
+	}
 		}
-	}
-	UsedBlocks.sort(AudioBlockComp);
-	int64_t Ret = Start;
-	for (std::list<TAudioBlock *>::iterator it = UsedBlocks.begin(); it != UsedBlocks.end(); it++) {
-		if (it == UsedBlocks.begin() || Ret == (*it)->Start)
-			Ret = (*it)->Start + (*it)->Samples;
-		else
-			break;
-	}
+		// Decode another block
+		else {
+			if (Start < CurrentSample && SeekOffset == -1)
+				throw FFMS_Exception(FFMS_ERROR_SEEKING, FFMS_ERROR_CODEC, "Audio stream is not seekable");
+
+			if (SeekOffset >= 0 && (Start < CurrentSample || Start > CurrentSample + Decoded * 5)) {
+				TFrameInfo f;
+				f.SampleStart = Start;
+				int NewPacketNumber = std::distance(Frames.begin(), std::lower_bound(Frames.begin(), Frames.end(), f, SampleStartComp));
+				NewPacketNumber = FFMAX(0, NewPacketNumber - SeekOffset - 15);
+				while (NewPacketNumber > 0 && !Frames[NewPacketNumber].KeyFrame) --NewPacketNumber;
+
+				// Only seek forward if it'll actually result in moving forward
+				if (Start < CurrentSample || static_cast<size_t>(NewPacketNumber) > PacketNumber) {
+					PacketNumber = NewPacketNumber;
+					Decoded = 0;
+					CurrentSample = -1;
+					avcodec_flush_buffers(CodecContext);
+					Seek();
+				}
 	return FFMIN(Ret, Start + Samples);
-}
+			}
 
 /* FFMS_AudioSource base class */
 
@@ -111,7 +123,7 @@ FFMS_AudioSource::FFMS_AudioSource(const char *SourceFile, FFMS_Index *Index, in
 	if (!Index->CompareFileSignature(SourceFile))
 		throw FFMS_Exception(FFMS_ERROR_INDEX, FFMS_ERROR_FILE_MISMATCH,
 			"The index does not match the source file");
-}
+	}
 
 FFMS_AudioSource::~FFMS_AudioSource() {
 
