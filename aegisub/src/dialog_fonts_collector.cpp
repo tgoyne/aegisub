@@ -178,6 +178,10 @@ void DialogFontsCollector::OnStart(wxCommandEvent &event) {
 		wxFileName folder = dest;
 
 		if (action != 2) {
+			if (dest.Last() != '/' && dest.Last() != '\\') {
+				dest += "/";
+				folder = dest;
+			}
 			if (folder.FileExists())
 		wxMessageBox(_("Invalid destination."),_("Error"),wxICON_EXCLAMATION | wxOK);
 			if (!folder.DirExists())
@@ -186,8 +190,6 @@ void DialogFontsCollector::OnStart(wxCommandEvent &event) {
 				wxMessageBox(_("Could not create destination folder."),_("Error"),wxICON_EXCLAMATION | wxOK);
 				return;
 			}
-			if (dest.Last() != '/' && dest.Last() != '\\')
-				dest += "/";
 		}
 		else if (folder.IsDir() || folder.GetName().empty()) {
 			wxMessageBox(_("Invalid path for .zip file."),_("Error"),wxICON_EXCLAMATION | wxOK);
