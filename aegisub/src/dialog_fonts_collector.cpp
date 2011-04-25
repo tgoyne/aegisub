@@ -51,13 +51,12 @@
 #include "compat.h"
 #include "dialog_fonts_collector.h"
 #include "font_file_lister.h"
-#include "frame_main.h"
 #include "help_button.h"
 #include "libresrc/libresrc.h"
 #include "main.h"
 #include "scintilla_text_ctrl.h"
+#include "selection_controller.h"
 #include "standard_paths.h"
-#include "subs_grid.h"
 #include "utils.h"
 
 enum {
@@ -74,9 +73,6 @@ DialogFontsCollector::DialogFontsCollector(wxWindow *parent, AssFile *ass)
 , subs(ass)
 {
 	SetIcon(BitmapToIcon(GETIMAGE(font_collector_button_24)));
-
-	// Parent
-	main = (FrameMain*) parent;
 
 	// Destination box
 	wxString dest = lagi_wxString(OPT_GET("Path/Fonts Collector Destination")->GetString());
@@ -358,11 +354,8 @@ void FontsCollectorThread::Collect() {
 			case 2: ret = ArchiveFont(*cur, *zip); break;
 		}
 
-			// Modify file if it was attaching
-			if (oper == 3 && someOk) {
-				wxMutexGuiEnter();
-				subs->Commit(_("font attachment"));
-				wxMutexGuiLeave();
+		if (ret == 1) {
+			AppendText(wxString::Format(_("* Copied %s.\n"), cur->c_str()),1);
 		}
 		else if (ret == 2) {
 			wxFileName fn(*cur);
@@ -380,10 +373,6 @@ void FontsCollectorThread::Collect() {
 	else {
 		AppendText(_("Done. Some fonts could not be copied."), 2);
 	}
-}
-
-void FontsCollectorThread::FontFound(wxString const& name, wxString const& path) {
-
 }
 
 int FontsCollectorThread::CopyFont(wxString const& filename) {

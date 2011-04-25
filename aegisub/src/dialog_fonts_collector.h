@@ -63,11 +63,6 @@ class FontsCollectorThread : public wxThread {
 	std::set<wxString> fontPaths; ///< Paths of needed fonts found by the lister
 	std::set<wxString> missingFonts; ///< Names of fonts which could not be found
 
-	/// @brief Callback with path information from the lister
-	/// @param name Name of font found (or not found)
-	/// @param path Path to font, or empty if it could not be found
-	void FontFound(wxString const& name, wxString const& path);
-
 	/// @brief Do the font collection
 	void Collect();
 
