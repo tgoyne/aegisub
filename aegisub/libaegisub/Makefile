@@ -26,6 +26,7 @@ SRC = \
 	common/option_value.cpp \
 	common/option_visit.cpp \
 	common/log.cpp \
+	common/thesaurus.cpp \
 	common/validator.cpp \
 	common/vfr.cpp \
 	unix/util.cpp \

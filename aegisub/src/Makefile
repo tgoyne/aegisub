@@ -194,7 +194,6 @@ SRC += \
 	main.cpp \
 	md5.c \
 	mkv_wrap.cpp \
-	mythes.cxx \
 	plugin_manager.cpp \
 	preferences.cpp \
 	preferences_base.cpp \
@@ -223,7 +222,6 @@ SRC += \
 	text_file_reader.cpp \
 	text_file_writer.cpp \
 	thesaurus.cpp \
-	thesaurus_myspell.cpp \
 	timeedit_ctrl.cpp \
 	threaded_frame_source.cpp \
 	toggle_bitmap.cpp \
