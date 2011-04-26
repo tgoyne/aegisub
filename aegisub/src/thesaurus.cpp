@@ -34,25 +34,10 @@
 /// @ingroup thesaurus
 ///
 
-
-///////////
-// Headers
 #include "config.h"
 
 #include "thesaurus_myspell.h"
 
-
-/// @brief Get spell checker 
-///
 Thesaurus *Thesaurus::GetThesaurus() {
-	// Initialize
-	Thesaurus *thes = NULL;
-
-	// Get myspell
-	thes = new MySpellThesaurus();
-
-	// Return
-	return thes;
+	return new MySpellThesaurus();
 }
-
-

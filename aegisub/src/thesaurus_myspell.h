@@ -34,18 +34,9 @@
 /// @ingroup thesaurus
 ///
 
-
-
-
-///////////
-// Headers
 #include "thesaurus.h"
 
-
-//////////////
-// Prototypes
 class MyThes;
-
 
 /// DOCME
 /// @class MySpellThesaurus
@@ -54,20 +45,19 @@ class MyThes;
 /// DOCME
 class MySpellThesaurus: public Thesaurus {
 private:
-
 	/// DOCME
 	MyThes *mythes;
 
 	/// DOCME
 	wxCSConv *conv;
 
+	wxArrayString languages;
+
 public:
 	MySpellThesaurus();
 	~MySpellThesaurus();
 
-	void Lookup(wxString word,ThesaurusEntryArray &result);
+	void Lookup(wxString const& word,ThesaurusEntryArray &result);
 	wxArrayString GetLanguageList();
-	void SetLanguage(wxString language);
+	void SetLanguage(wxString const& language);
 };
-
-

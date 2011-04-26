@@ -34,9 +34,6 @@
 /// @ingroup thesaurus
 ///
 
-
-///////////
-// Headers
 #include "config.h"
 
 #ifndef AGI_PRE
@@ -54,123 +51,106 @@
 #include "thesaurus_myspell.h"
 #include "utils.h"
 
-
-/// @brief Constructor 
-///
-MySpellThesaurus::MySpellThesaurus() {
-	conv = NULL;
-	mythes = NULL;
+MySpellThesaurus::MySpellThesaurus()
+: mythes(0)
+, conv(0)
+{
 	SetLanguage(lagi_wxString(OPT_GET("Tool/Thesaurus/Language")->GetString()));
 }
 
-
-
-/// @brief Destructor 
-///
 MySpellThesaurus::~MySpellThesaurus() {
 	delete mythes;
-	mythes = NULL;
 	delete conv;
-	conv = NULL;
 }
 
-
-
-/// @brief Get suggestions 
-/// @param word   
-/// @param result 
-/// @return 
-///
-void MySpellThesaurus::Lookup(wxString word,ThesaurusEntryArray &result) {
-	// Loaded?
+void MySpellThesaurus::Lookup(wxString const& word, ThesaurusEntryArray &result) {
 	if (!mythes) return;
 
-	// Grab raw from MyThes
 	mentry *me;
 	wxCharBuffer buf = word.Lower().mb_str(*conv);
 	if (!buf) return;
-	int n = mythes->Lookup(buf,strlen(buf),&me);
+	int n = mythes->Lookup(buf, strlen(buf), &me);
 
-	// Each entry
-	for (int i=0;i<n;i++) {
+	for (int i = 0; i < n; i++) {
 		ThesaurusEntry entry;
-		entry.name = wxString(me[i].defn,*conv);
-		for (int j=0;j<me[i].count;j++) entry.words.Add(wxString(me[i].psyns[j],*conv));
+		entry.name = wxString(me[i].defn, *conv);
+		for (int j = 0; j < me[i].count; j++)
+			entry.words.Add(wxString(me[i].psyns[j], *conv));
 		result.push_back(entry);
 	}
 
-	// Clean up
-	mythes->CleanUpAfterLookup(&me,n);
+	mythes->CleanUpAfterLookup(&me, n);
 }
 
-
-
-/// @brief Get language list 
-/// @return 
-///
 wxArrayString MySpellThesaurus::GetLanguageList() {
-	// Get dir name
-	wxString path = StandardPaths::DecodePathMaybeRelative(lagi_wxString(OPT_GET("Path/Dictionary")->GetString()), _T("?data")) + _T("/");
-	wxArrayString list;
-	wxFileName folder(path);
-	if (!folder.DirExists()) return list;
+	if (!languages.empty()) return languages;
 
-	// Get file lists
-	wxArrayString idx;
-	wxDir::GetAllFiles(path,&idx,_T("*.idx"),wxDIR_FILES);
-	wxArrayString dat;
-	wxDir::GetAllFiles(path,&dat,_T("*.dat"),wxDIR_FILES);
+	wxArrayString idx, dat;
 
-	// For each idxtionary match, see if it can find the corresponding .dat
-	for (unsigned int i=0;i<idx.Count();i++) {
-		wxString curdat = idx[i].Left(MAX(0,signed(idx[i].Length())-4)) + _T(".dat");
-		for (unsigned int j=0;j<dat.Count();j++) {
-			// Found match
-			if (curdat == dat[j]) {
-				wxFileName fname(curdat);
-				wxString name = fname.GetName();
-				if (name.Left(3) == _T("th_")) name = name.Mid(3);
-				list.Add(name);
-				break;
-			}
+	// Get list of dictionaries
+	wxString path = StandardPaths::DecodePath("?data/dictionaries/");
+	if (wxFileName::DirExists(path)) {
+		wxDir::GetAllFiles(path, &idx, "th_*.idx", wxDIR_FILES);
+		wxDir::GetAllFiles(path, &dat, "th_*.dat", wxDIR_FILES);
+	}
+	path = StandardPaths::DecodePath(lagi_wxString(OPT_GET("Path/Dictionary")->GetString()) + "/");
+	if (wxFileName::DirExists(path)) {
+		wxDir::GetAllFiles(path, &idx, "th_*.idx", wxDIR_FILES);
+		wxDir::GetAllFiles(path, &dat, "th_*.dat", wxDIR_FILES);
+	}
+	if (idx.empty() || dat.empty()) return languages;
+
+	idx.Sort();
+	dat.Sort();
+
+	// Drop extensions and the th_ prefix
+	for (size_t i = 0; i < idx.size(); ++i) idx[i] = idx[i].Mid(3, idx[i].size() - 7);
+	for (size_t i = 0; i < dat.size(); ++i) dat[i] = dat[i].Mid(3, dat[i].size() - 7);
+
+	// Verify that each idx has a dat
+	for (size_t i = 0, j = 0; i < idx.size() && j < dat.size(); ) {
+		int cmp = idx[i].Cmp(dat[j]);
+		if (cmp < 0) ++i;
+		else if (cmp > 0) ++j;
+		else {
+			// Don't insert a language twice if it's in both the user dir and
+			// the app's dir
+			wxString name = wxFileName(dat[j]).GetName().Mid(3);
+			if (languages.empty() || name != languages.back())
+				languages.push_back(name);
+			++i;
+			++j;
 		}
 	}
-
-	// Return list
-	return list;
+	return languages;
 }
 
-
-
-/// @brief Set language 
-/// @param language 
-///
-void MySpellThesaurus::SetLanguage(wxString language) {
-	// Unload
+void MySpellThesaurus::SetLanguage(wxString const& language) {
 	delete mythes;
-	mythes = NULL;
+	mythes = 0;
 	delete conv;
-	conv = NULL;
+	conv = 0;
 
-	// Unloading
-	if (language.IsEmpty()) return;
+	if (language.empty()) return;
 
-	// Get dir name
-	wxString path = StandardPaths::DecodePathMaybeRelative(lagi_wxString(OPT_GET("Path/Dictionary")->GetString()), _T("?data")) + _T("/");
+	wxString path = StandardPaths::DecodePath(lagi_wxString(OPT_GET("Path/Dictionary")->GetString()) + "/");
 
 	// Get affix and dictionary paths
-	wxString idxpath = path + _T("th_") + language + _T(".idx");
-	wxString datpath = path + _T("th_") + language + _T(".dat");
+	wxString idxpath = wxString::Format("%s/th_%s.idx", path, language);
+	wxString datpath = wxString::Format("%s/th_%s.dat", path, language);
 
-	// Check if language is available
-	if (!wxFileExists(idxpath) || !wxFileExists(datpath)) return;
+	// If they aren't in the user dictionary path, check the application directory
+	if (!wxFileExists(idxpath) || !wxFileExists(datpath)) {
+		path = StandardPaths::DecodePath("?data/dictionaries/");
+		idxpath = wxString::Format("%s/th_%s.idx", path, language);
+		datpath = wxString::Format("%s/th_%s.dat", path, language);
+
+		if (!wxFileExists(idxpath) || !wxFileExists(datpath)) return;
+	}
 
 	LOG_I("thesaurus/file") << "Using thesaurus: " << datpath.c_str();
 
 	// Load
 	mythes = new MyThes(idxpath.mb_str(wxConvLocal),datpath.mb_str(wxConvLocal));
-	conv = NULL;
 	if (mythes) conv = new wxCSConv(wxString(mythes->get_th_encoding(),wxConvUTF8));
 }
-
-

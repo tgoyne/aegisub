@@ -34,9 +34,6 @@
 /// @ingroup thesaurus
 ///
 
-
-///////////
-// Headers
 #ifndef AGI_PRE
 #include <vector>
 
@@ -50,9 +47,7 @@
 /// @brief DOCME
 ///
 /// DOCME
-class ThesaurusEntry {
-public:
-
+struct ThesaurusEntry {
 	/// DOCME
 	wxString name;
 
@@ -60,12 +55,8 @@ public:
 	wxArrayString words;
 };
 
-
-
 /// DOCME
 typedef std::vector<ThesaurusEntry> ThesaurusEntryArray;
-
-
 
 /// DOCME
 /// @class Thesaurus
@@ -85,9 +76,7 @@ public:
 	///
 	virtual ~Thesaurus() {}
 
-	virtual void Lookup(wxString word,ThesaurusEntryArray &result)=0;
+	virtual void Lookup(wxString const& word, ThesaurusEntryArray &result)=0;
 	virtual wxArrayString GetLanguageList()=0;
-	virtual void SetLanguage(wxString language)=0;
+	virtual void SetLanguage(wxString const& language)=0;
 };
-
-
