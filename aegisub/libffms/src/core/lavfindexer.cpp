@@ -20,6 +20,9 @@
 
 #include "indexing.h"
 
+extern "C" {
+#include <libavutil/avutil.h>
+};
 
 
 FFLAVFIndexer::FFLAVFIndexer(const char *Filename, AVFormatContext *FormatContext) : FFMS_Indexer(Filename) {
@@ -49,9 +52,9 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 			FormatContext->streams[i]->time_base.den,
 			static_cast<FFMS_TrackType>(FormatContext->streams[i]->codec->codec_type)));
 
-		if (FormatContext->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
+		if (FormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
 			AVCodec *VideoCodec = avcodec_find_decoder(FormatContext->streams[i]->codec->codec_id);
-			if (VideoCodec == NULL)	
+			if (!VideoCodec)
 				throw FFMS_Exception(FFMS_ERROR_CODEC, FFMS_ERROR_UNSUPPORTED,
 					"Video codec not found");
 
@@ -62,10 +65,10 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 			VideoContexts[i].CodecContext = FormatContext->streams[i]->codec;
 			VideoContexts[i].Parser = av_parser_init(FormatContext->streams[i]->codec->codec_id);
 			if (VideoContexts[i].Parser)
-			VideoContexts[i].Parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
+				VideoContexts[i].Parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
+			IndexMask |= 1 << i;
 		}
-
-		if (IndexMask & (1 << i) && FormatContext->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO) {
+		else if (IndexMask & (1 << i) && FormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
 			AVCodecContext *AudioCodecContext = FormatContext->streams[i]->codec;
 
 			AVCodec *AudioCodec = avcodec_find_decoder(AudioCodecContext->codec_id);
@@ -83,11 +86,8 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 		}
 	}
 
-	//
-
-	AVPacket Packet, TempPacket;
+	AVPacket Packet;
 	InitNullPacket(Packet);
-	InitNullPacket(TempPacket);
 	std::vector<int64_t> LastValidTS;
 	LastValidTS.resize(FormatContext->nb_streams, ffms_av_nopts_value);
 
@@ -99,106 +99,38 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 				throw FFMS_Exception(FFMS_ERROR_CANCELLED, FFMS_ERROR_USER,
 					"Cancelled by user");
 		}
-
-		// Only create index entries for video for now to save space
-		if (FormatContext->streams[Packet.stream_index]->codec->codec_type == CODEC_TYPE_VIDEO) {
-			uint8_t *OB;
-			int OBSize;
-			int RepeatPict = -1;
-
-			// Duplicated code
-			if (!(*TrackIndices)[Packet.stream_index].UseDTS && Packet.pts != ffms_av_nopts_value)
-				LastValidTS[Packet.stream_index] = Packet.pts;
-			if (LastValidTS[Packet.stream_index] == ffms_av_nopts_value)
-				(*TrackIndices)[Packet.stream_index].UseDTS = true;
-			if ((*TrackIndices)[Packet.stream_index].UseDTS && Packet.dts != ffms_av_nopts_value)
-				LastValidTS[Packet.stream_index] = Packet.dts;
-			if (LastValidTS[Packet.stream_index] == ffms_av_nopts_value)
-				throw FFMS_Exception(FFMS_ERROR_INDEXING, FFMS_ERROR_PARSER,
-					"Invalid initial pts and dts");
-			//
-
-			if (VideoContexts[Packet.stream_index].Parser) {
-				av_parser_parse2(VideoContexts[Packet.stream_index].Parser, VideoContexts[Packet.stream_index].CodecContext, &OB, &OBSize, Packet.data, Packet.size, Packet.pts, Packet.dts, Packet.pos);
-				RepeatPict = VideoContexts[Packet.stream_index].Parser->repeat_pict;
+		if (!(IndexMask & (1 << Packet.stream_index))) {
+			av_free_packet(&Packet);
+			continue;
 		}
 
-			(*TrackIndices)[Packet.stream_index].push_back(TFrameInfo::VideoFrameInfo(LastValidTS[Packet.stream_index], RepeatPict, (Packet.flags & AV_PKT_FLAG_KEY) ? 1 : 0));
-		} else if (FormatContext->streams[Packet.stream_index]->codec->codec_type == CODEC_TYPE_AUDIO && (IndexMask & (1 << Packet.stream_index))) {
-			int64_t StartSample = AudioContexts[Packet.stream_index].CurrentSample;
-			AVCodecContext *AudioCodecContext = FormatContext->streams[Packet.stream_index]->codec;
-			TempPacket.data = Packet.data;
-			TempPacket.size = Packet.size;
-			TempPacket.flags = Packet.flags;
+		int Track = Packet.stream_index;
+		bool KeyFrame = !!(Packet.flags & AV_PKT_FLAG_KEY);
+		ReadTS(Packet, LastValidTS[Track], (*TrackIndices)[Track].UseDTS);
 
-			// Duplicated code
-			if (!(*TrackIndices)[Packet.stream_index].UseDTS && Packet.pts != ffms_av_nopts_value)
-				LastValidTS[Packet.stream_index] = Packet.pts;
-			if (LastValidTS[Packet.stream_index] == ffms_av_nopts_value)
-				(*TrackIndices)[Packet.stream_index].UseDTS = true;
-			if ((*TrackIndices)[Packet.stream_index].UseDTS && Packet.dts != ffms_av_nopts_value)
-				LastValidTS[Packet.stream_index] = Packet.dts;
-			if (LastValidTS[Packet.stream_index] == ffms_av_nopts_value)
+		if (FormatContext->streams[Track]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+			if (LastValidTS[Track] == ffms_av_nopts_value)
 				throw FFMS_Exception(FFMS_ERROR_INDEXING, FFMS_ERROR_PARSER,
 				"Invalid initial pts and dts");
-			//
 
-			bool first = true;
-			int LastNumChannels;
-			int LastSampleRate;
-			AVSampleFormat LastSampleFormat;
-			while (TempPacket.size > 0) {
-				int dbsize = AVCODEC_MAX_AUDIO_FRAME_SIZE*10;
-				int Ret = avcodec_decode_audio3(AudioCodecContext, &DecodingBuffer[0], &dbsize, &TempPacket);
-				if (Ret < 0) {
-					if (ErrorHandling == FFMS_IEH_ABORT) {
-						throw FFMS_Exception(FFMS_ERROR_CODEC, FFMS_ERROR_DECODING,
-							"Audio decoding error");
-					} else if (ErrorHandling == FFMS_IEH_CLEAR_TRACK) {
-						(*TrackIndices)[Packet.stream_index].clear();
-						IndexMask &= ~(1 << Packet.stream_index);
-						break;
-					} else if (ErrorHandling == FFMS_IEH_STOP_TRACK) {
-						IndexMask &= ~(1 << Packet.stream_index);
-						break;
-					} else if (ErrorHandling == FFMS_IEH_IGNORE) {
-						break;
-					}
-				}
+			int RepeatPict = -1;
 
-				if (first) {
-					LastNumChannels		= AudioCodecContext->channels;
-					LastSampleRate		= AudioCodecContext->sample_rate;
-					LastSampleFormat	= AudioCodecContext->sample_fmt;
-					first = false;
+			if (VideoContexts[Track].Parser) {
+				uint8_t *OB;
+				int OBSize;
+				av_parser_parse2(VideoContexts[Track].Parser, VideoContexts[Track].CodecContext, &OB, &OBSize, Packet.data, Packet.size, Packet.pts, Packet.dts, Packet.pos);
+				RepeatPict = VideoContexts[Track].Parser->repeat_pict;
 			}
 
-				if (LastNumChannels != AudioCodecContext->channels || LastSampleRate != AudioCodecContext->sample_rate
-					|| LastSampleFormat != AudioCodecContext->sample_fmt) {
-					std::ostringstream buf;
-					buf <<
-						"Audio format change detected. This is currently unsupported."
-						<< " Channels: " << LastNumChannels << " -> " << AudioCodecContext->channels << ";"
-						<< " Sample rate: " << LastSampleRate << " -> " << AudioCodecContext->sample_rate << ";"
-						<< " Sample format: " << GetLAVCSampleFormatName(LastSampleFormat) << " -> "
-						<< GetLAVCSampleFormatName(AudioCodecContext->sample_fmt);
-					throw FFMS_Exception(FFMS_ERROR_UNSUPPORTED, FFMS_ERROR_DECODING, buf.str());
+			(*TrackIndices)[Track].push_back(TFrameInfo::VideoFrameInfo(LastValidTS[Track], RepeatPict, KeyFrame, Packet.pos));
 		}
+		else if (FormatContext->streams[Track]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+			int64_t StartSample = AudioContexts[Track].CurrentSample;
+			int64_t SampleCount = IndexAudioPacket(Track, &Packet, AudioContexts[Track], *TrackIndices);
 
-				if (Ret > 0) {
-					TempPacket.size -= Ret;
-					TempPacket.data += Ret;
-				}
-
-				if (dbsize > 0)
-					AudioContexts[Packet.stream_index].CurrentSample += (dbsize * 8) / (av_get_bits_per_sample_fmt(AudioCodecContext->sample_fmt) * AudioCodecContext->channels);
-
-				if (DumpMask & (1 << Packet.stream_index))
-					WriteAudio(AudioContexts[Packet.stream_index], TrackIndices.get(), Packet.stream_index, dbsize);
-		}
-
-			(*TrackIndices)[Packet.stream_index].push_back(TFrameInfo::AudioFrameInfo(LastValidTS[Packet.stream_index], StartSample,
-				static_cast<unsigned int>(AudioContexts[Packet.stream_index].CurrentSample - StartSample), (Packet.flags & AV_PKT_FLAG_KEY) ? 1 : 0));
+			if (SampleCount != 0)
+				(*TrackIndices)[Track].push_back(TFrameInfo::AudioFrameInfo(LastValidTS[Track],
+					StartSample, SampleCount, KeyFrame, Packet.pos));
 		}
 
 		av_free_packet(&Packet);
@@ -206,6 +138,15 @@ FFMS_Index *FFLAVFIndexer::DoIndexing() {
 
 	TrackIndices->Sort();
 	return TrackIndices.release();
+}
+
+void FFLAVFIndexer::ReadTS(const AVPacket &Packet, int64_t &TS, bool &UseDTS) {
+	if (!UseDTS && Packet.pts != ffms_av_nopts_value)
+		TS = Packet.pts;
+	if (TS == ffms_av_nopts_value)
+		UseDTS = true;
+	if (UseDTS && Packet.dts != ffms_av_nopts_value)
+		TS = Packet.dts;
 }
 
 int FFLAVFIndexer::GetNumberOfTracks() {
@@ -219,4 +160,12 @@ FFMS_TrackType FFLAVFIndexer::GetTrackType(int Track) {
 const char *FFLAVFIndexer::GetTrackCodec(int Track) {
 	AVCodec *codec = avcodec_find_decoder(FormatContext->streams[Track]->codec->codec_id);
 	return codec ? codec->name : NULL;
+}
+
+const char *FFLAVFIndexer::GetFormatName() {
+	return this->FormatContext->iformat->name;
+}
+
+FFMS_Sources FFLAVFIndexer::GetSourceType() {
+	return FFMS_SOURCE_LAVF;
 }

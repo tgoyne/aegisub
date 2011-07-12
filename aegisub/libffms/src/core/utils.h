@@ -34,9 +34,9 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
-#ifdef WITH_LIBPOSTPROC
+#ifdef FFMS_USE_POSTPROC
 #include <libpostproc/postprocess.h>
-#endif // WITH_LIBPOSTPROC
+#endif // FFMS_USE_POSTPROC
 }
 
 // must be included after ffmpeg headers
@@ -60,17 +60,17 @@ const int64_t ffms_av_nopts_value = static_cast<int64_t>(1) << 63;
 
 // used for matroska<->ffmpeg codec ID mapping to avoid Win32 dependency
 typedef struct FFMS_BITMAPINFOHEADER {
-        uint32_t      biSize;
-        int32_t       biWidth;
-        int32_t       biHeight;
-        uint16_t      biPlanes;
-        uint16_t      biBitCount;
-        uint32_t      biCompression;
-        uint32_t      biSizeImage;
-        int32_t       biXPelsPerMeter;
-        int32_t       biYPelsPerMeter;
-        uint32_t      biClrUsed;
-        uint32_t      biClrImportant;
+	uint32_t      biSize;
+	int32_t       biWidth;
+	int32_t       biHeight;
+	uint16_t      biPlanes;
+	uint16_t      biBitCount;
+	uint32_t      biCompression;
+	uint32_t      biSizeImage;
+	int32_t       biXPelsPerMeter;
+	int32_t       biYPelsPerMeter;
+	uint32_t      biClrUsed;
+	uint32_t      biClrImportant;
 } FFMS_BITMAPINFOHEADER;
 
 class FFMS_Exception : public std::exception {
@@ -113,8 +113,35 @@ public:
 		_Arg = Arg;
 	}
 };
+// auto_ptr-ish holder for AVCodecContexts with overridable deleter
+class FFCodecContext {
+	AVCodecContext *CodecContext;
+	void (*Deleter)(AVCodecContext *);
+public:
+	FFCodecContext() : CodecContext(0), Deleter(0) { }
+	FFCodecContext(FFCodecContext &r) : CodecContext(r.CodecContext), Deleter(r.Deleter) { r.CodecContext = 0; }
+	FFCodecContext(AVCodecContext *c, void (*d)(AVCodecContext *)) : CodecContext(c), Deleter(d) { }
+	FFCodecContext& operator=(FFCodecContext r) { reset(r.CodecContext, r.Deleter); r.CodecContext = 0; return *this; }
+	~FFCodecContext() { reset(); }
+	AVCodecContext* operator->() { return CodecContext; }
+	operator AVCodecContext*() { return CodecContext; }
+	void reset(AVCodecContext *c = 0, void (*d)(AVCodecContext *) = 0) {
+		if (CodecContext && Deleter) Deleter(CodecContext);
+		CodecContext = c;
+		Deleter = d;
+	}
+};
 
-struct MatroskaReaderContext {
+inline void DeleteHaaliCodecContext(AVCodecContext *CodecContext) {
+	av_freep(&CodecContext->extradata);
+	av_freep(&CodecContext);
+}
+inline void DeleteMatroskaCodecContext(AVCodecContext *CodecContext) {
+	avcodec_close(CodecContext);
+	av_freep(&CodecContext);
+}
+
+class MatroskaReaderContext {
 public:
 	StdIoStream ST;
 	uint8_t *Buffer;
@@ -123,12 +150,16 @@ public:
 
 	MatroskaReaderContext() {
 		InitStdIoStream(&ST);
-		Buffer = NULL;
-		BufferSize = 0;
+		Buffer = static_cast<uint8_t *>(av_mallocz(16384)); // arbitrarily decided number
+		if (!Buffer)
+			throw FFMS_Exception(FFMS_ERROR_PARSER, FFMS_ERROR_ALLOCATION_FAILED, "Out of memory");
+		BufferSize = 16384;
 	}
 
 	~MatroskaReaderContext() {
-		free(Buffer);
+		if (Buffer)
+			av_free(Buffer);
+		if (ST.fp) fclose(ST.fp);
 	}
 };
 
@@ -143,16 +174,16 @@ class AlignedBuffer {
 	T *buf;
 
 public:
-	AlignedBuffer(size_t n = 1) {
+	AlignedBuffer(size_t n = 1, bool zero = false) {
 		buf = (T*) av_malloc(sizeof(*buf) * n);
 		if (!buf) throw std::bad_alloc();
 	}
-	
+
 	~AlignedBuffer() {
 		av_free(buf);
 		buf = 0;
 	}
-	
+
 	const T &operator[] (size_t i) const { return buf[i]; }
 	T &operator[] (size_t i) { return buf[i]; }
 };
@@ -170,7 +201,8 @@ public:
 };
 
 
-int GetSWSCPUFlags();
+int64_t GetSWSCPUFlags();
+SwsContext *GetSwsContext(int SrcW, int SrcH, PixelFormat SrcFormat, int DstW, int DstH, PixelFormat DstFormat, int64_t Flags, int ColorSpace = -1);
 int GetPPCPUFlags();
 void ClearErrorInfo(FFMS_ErrorInfo *ErrorInfo);
 FFMS_TrackType HaaliTrackTypeToFFTrackType(int TT);
@@ -178,16 +210,18 @@ void ReadFrame(uint64_t FilePos, unsigned int &FrameSize, TrackCompressionContex
 bool AudioFMTIsFloat(AVSampleFormat FMT);
 void InitNullPacket(AVPacket &pkt);
 void FillAP(FFMS_AudioProperties &AP, AVCodecContext *CTX, FFMS_Track &Frames);
+
 #ifdef HAALISOURCE
 unsigned vtSize(VARIANT &vt);
 void vtCopy(VARIANT& vt,void *dest);
-void InitializeCodecContextFromHaaliInfo(CComQIPtr<IPropertyBag> pBag, AVCodecContext *CodecContext);
+FFCodecContext InitializeCodecContextFromHaaliInfo(CComQIPtr<IPropertyBag> pBag);
 #endif
+
 void InitializeCodecContextFromMatroskaTrackInfo(TrackInfo *TI, AVCodecContext *CodecContext);
 CodecID MatroskaToFFCodecID(char *Codec, void *CodecPrivate, unsigned int FourCC = 0, unsigned int BitsPerSample = 0);
 FILE *ffms_fopen(const char *filename, const char *mode);
 size_t ffms_mbstowcs (wchar_t *wcstr, const char *mbstr, size_t max);
-#ifdef _WIN32
+#if defined(_WIN32) && LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(53,0,3)
 void ffms_patch_lavf_file_open();
 #endif // _WIN32
 #ifdef HAALISOURCE

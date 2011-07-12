@@ -1,30 +1,32 @@
 /*
- * Copyright (c) 2004-2009 Mike Matsnev.  All Rights Reserved.
+ * Copyright (c) 2004-2008 Mike Matsnev.  All Rights Reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
- * 
- * 1. Redistributions of source code must retain the above copyright 
- *    notice immediately at the beginning of the file, without modification, 
- *    this list of conditions, and the following disclaimer. 
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
- * 3. Absolutely no warranty of function or purpose is made by the author 
- *    Mike Matsnev. 
- * 
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR 
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice immediately at the beginning of the file, without modification,
+ *    this list of conditions, and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Absolutely no warranty of function or purpose is made by the author
+ *    Mike Matsnev.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * 
+ * $Id: MatroskaParser.c,v 1.75 2010/08/14 08:38:41 mike Exp $
+ * 
  */
 
 #ifdef HAVE_CONFIG_H
@@ -68,6 +70,7 @@
 #define	EBML_MAX_SIZE_LENGTH  8
 #define	MATROSKA_VERSION      2
 #define	MATROSKA_DOCTYPE      "matroska"
+#define WEBM_DOCTYPE          "webm"
 
 #define	MAX_STRING_LEN	      1023
 #define	QSEGSIZE	      512
@@ -298,8 +301,7 @@ static void   myvsnprintf_int(char **pdest,char *de,int width,int zero,
 static void   myvsnprintf(char *dest,unsigned dsize,const char *fmt,va_list ap) {
   // s,d,x,u,ll
   char	    *de = dest + dsize - 1;
-  int	    state, width, zero, neg, ll;
-  state = width = zero = neg = ll = 0;
+  int	    state = 0, width, zero, neg, ll;
 
   if (dsize <= 1) {
     if (dsize > 0)
@@ -720,12 +722,22 @@ static inline ulonglong	readVLUInt(MatroskaFile *mf) {
   return readVLUIntImp(mf,NULL);
 }
 
-static ulonglong	readSize(MatroskaFile *mf) {
+static ulonglong	readSizeUnspec(MatroskaFile *mf) {
   int	    m;
   ulonglong v = readVLUIntImp(mf,&m);
 
   // see if it's unspecified
   if (v == (MAXU64 >> (57-m*7)))
+    return MAXU64;
+
+  return v;
+}
+
+static ulonglong	readSize(MatroskaFile *mf) {
+  ulonglong v = readSizeUnspec(mf);
+
+  // see if it's unspecified
+  if (v == MAXU64)
     errorjmp(mf,"Unspecified element size is not supported here.");
 
   return v;
@@ -873,7 +885,7 @@ static void readLangCC(MatroskaFile *mf, ulonglong len, char lcc[4]) {
 
 ///////////////////////////////////////////////////////////////////////////
 // file parser
-#define	FOREACH(f,tl) \
+#define	FOREACH2(f,tl,clid) \
   { \
     ulonglong	tmplen = (tl); \
     { \
@@ -882,13 +894,17 @@ static void readLangCC(MatroskaFile *mf, ulonglong len, char lcc[4]) {
       int	      id; \
       for (;;) { \
 	cur = filepos(mf); \
-	if (cur == start + tmplen) \
+	if (tmplen != MAXU64 && cur == start + tmplen) \
 	  break; \
 	id = readID(f); \
 	if (id==EOF) \
 	  errorjmp(mf,"Unexpected EOF while reading EBML container"); \
-	len = readSize(mf); \
+        len = id == clid ? readSizeUnspec(mf) : readSize(mf); \
 	switch (id) {
+
+#define FOREACH(f,tl) FOREACH2(f,tl,EOF)
+
+#define RESTART()     (tmplen=len),(start=cur)
 
 #define	ENDFOR1(f) \
 	default: \
@@ -917,6 +933,16 @@ static void readLangCC(MatroskaFile *mf, ulonglong len, char lcc[4]) {
 #define	STRGETA(f,v,len)  STRGETF(f,v,len,myalloca)
 #define	STRGETM(f,v,len)  STRGETF(f,v,len,f->cache->memalloc)
 
+static int  IsWritingApp(MatroskaFile *mf,const char *str) {
+  const char  *cp = mf->Seg.WritingApp;
+  if (!cp)
+    return 0;
+
+  while (*str && *str++==*cp++) ;
+
+  return !*str;
+}
+
 static void parseEBML(MatroskaFile *mf,ulonglong toplen) {
   ulonglong v;
   char	    buf[32];
@@ -942,7 +968,7 @@ static void parseEBML(MatroskaFile *mf,ulonglong toplen) {
       break;
     case 0x4282: // DocType
       readString(mf,len,buf,sizeof(buf));
-      if (strcmp(buf,MATROSKA_DOCTYPE))
+      if (strcmp(buf,MATROSKA_DOCTYPE) != 0 && strcmp(buf,WEBM_DOCTYPE) != 0)
 	errorjmp(mf,"Unsupported DocType: %s",buf);
       break;
     case 0x4287: // DocTypeVersion
@@ -1077,31 +1103,57 @@ static void parseSegmentInfo(MatroskaFile *mf,ulonglong toplen) {
 }
 
 static void parseFirstCluster(MatroskaFile *mf,ulonglong toplen) {
-  ulonglong end = filepos(mf) + toplen;
+  int       seenTimecode = 0, seenBlock = 0;
+  longlong  tc;
+  ulonglong clstart = filepos(mf);
 
   mf->seen.Cluster = 1;
   mf->firstTimecode = 0;
 
-  FOREACH(mf,toplen)
+  FOREACH2(mf,toplen,0x1f43b675)
     case 0xe7: // Timecode
-      mf->firstTimecode += readUInt(mf,(unsigned)len);
+      tc = readUInt(mf,(unsigned)len);
+      if (!seenTimecode) {
+        seenTimecode = 1;
+        mf->firstTimecode += tc;
+      }
+
+      if (seenBlock) {
+out:
+        if (toplen != MAXU64)
+          skipbytes(mf,clstart + toplen - filepos(mf));
+        else if (len != MAXU64)
+          skipbytes(mf,cur + len - filepos(mf));
+        return;
+      }
       break;
     case 0xa3: // BlockEx
       readVLUInt(mf); // track number
-      mf->firstTimecode += readSInt(mf, 2);
+      tc = readSInt(mf, 2);
+      if (!seenBlock) {
+        seenBlock = 1;
+        mf->firstTimecode += tc;
+      }
 
-      skipbytes(mf,end - filepos(mf));
-      return;
+      if (seenTimecode)
+        goto out;
+      break;
     case 0xa0: // BlockGroup
       FOREACH(mf,len)
 	case 0xa1: // Block
 	  readVLUInt(mf); // track number
-	  mf->firstTimecode += readSInt(mf,2); 
+	  tc = readSInt(mf,2); 
+          if (!seenBlock) {
+            seenBlock = 1;
+            mf->firstTimecode += tc;
+          }
 
-	  skipbytes(mf,end - filepos(mf));
-	  return;
+          if (seenTimecode)
+            goto out;
       ENDFOR(mf);
       break;
+    case 0x1f43b675:
+      return;
   ENDFOR(mf);
 }
 
@@ -1151,14 +1203,10 @@ static void parseVideoInfo(MatroskaFile *mf,ulonglong toplen,struct TrackInfo *t
       break;
     case 0x54b2: // DisplayUnit
       v = readUInt(mf,(unsigned)len);
-      if (v>2)
-	errorjmp(mf,"Invalid DisplayUnit: %d",(int)v);
       ti->AV.Video.DisplayUnit = (unsigned char)v;
       break;
     case 0x54b3: // AspectRatioType
       v = readUInt(mf,(unsigned)len);
-      if (v>2)
-	errorjmp(mf,"Invalid AspectRatioType: %d",(int)v);
       ti->AV.Video.AspectRatioType = (unsigned char)v;
       break;
     case 0x54aa: // PixelCropBottom
@@ -1215,6 +1263,10 @@ static void parseAudioInfo(MatroskaFile *mf,ulonglong toplen,struct TrackInfo *t
       break;
     case 0x6264: // BitDepth
       v = readUInt(mf,(unsigned)len);
+#if 0
+      if ((v<1 || v>255) && !IsWritingApp(mf,"AVI-Mux GUI"))
+	errorjmp(mf,"Invalid BitDepth: %d",(int)v);
+#endif
       ti->AV.Audio.BitDepth = (unsigned char)v;
       break;
   ENDFOR(mf);
@@ -1244,7 +1296,7 @@ static void parseTrackEntry(MatroskaFile *mf,ulonglong toplen) {
   ulonglong	    v;
   char		    *cp = NULL, *cs = NULL;
   size_t	    cplen = 0, cslen = 0, cpadd = 0;
-  unsigned	    CompScope = 0, num_comp = 0;
+  unsigned	    CompScope, num_comp = 0;
 
   if (mf->nTracks >= MAX_TRACKS)
     errorjmp(mf,"Too many tracks.");
@@ -1430,7 +1482,7 @@ static void parseTrackEntry(MatroskaFile *mf,ulonglong toplen) {
       errorjmp(mf, "inflateInit failed");
 
     zs.next_in = (Bytef *)cp;
-    zs.avail_in = cplen;
+    zs.avail_in = (uInt)cplen;
 
     do {
       zs.next_out = tmp;
@@ -1448,7 +1500,7 @@ static void parseTrackEntry(MatroskaFile *mf,ulonglong toplen) {
     inflateReset(&zs);
 
     zs.next_in = (Bytef *)cp;
-    zs.avail_in = cplen;
+    zs.avail_in = (uInt)cplen;
     zs.next_out = ncp;
     zs.avail_out = ncplen;
 
@@ -1987,7 +2039,7 @@ static void parseSegment(MatroskaFile *mf,ulonglong toplen) {
     mf->flags &= ~MPF_ERROR;
   else {
     // we want to read data until we find a seekhead or a trackinfo
-    FOREACH(mf,toplen)
+    FOREACH2(mf,toplen,0x1f43b675)
       case 0x114d9b74: // SeekHead
         if (mf->flags & MKVF_AVOID_SEEKS) {
 	  skipbytes(mf,len);
@@ -2018,9 +2070,10 @@ static void parseSegment(MatroskaFile *mf,ulonglong toplen) {
       case 0x1f43b675: // Cluster
         if (!mf->pCluster)
 	  mf->pCluster = cur;
-        if (mf->seen.Cluster)
-	  skipbytes(mf,len);
-        else
+        if (mf->seen.Cluster) {
+          if (len != MAXU64)
+	    skipbytes(mf,len);
+        } else
 	  parseFirstCluster(mf,len);
         break;
       case 0x1654ae6b: // Tracks
@@ -2346,8 +2399,8 @@ static int  readMoreBlocks(MatroskaFile *mf) {
       if (cid == EOF)
 	goto ex;
       if (cid == 0x1f43b675) {
-	toplen = readSize(mf);
-	if (toplen < MAXCLUSTER) {
+	toplen = readSizeUnspec(mf);
+	if (toplen < MAXCLUSTER || toplen == MAXU64) {
 	  // reset error flags
 	  mf->flags &= ~MPF_ERROR;
 	  ret = RBRESYNC;
@@ -2372,12 +2425,15 @@ static int  readMoreBlocks(MatroskaFile *mf) {
       ret = EOF;
       break;
     }
-    toplen = readSize(mf);
+    toplen = cid == 0x1f43b675 ? readSizeUnspec(mf) : readSize(mf);
 
     if (cid == 0x1f43b675) { // Cluster
       unsigned char	have_timecode = 0;
 
-      FOREACH(mf,toplen)
+      FOREACH2(mf,toplen,0x1f43b675)
+        case 0x1f43b675:
+          RESTART();
+          break;
 	case 0xe7: // Timecode
 	  mf->tcCluster = readUInt(mf,(unsigned)len);
 	  have_timecode = 1;
@@ -2517,7 +2573,10 @@ static void reindex(MatroskaFile *mf) {
     if (id != 0x1f43b675) // shouldn't happen
       continue;
 
-    size = readVLUInt(mf);
+    size = readSizeUnspec(mf);
+    if (size == MAXU64)
+      break;
+
     if (size >= MAXCLUSTER || size < 1024)
       continue;
 
@@ -2650,7 +2709,6 @@ static void parseFile(MatroskaFile *mf) {
   ulonglong len = filepos(mf), adjust;
   unsigned  i;
   int	    id = readID(mf);
-  int	    m;
 
   if (id==EOF)
     errorjmp(mf,"Unexpected EOF at start of file");
@@ -2671,12 +2729,11 @@ static void parseFile(MatroskaFile *mf) {
     if (id==EOF)
       errorjmp(mf,"No segments found in the file");
 segment:
-    len = readVLUIntImp(mf,&m);
-    // see if it's unspecified
-    if (len == (MAXU64 >> (57-m*7)))
-      len = MAXU64;
+    len = readSizeUnspec(mf);
     if (id == 0x18538067) // Segment
       break;
+    if (len == MAXU64)
+      errorjmp(mf,"No segments found in the file");
     skipbytes(mf,len);
   }
 

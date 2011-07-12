@@ -45,8 +45,12 @@ FFLAVFVideo::FFLAVFVideo(const char *SourceFile, int Track, FFMS_Index *Index,
 			"Video track is unseekable");
 
 	CodecContext = FormatContext->streams[VideoTrack]->codec;
+#if LIBAVCODEC_VERSION_MAJOR >= 53 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR >= 112)
+	CodecContext->thread_count = Threads;
+#else
 	if (avcodec_thread_init(CodecContext, Threads))
 		CodecContext->thread_count = 1;
+#endif
 
 	Codec = avcodec_find_decoder(CodecContext->codec_id);
 	if (Codec == NULL)
@@ -83,6 +87,15 @@ FFLAVFVideo::FFLAVFVideo(const char *SourceFile, int Track, FFMS_Index *Index,
 	VP.ColorSpace = 0;
 	VP.ColorRange = 0;
 #endif
+	// these pixfmt's are deprecated but still used
+	if (
+		CodecContext->pix_fmt == PIX_FMT_YUVJ420P 
+		|| CodecContext->pix_fmt == PIX_FMT_YUVJ422P
+		|| CodecContext->pix_fmt == PIX_FMT_YUVJ444P
+	)
+		VP.ColorRange = AVCOL_RANGE_JPEG;
+
+
 	VP.FirstTime = ((Frames.front().PTS * Frames.TB.Num) / (double)Frames.TB.Den) / 1000;
 	VP.LastTime = ((Frames.back().PTS * Frames.TB.Num) / (double)Frames.TB.Den) / 1000;
 
@@ -96,14 +109,13 @@ FFLAVFVideo::FFLAVFVideo(const char *SourceFile, int Track, FFMS_Index *Index,
 		VP.FPSNumerator = 30;
 	}
 
-	// Adjust framerate to match the duration of the first frame
-	for (size_t i = 1; i < Frames.size(); i++) {
-		if (Frames[i].PTS != Frames[0].PTS) {
-			unsigned int PTSDiff = (unsigned int)(Frames[i].PTS - Frames[0].PTS);
-			VP.FPSDenominator *= PTSDiff;
-			VP.FPSDenominator /= i;
-			break;
-		}
+	// Calculate the average framerate
+	if (Frames.size() >= 2) {
+		double PTSDiff = (double)(Frames.back().PTS - Frames.front().PTS);
+		double TD = (double)(Frames.TB.Den);
+		double TN = (double)(Frames.TB.Num);
+		VP.FPSDenominator = (unsigned int)(((double)1000000) / (double)((VP.NumFrames - 1) / ((PTSDiff * TN/TD) / (double)1000)));
+		VP.FPSNumerator = 1000000; 
 	}
 
 	// attempt to correct framerate to the proper NTSC fraction, if applicable
@@ -231,7 +243,7 @@ ReSeek:
 					case 1:
 						// No idea where we are so go back a bit further
 						if (ClosestKF + SeekOffset == 0)
-							throw FFMS_Exception(FFMS_ERROR_DECODING, FFMS_ERROR_CODEC,
+							throw FFMS_Exception(FFMS_ERROR_SEEKING, FFMS_ERROR_UNKNOWN,
 								"Frame accurate seeking is not possible in this file");
 
 
