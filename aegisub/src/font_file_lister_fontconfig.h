@@ -34,11 +34,6 @@
 /// @ingroup font_collector
 ///
 
-
-
-
-////////////
-// Includes
 #include <fontconfig/fontconfig.h>
 #include <fontconfig/fcfreetype.h>
 
@@ -47,24 +42,29 @@
 
 /// DOCME
 /// @class FontConfigFontFileLister
-/// @brief DOCME
-///
-/// DOCME
+/// @brief fontconfig powered font lister
 class FontConfigFontFileLister : public FontFileLister {
-	friend class FontFileLister;
-private:
+	template<typename T> class scoped {
+		T data;
+		std::tr1::function<void (T)> destructor;
+	public:
+		scoped(T data, std::tr1::function<void (T)> d) : data(data), destructor(d) { }
+		~scoped() { if (data) destructor(data); }
+		operator T() { return data; }
+		T operator->() { return data; }
+	};
 
-	/// DOCME
-	FcConfig *fontconf;
+	scoped<FcConfig*> config;
 
-	/// DOCME
-	FcPattern *aux;
-	
-	FontConfigFontFileLister();
+	/// @brief Case-insensitive match ASS/SSA font family against full name. (also known as "name for humans")
+	/// @param family font fullname
+	/// @param bold weight attribute
+	/// @param italic italic attribute
+	/// @return font set
+	FcFontSet *MatchFullname(const char *family, int weight, int slant);
 
-	wxArrayString DoGetFilesWithFace(wxString facename);
-	void DoInitialize();
-	void DoClearData();
+	wxString GetFontPath(wxString const& facename, int bold, bool italic);
+public:
+	FontConfigFontFileLister(std::tr1::function<void (wxString, int)> cb);
+	~FontConfigFontFileLister();
 };
-
-
