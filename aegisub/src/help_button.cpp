@@ -58,27 +58,27 @@ static void init_static() {
 	if (!pages) {
 		pages = new std::map<wxString, wxString>;
 		std::map<wxString, wxString> &page = *pages;
-		page["Attachment Manager"] = "Attachment_Manager";
-		page["Automation Manager"] = "Automation_Manager";
-		page["Colour Picker"] = "Colour_Picker";
-		page["Dummy Video"] = "Dummy_video";
-		page["Export"] = "Exporting";
-		page["Fonts Collector"] = "Fonts_Collector";
-		page["Kanji Timer"] = "Kanji_Timer";
-		page["Main"] = "Main_Page";
-		page["Options"] = "Options";
-		page["Paste Over"] = "Paste_Over";
-		page["Properties"] = "Properties";
-		page["Resample resolution"] = "Resolution_Resampler";
-		page["Shift Times"] = "Shift_Times";
-		page["Select Lines"] = "Select_Lines";
-		page["Spell Checker"] = "Spell_Checker";
-		page["Style Editor"] = "Styles";
-		page["Styles Manager"] = "Styles";
-		page["Styling Assistant"] = "Styling_Assistant";
-		page["Timing Processor"] = "Timing_Post-Processor";
-		page["Translation Assistant"] = "Translation_Assistant";
-		page["Visual Typesetting"] = "Visual_Typesetting";
+		page["Attachment Manager"] = "Attachment_Manager/";
+		page["Automation Manager"] = "Automation/Manager/";
+		page["Colour Picker"] = "Colour_Picker/";
+		page["Dummy Video"] = "Video/#dummyvideo";
+		page["Export"] = "Exporting/";
+		page["Fonts Collector"] = "Fonts_Collector/";
+		page["Kanji Timer"] = "Kanji_Timer/";
+		page["Main"] = "Main_Page/";
+		page["Options"] = "Options/";
+		page["Paste Over"] = "Paste_Over/";
+		page["Properties"] = "Properties/";
+		page["Resample resolution"] = "Resolution_Resampler/";
+		page["Shift Times"] = "Shift_Times/";
+		page["Select Lines"] = "Select_Lines/";
+		page["Spell Checker"] = "Spell_Checker/";
+		page["Style Editor"] = "Styles/";
+		page["Styles Manager"] = "Styles/";
+		page["Styling Assistant"] = "Styling_Assistant/";
+		page["Timing Processor"] = "Timing_Post-Processor/";
+		page["Translation Assistant"] = "Translation_Assistant/";
+		page["Visual Typesetting"] = "Visual_Typesetting/";
 	}
 }
 
@@ -106,7 +106,7 @@ void HelpButton::OpenPage(wxString const& pageID) {
 		// is safe with everything everyone uses. Blame Microsoft.
 		url = wxString("file://") + docFile.GetFullPath(wxPATH_NATIVE);
 	else
-		url = wxString::Format("http://docs.aegisub.org/manual/%s", page);
+		url = wxString::Format("http://plorkyeran.com/manual/%s", page);
 
 	wxLaunchDefaultBrowser(url);
 }
