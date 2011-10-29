@@ -331,8 +331,8 @@ void AegisubVersionCheckerThread::DoCheck()
 		inserter(accept_tags, accept_tags.end()));
 #endif
 
-	const wxString servername = "updates.aegisub.org";
-	const wxString base_updates_path = "/trunk";
+	const wxString servername = "plorkyeran.com";
+	const wxString base_updates_path = "/aegisub/update";
 
 	wxString querystring = wxString::Format(
 		"?rev=%d&rel=%d&os=%s&lang=%s",
