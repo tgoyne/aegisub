@@ -41,11 +41,10 @@
 #ifndef AGI_PRE
 #include <algorithm>
 
-#include <wx/dcmemory.h>
+#include <wx/memorydc.h>
 #endif
 
 #include "audio_colorscheme.h"
-#include "block_cache.h"
 #include "colorspace.h"
 #include "include/aegisub/audio_provider.h"
 #include "main.h"
@@ -67,25 +66,16 @@ AudioWaveformRenderer::AudioWaveformRenderer(std::string const& color_scheme_nam
 {
 }
 
-
 AudioWaveformRenderer::~AudioWaveformRenderer()
 {
 	delete[] audio_buffer;
 }
 
-
-void AudioWaveformRenderer::Render(wxBitmap &bmp, int start, AudioRenderingStyle style)
+void AudioWaveformRenderer::Render(wxBitmap &target, int start, AudioRenderingStyle style)
 {
-	wxMemoryDC dc(bmp);
-	wxRect rect(wxPoint(0, 0), bmp.GetSize());
-	int midpoint = rect.height / 2;
+	int midpoint = target.GetHeight() / 2;
 
 	const AudioColorScheme *pal = GetColorScheme(style);
-
-	// Fill the background
-	dc.SetBrush(wxBrush(pal->get(0.0f)));
-	dc.SetPen(*wxTRANSPARENT_PEN);
-	dc.DrawRectangle(rect);
 
 	// Make sure we've got a buffer to fill with audio data
 	if (!audio_buffer)
@@ -100,54 +90,55 @@ void AudioWaveformRenderer::Render(wxBitmap &bmp, int start, AudioRenderingStyle
 	assert(provider->GetBytesPerSample() == 2);
 	assert(provider->GetChannels() == 1);
 
-	wxPen pen_peaks(wxPen(pal->get(0.4f)));
-	wxPen pen_avgs(wxPen(pal->get(0.7f)));
-
-	for (int x = 0; x < rect.width; ++x)
+	unsigned char *data = static_cast<unsigned char *>(malloc(target.GetWidth() * target.GetHeight() * 3));
+	for (int x = 0; x < target.GetWidth(); ++x)
 	{
 		provider->GetAudio(audio_buffer, cur_sample, pixel_samples);
 		cur_sample += pixel_samples;
-		
-		int peak_min = 0, peak_max = 0;
-		int64_t avg_min_accum = 0, avg_max_accum = 0;
+
+		std::vector<int> pos;
+		std::vector<int> neg;
+
+		int pos_count = 0;
+		int neg_count = 0;
+
 		const int16_t *aud = (const int16_t *)audio_buffer;
-		for (int si = pixel_samples; si > 0; --si, ++aud)
-		{
-			if (*aud > 0)
-			{
-				peak_max = std::max(peak_max, (int)*aud);
-				avg_max_accum += *aud;
+		for (int i = 0; i < pixel_samples; ++i) {
+			int val = (aud[i] * amplitude_scale * midpoint) / 0x8000;
+			if (val > 0) {
+				if (val >= (int)pos.size()) {
+					pos.resize(val + 1, 0);
+				}
+				++pos[val];
+				++pos_count;
 			}
-			else
-			{
-				peak_min = std::min(peak_min, (int)*aud);
-				avg_min_accum += *aud;
+			else {
+				if (-val >= (int)neg.size()) {
+					neg.resize(-val + 1, 0);
+				}
+				++neg[-val];
+				++neg_count;
 			}
 		}
 
-		// midpoint is half height
-		peak_min = std::max((int)(peak_min * amplitude_scale * midpoint) / 0x8000, -midpoint);
-		peak_max = std::min((int)(peak_max * amplitude_scale * midpoint) / 0x8000, midpoint);
-		int avg_min = std::max((int)(avg_min_accum * amplitude_scale * midpoint / pixel_samples) / 0x8000, -midpoint);
-		int avg_max = std::min((int)(avg_max_accum * amplitude_scale * midpoint / pixel_samples) / 0x8000, midpoint);
-
-		dc.SetPen(pen_peaks);
-		dc.DrawLine(x, midpoint - peak_max, x, midpoint - peak_min);
-		if (render_averages) {
-			dc.SetPen(pen_avgs);
-			dc.DrawLine(x, midpoint - avg_max, x, midpoint - avg_min);
+		float acc = 0;
+		for (int y = (int)pos.size() - 1; y >= 0; --y) {
+			acc += pos[y];
+			pal->map(acc / pos_count, data + x * target.GetHeight() + midpoint - y);
+		}
+		acc = 0;
+		for (int y = (int)neg.size() - 1; y >= 0; --y) {
+			acc += neg[y];
+			pal->map(acc / pos_count, data + x * target.GetHeight() + midpoint + y);
 		}
 	}
 
-	// Horizontal zero-point line
-	if (render_averages)
-		dc.SetPen(wxPen(pal->get(1.0f)));
-	else
-		dc.SetPen(pen_peaks);
+	wxImage img(target.GetSize(), data);
+	wxBitmap bmp(img);
 
-	dc.DrawLine(0, midpoint, rect.width, midpoint);
+	wxMemoryDC dc(target);
+	dc.DrawBitmap(bmp, 0, 0);
 }
-
 
 void AudioWaveformRenderer::RenderBlank(wxDC &dc, const wxRect &rect, AudioRenderingStyle style)
 {
