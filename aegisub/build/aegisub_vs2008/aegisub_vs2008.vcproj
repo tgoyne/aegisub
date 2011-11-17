@@ -996,6 +996,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\dialog_associations.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\dialog_associations.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\dialog_attachments.cpp"
 				>
 			</File>

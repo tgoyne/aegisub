@@ -576,6 +576,9 @@
     <ClInclude Include="$(SrcDir)dialog_about.h">
       <Filter>Features\About box</Filter>
     </ClInclude>
+    <ClInclude Include="$(SrcDir)dialog_associations.h">
+      <Filter>Features\About box</Filter>
+    </ClInclude>
     <ClInclude Include="$(SrcDir)dialog_selection.h">
       <Filter>Features\Conditional select lines</Filter>
     </ClInclude>
@@ -1083,6 +1086,9 @@
       <Filter>Features\About box</Filter>
     </ClCompile>
     <ClCompile Include="$(SrcDir)dialog_about.cpp">
+      <Filter>Features\About box</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SrcDir)dialog_associations.cpp">
       <Filter>Features\About box</Filter>
     </ClCompile>
     <ClCompile Include="$(SrcDir)dialog_selection.cpp">

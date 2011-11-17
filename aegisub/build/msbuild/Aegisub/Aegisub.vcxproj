@@ -103,6 +103,7 @@
     <ClInclude Include="$(SrcDir)compat.h" />
     <ClInclude Include="$(SrcDir)config.h" />
     <ClInclude Include="$(SrcDir)dialog_about.h" />
+    <ClInclude Include="$(SrcDir)dialog_associations.h" />
     <ClInclude Include="$(SrcDir)dialog_attachments.h" />
     <ClInclude Include="$(SrcDir)dialog_automation.h" />
     <ClInclude Include="$(SrcDir)dialog_colorpicker.h" />
@@ -289,6 +290,7 @@
     <ClCompile Include="$(SrcDir)command\vis_tool.cpp" />
     <ClCompile Include="$(SrcDir)compat.cpp" />
     <ClCompile Include="$(SrcDir)dialog_about.cpp" />
+    <ClCompile Include="$(SrcDir)dialog_associations.cpp" />
     <ClCompile Include="$(SrcDir)dialog_attachments.cpp" />
     <ClCompile Include="$(SrcDir)dialog_automation.cpp" />
     <ClCompile Include="$(SrcDir)dialog_colorpicker.cpp" />

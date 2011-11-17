@@ -160,6 +160,7 @@ SRC += \
 	colour_button.cpp \
 	compat.cpp \
 	dialog_about.cpp \
+	dialog_associations.cpp \
 	dialog_attachments.cpp \
 	dialog_automation.cpp \
 	dialog_colorpicker.cpp \
