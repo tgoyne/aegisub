@@ -53,6 +53,7 @@
 #include "libresrc/libresrc.h"
 #include "main.h"
 #include "preferences_base.h"
+#include "validators.h"
 #include "video_provider_manager.h"
 
 #ifdef WITH_PORTAUDIO
@@ -154,6 +155,133 @@ Audio::Audio(wxTreebook *book, Preferences *parent): OptionPage(book, parent, _(
 
 	SetSizerAndFit(sizer);
 }
+
+/// Audio colour schemes preferences page
+class Audio_ColourScheme : public OptionPage {
+	std::map<std::string, wxWindow*> panels;
+	wxWindow *current_panel;
+
+	void SetActiveScheme(std::string const& scheme_name);
+
+	static void UpdateSlider(wxSlider *s, wxSpinEvent &evt) {
+		s->SetValue(evt.GetValue());
+	}
+
+	void UpdateSpinCtrl(wxSpinCtrl *sc, wxCommandEvent &evt, std::string const& opt_name) {
+		sc->SetValue(evt.GetInt());
+		parent->SetOption(opt_name, evt.GetInt());
+	}
+
+	void OnSchemeChange(wxCommandEvent &evt) {
+		SetActiveScheme(STD_STR(evt.GetString()));
+	}
+
+	void OnNew(wxCommandEvent&) {
+
+	}
+	
+	void OnRename(wxCommandEvent &) {
+
+	}
+
+	void OnDelete(wxCommandEvent &) {
+
+	}
+
+	template<class T>
+	wxButton *MakeButton(wxString const& name, T on_click) {
+		wxButton *bt = new wxButton(this, -1, name);
+		bt->Bind(wxEVT_COMMAND_BUTTON_CLICKED, on_click, this);
+		return bt;
+	}
+
+public:
+	Audio_ColourScheme(wxTreebook *book, Preferences *parent)
+	: OptionPage(book, parent, _("Colour Schemes"), PAGE_SUB)
+	, current_panel(0)
+	{
+		wxArrayString scheme_names = vec_to_arrstr(OPT_GET("Audio/Colour Schemes")->GetListString());
+		wxComboBox *scheme_sel = new wxComboBox(this, -1, scheme_names.front(), wxDefaultPosition, wxDefaultSize, scheme_names, wxCB_READONLY | wxCB_DROPDOWN);
+		scheme_sel->Bind(wxEVT_COMMAND_COMBOBOX_SELECTED, &Audio_ColourScheme::OnSchemeChange, this);
+
+		wxSizer *scheme_sel_sizer = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Schemes"));
+		scheme_sel_sizer->Add(new wxStaticText(this, -1, _("Colour Scheme: ")), wxSizerFlags().Center().Border(wxLEFT | wxTOP));
+		scheme_sel_sizer->Add(scheme_sel, wxSizerFlags(1).Center().Border(wxTOP));
+		scheme_sel_sizer->Add(MakeButton(_("New"), &Audio_ColourScheme::OnNew), wxSizerFlags().Border(wxLEFT | wxTOP));
+		scheme_sel_sizer->Add(MakeButton(_("Rename"), &Audio_ColourScheme::OnRename), wxSizerFlags().Border(wxTOP));
+		scheme_sel_sizer->Add(MakeButton(_("Delete"), &Audio_ColourScheme::OnDelete), wxSizerFlags().Border(wxRIGHT | wxTOP));
+		sizer->Add(scheme_sel_sizer, wxSizerFlags().Expand());
+
+		SetActiveScheme(STD_STR(scheme_names[0]));
+
+		SetSizerAndFit(sizer);
+	}
+};
+
+void Audio_ColourScheme::SetActiveScheme(std::string const& scheme_name) {
+	if (current_panel)
+		sizer->Hide(current_panel);
+
+	std::map<std::string, wxWindow*>::iterator existing = panels.find(scheme_name);
+	if (existing != panels.end()) {
+		current_panel = existing->second;
+		sizer->Show(current_panel);
+		sizer->Layout();
+		return;
+	}
+
+	static const char *styles[] = {
+		wxTRANSLATE("Normal"),
+		wxTRANSLATE("Inactive"),
+		wxTRANSLATE("Active"),
+		wxTRANSLATE("Selected")
+	};
+
+	static const char *props[] = {
+		wxTRANSLATE("Hue Offset"),
+		wxTRANSLATE("Hue Scale"),
+		wxTRANSLATE("Saturation Offset"),
+		wxTRANSLATE("Saturation Scale"),
+		wxTRANSLATE("Lightness Offset"),
+		wxTRANSLATE("Lightness Scale")
+	};
+
+	// Make new
+	wxNotebook *nb = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxNB_NOPAGETHEME);
+
+	for (int i = 0; i < 4; ++i) {
+		wxPanel *page = new wxPanel(nb);
+		wxFlexGridSizer *sz = new wxFlexGridSizer(3,5,5);
+		sz->AddGrowableCol(1, 1);
+		std::string opt_prefix = "Colour/Schemes/" + scheme_name + "/" + styles[i] + "/";
+		for (int j = 0; j < 6; ++j) {
+			std::string opt_name = opt_prefix + props[j];
+			int value = OPT_GET(opt_name)->GetDouble();
+
+			sz->Add(new wxStaticText(page, -1, _(props[j]) + ":"), wxSizerFlags().Center().Left());
+
+			wxSlider *slider = new wxSlider(page, -1, value, -500, 500);
+			sz->Add(slider, wxSizerFlags(1).Expand());
+
+			wxSpinCtrl *sc = new wxSpinCtrl(page, -1, wxString::Format("%d", value), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS | wxALIGN_RIGHT, -500, 500);
+			sz->Add(sc);
+
+			using std::tr1::placeholders::_1;
+			sc->Bind(wxEVT_COMMAND_SPINCTRL_UPDATED, bind(&Audio_ColourScheme::UpdateSlider, slider, _1));
+			slider->Bind(wxEVT_COMMAND_SLIDER_UPDATED, bind(&Audio_ColourScheme::UpdateSpinCtrl, this, sc, _1, opt_name));
+		}
+		page->SetSizerAndFit(sz);
+
+		nb->AddPage(page, _(styles[i]));
+	}
+
+	sizer->Add(nb, wxSizerFlags(1).Expand());
+	sizer->Layout();
+
+	current_panel = nb;
+	panels[scheme_name] = nb;
+}
+
 
 /// Video preferences page
 Video::Video(wxTreebook *book, Preferences *parent): OptionPage(book, parent, _("Video")) {
@@ -643,6 +771,7 @@ Preferences::Preferences(wxWindow *parent): wxDialog(parent, -1, _("Preferences"
 	book = new wxTreebook(this, -1, wxDefaultPosition, wxDefaultSize);
 	new General(book, this);
 	new Audio(book, this);
+	new Audio_ColourScheme(book, this);
 	new Video(book, this);
 	new Interface(book, this);
 	new Interface_Colours(book, this);
