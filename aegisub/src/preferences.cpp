@@ -212,6 +212,9 @@ public:
 		scheme_sel_sizer->Add(delete_button, wxSizerFlags().Border(wxRIGHT | wxTOP));
 		sizer->Add(scheme_sel_sizer, wxSizerFlags().Expand());
 
+		wxSizer *preview = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Preview"));
+		sizer->Add(preview);
+
 		SetActiveScheme(STD_STR(scheme_names[0]));
 
 		// Don't allow deleting the only color scheme
@@ -280,7 +283,7 @@ void Audio_ColourScheme::SetActiveScheme(std::string const& scheme_name) {
 		nb->AddPage(page, _(styles[i]));
 	}
 
-	sizer->Add(nb, wxSizerFlags(1).Expand());
+	sizer->Insert(1, nb, wxSizerFlags(1).Expand());
 	sizer->Layout();
 
 	panels[scheme_name] = nb;
