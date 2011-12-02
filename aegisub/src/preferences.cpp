@@ -159,7 +159,7 @@ Audio::Audio(wxTreebook *book, Preferences *parent): OptionPage(book, parent, _(
 /// Audio colour schemes preferences page
 class Audio_ColourScheme : public OptionPage {
 	std::map<std::string, wxWindow*> panels;
-	wxWindow *current_panel;
+	std::string active_scheme;
 
 	void SetActiveScheme(std::string const& scheme_name);
 
@@ -198,7 +198,6 @@ class Audio_ColourScheme : public OptionPage {
 public:
 	Audio_ColourScheme(wxTreebook *book, Preferences *parent)
 	: OptionPage(book, parent, _("Colour Schemes"), PAGE_SUB)
-	, current_panel(0)
 	{
 		wxArrayString scheme_names = vec_to_arrstr(OPT_GET("Audio/Colour Schemes")->GetListString());
 		wxComboBox *scheme_sel = new wxComboBox(this, -1, scheme_names.front(), wxDefaultPosition, wxDefaultSize, scheme_names, wxCB_READONLY | wxCB_DROPDOWN);
@@ -209,23 +208,29 @@ public:
 		scheme_sel_sizer->Add(scheme_sel, wxSizerFlags(1).Center().Border(wxTOP));
 		scheme_sel_sizer->Add(MakeButton(_("New"), &Audio_ColourScheme::OnNew), wxSizerFlags().Border(wxLEFT | wxTOP));
 		scheme_sel_sizer->Add(MakeButton(_("Rename"), &Audio_ColourScheme::OnRename), wxSizerFlags().Border(wxTOP));
-		scheme_sel_sizer->Add(MakeButton(_("Delete"), &Audio_ColourScheme::OnDelete), wxSizerFlags().Border(wxRIGHT | wxTOP));
+		wxButton *delete_button = MakeButton(_("Delete"), &Audio_ColourScheme::OnDelete);
+		scheme_sel_sizer->Add(delete_button, wxSizerFlags().Border(wxRIGHT | wxTOP));
 		sizer->Add(scheme_sel_sizer, wxSizerFlags().Expand());
 
 		SetActiveScheme(STD_STR(scheme_names[0]));
+
+		// Don't allow deleting the only color scheme
+		if (scheme_names.size() == 1)
+			delete_button->Disable();
 
 		SetSizerAndFit(sizer);
 	}
 };
 
 void Audio_ColourScheme::SetActiveScheme(std::string const& scheme_name) {
-	if (current_panel)
-		sizer->Hide(current_panel);
+	if (active_scheme.size())
+		sizer->Hide(panels[scheme_name]);
+
+	active_scheme = scheme_name;
 
 	std::map<std::string, wxWindow*>::iterator existing = panels.find(scheme_name);
 	if (existing != panels.end()) {
-		current_panel = existing->second;
-		sizer->Show(current_panel);
+		sizer->Show(existing->second);
 		sizer->Layout();
 		return;
 	}
@@ -278,7 +283,6 @@ void Audio_ColourScheme::SetActiveScheme(std::string const& scheme_name) {
 	sizer->Add(nb, wxSizerFlags(1).Expand());
 	sizer->Layout();
 
-	current_panel = nb;
 	panels[scheme_name] = nb;
 }
 
