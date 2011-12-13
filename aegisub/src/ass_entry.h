@@ -43,9 +43,10 @@
 
 #include <libaegisub/exception.h>
 
-class AssDialogue;
-class AssStyle;
 class AssAttachment;
+class AssDialogue;
+class AssEntry;
+class AssStyle;
 
 enum ASS_EntryType {
 	ENTRY_BASE,
@@ -68,6 +69,16 @@ namespace Aegisub {
 		const char *GetName() const { return "internal_error/invalid_margin_id"; }
 	};
 }
+
+class AssEntryVisitor {
+public:
+	virtual ~AssEntryVisitor() { }
+
+	virtual void operator()(AssAttachment *)=0;
+	virtual void operator()(AssDialogue *)=0;
+	virtual void operator()(AssEntry *)=0;
+	virtual void operator()(AssStyle *)=0;
+};
 
 /// DOCME
 /// @class AssEntry
@@ -100,4 +111,6 @@ public:
 
 	/// Get this line in SSA format
 	virtual wxString GetSSAText() const;
+
+	virtual void Visit(AssEntryVisitor &visitor) { visitor(this); }
 };

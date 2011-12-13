@@ -112,4 +112,5 @@ public:
 	wxString GetSSAText() const;
 	ASS_EntryType GetType() const { return ENTRY_STYLE; }
 	AssEntry *Clone() const;
+	void Visit(AssEntryVisitor &visitor) { visitor(this); }
 };

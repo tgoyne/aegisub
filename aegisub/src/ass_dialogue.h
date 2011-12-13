@@ -220,6 +220,7 @@ public:
 	bool CollidesWith(AssDialogue *target);
 
 	AssEntry *Clone() const;
+	void Visit(AssEntryVisitor &visitor) { visitor(this); }
 
 	AssDialogue();
 	AssDialogue(AssDialogue const&);

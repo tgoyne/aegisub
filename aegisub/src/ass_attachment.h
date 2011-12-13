@@ -78,6 +78,7 @@ public:
 	const wxString GetEntryData() const;
 	ASS_EntryType GetType() const { return ENTRY_ATTACHMENT; }
 	AssEntry *Clone() const;
+	void Visit(AssEntryVisitor &visitor) { visitor(this); }
 
 	AssAttachment(wxString name);
 };

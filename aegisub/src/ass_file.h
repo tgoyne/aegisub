@@ -55,6 +55,7 @@ class AssDialogueBlock;
 class AssDialogueBlockOverride;
 class AssDialogueBlockPlain;
 class AssEntry;
+class AssEntryVisitor;
 
 typedef std::list<AssEntry*>::iterator entryIter;
 
@@ -219,6 +220,8 @@ public:
 	wxString GetUndoDescription() const;
 	/// Get the description of the first redoable change
 	wxString GetRedoDescription() const;
+
+	void Visit(AssEntryVisitor &visitor);
 
 	/// Current script file. It is "above" the stack.
 	static AssFile *top;

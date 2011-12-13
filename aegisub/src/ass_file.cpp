@@ -740,4 +740,9 @@ void AssFile::Sort(std::list<AssDialogue*> &lst, CompFunc comp) {
 	lst.sort(comp);
 }
 
+void AssFile::Visit(AssEntryVisitor &visitor) {
+	for (std::list<AssEntry*>::iterator it = Line.begin(); it != Line.end(); ++it)
+		(*it)->Visit(visitor);
+}
+
 AssFile *AssFile::top;

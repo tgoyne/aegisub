@@ -419,22 +419,32 @@ void SubtitlesGrid::SplitLine(AssDialogue *n1,int pos,bool estimateTimes) {
 	context->ass->Commit(_("split"), AssFile::COMMIT_DIAG_ADDREM | AssFile::COMMIT_DIAG_FULL);
 }
 
+struct to_absolute_visitor : public AssEntryVisitor {
+	int line_index;
+	std::set<AssDialogue*> sel;
+	std::vector<int> result;
+
+	to_absolute_visitor(std::set<AssDialogue*> const& sel) : line_index(0), sel(sel) {
+		result.reserve(sel.size());
+	}
+
+	void operator()(AssAttachment *) { ++line_index; }
+	void operator()(AssEntry *) { ++line_index; }
+	void operator()(AssStyle *) { ++line_index; }
+	void operator()(AssDialogue *d) {
+		++line_index;
+		if (sel.count(d))
+			result.push_back(line_index);
+	}
+};
+
 /// @brief Retrieve a list of selected lines in the actual ASS file (ie. not as displayed in the grid but as represented in the file)
 /// @return 
 ///
 std::vector<int> SubtitlesGrid::GetAbsoluteSelection() {
-	Selection sel = GetSelectedSet();
-
-	std::vector<int> result;
-	result.reserve(sel.size());
-
-	int line_index = 0;
-	for (entryIter it = context->ass->Line.begin(); it != context->ass->Line.end(); ++it, ++line_index) {
-		if (sel.find(dynamic_cast<AssDialogue*>(*it)) != sel.end())
-			result.push_back(line_index);
-	}
-
-	return result;
+	to_absolute_visitor visitor(GetSelectedSet());
+	context->ass->Visit(visitor);
+	return visitor.result;
 }
 
 /// @brief Update list of selected lines from absolute selection
