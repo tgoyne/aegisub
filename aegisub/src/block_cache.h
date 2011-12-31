@@ -124,6 +124,9 @@ class DataBlockCache {
 	/// Factory object for blocks
 	BlockFactoryT factory;
 
+	/// Total size of the cached data blocks
+	size_t size;
+
 	/// Used in sorting the macroblocks by accesas count for aging
 	static bool comp_access_count(const MacroBlock *lft, const MacroBlock *rgt) { return lft->access_count > rgt->access_count; }
 
@@ -153,7 +156,8 @@ public:
 	///
 	/// The factory object passed must respond well to copying.
 	DataBlockCache(size_t block_count, BlockFactoryT factory = BlockFactoryT())
-		: factory(factory)
+	: factory(factory)
+	, size(0)
 	{
 		SetBlockCount(block_count);
 	}
@@ -191,9 +195,6 @@ public:
 	///
 	/// Passing a max_size of 0 (zero) causes the cache to be completely flushed
 	/// in a fast manner.
-	///
-	/// The max_size is not a hard limit, the cache size might somewhat exceed the max
-	/// after the aging operation, though it shouldn't be by much.
 	void Age(size_t max_size)
 	{
 		// Quick way out: get rid of everything
@@ -203,6 +204,14 @@ public:
 			{
 				KillMacroBlock(data[mbi]);
 			}
+			return;
+		}
+
+		// Just age everything
+		if (max_size > size)
+		{
+			for (size_t mbi = 0; mbi != data.size(); ++mbi)
+				data[mbi].access_count /= 2;
 			return;
 		}
 
@@ -219,20 +228,24 @@ public:
 		sort(access_data.begin(), access_data.begin() + access_data_count, comp_access_count);
 
 		// Sum up data size until we hit the max
-		size_t cur_size = 0;
+		size = 0;
 		size_t block_size = factory.GetBlockSize();
 		size_t mbi = 0;
-		for (; mbi < access_data_count && cur_size < max_size; ++mbi)
+		for (; mbi < access_data_count; ++mbi)
 		{
 			BlockArray &ba = access_data[mbi]->blocks;
-			cur_size += (ba.size() - std::count(ba.begin(), ba.end(), (BlockT*)0)) * block_size;
+			size_t cur_block = (ba.size() - std::count(ba.begin(), ba.end(), (BlockT*)0)) * block_size;
+			if (size + cur_block > max_size)
+				break;
+
+			size += cur_block;
 
 			// Cut access count in half for live blocks, so parts that don't get accessed
 			// a lot will eventually be killed off.
 			access_data[mbi]->access_count /= 2;
 		}
 		// Hit max, clear all remaining blocks
-		for (++mbi; mbi < access_data_count; ++mbi)
+		for (; mbi < access_data_count; ++mbi)
 		{
 			KillMacroBlock(*access_data[mbi]);
 		}
@@ -270,6 +283,7 @@ public:
 			mb.blocks[block_index] = b;
 
 			if (created) *created = true;
+			size += factory.GetBlockSize();
 		}
 		else
 			if (created) *created = false;
