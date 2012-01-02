@@ -95,10 +95,11 @@ class AegisubApp: public wxApp {
 
 	bool OnInit();
 	int OnExit();
-	int OnRun();
 
-	void OnUnhandledException();
 	void OnFatalException();
+	void OnUnhandledException();
+	bool OnExceptionInMainLoop();
+#endif
 
 	/// @brief Handle wx assertions and redirect to the logging system.
 	/// @param file File name
@@ -107,10 +108,6 @@ class AegisubApp: public wxApp {
 	/// @param cond Condition
 	/// @param msg  Message
 	void OnAssertFailure(const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg);
-
-	// This function wraps all event handler calls anywhere in the application and is
-	// our ticket to catch exceptions happening in event handlers.
-	void HandleEvent(wxEvtHandler *handler, wxEventFunction func, wxEvent& event) const;
 
 	/// Top-level event filter to enable propagation of key events, which we
 	/// need for our hotkeys to work correctly
@@ -133,22 +130,3 @@ public:
 };
 
 wxDECLARE_APP(AegisubApp);
-
-
-#if wxUSE_STACKWALKER == 1
-/// @class StackWalker
-/// @brief DOCME
-///
-/// DOCME
-class StackWalker: public wxStackWalker {
-private:
-
-	wxFile *crash_text;	// FP to the crash text file.
-	wxFile *crash_xml;	// FP to the crash xml file.
-
-public:
-	StackWalker(wxString cause);
-	~StackWalker();
-	void OnStackFrame(const wxStackFrame& frame);
-};
-#endif // wxUSE_STACKWALKER

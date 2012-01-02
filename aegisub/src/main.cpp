@@ -34,6 +34,8 @@
 /// @ingroup main
 ///
 
+#define WITH_EXCEPTIONS
+
 #include "config.h"
 
 #ifndef AGI_PRE
@@ -82,9 +84,6 @@ namespace config {
 	agi::Path *path = 0;
 }
 
-
-///////////////////
-// wxWidgets macro
 IMPLEMENT_APP(AegisubApp)
 
 static const char *LastStartupState = NULL;
@@ -280,11 +279,6 @@ bool AegisubApp::OnInit() {
 	return true;
 }
 
-
-
-/// @brief Exit
-/// @return
-///
 int AegisubApp::OnExit() {
 	if (wxTheClipboard->Open()) {
 		wxTheClipboard->Flush();
@@ -310,6 +304,50 @@ int AegisubApp::OnExit() {
 	return wxApp::OnExit();
 }
 
+#if !defined(_DEBUG) || defined(WITH_EXCEPTIONS)
+#if wxUSE_STACKWALKER == 1
+
+/// @class StackWalker
+/// @brief DOCME
+class StackWalker: public wxStackWalker {
+	wxFile crash_text; ///< FP to the crash text file.
+
+public:
+	/// @brief Called at the start of walking the stack.
+	/// @param cause cause of the crash.
+	StackWalker(wxString cause)
+	: crash_text(StandardPaths::DecodePath("?user/crashlog.txt"), wxFile::write_append)
+	{
+		if (crash_text.IsOpened()) {
+			crash_text.Write(wxString::Format("--- %s ------------------\n", wxDateTime::Now().FormatISOCombined()));
+			crash_text.Write(wxString::Format("VER - %s\n", GetAegisubLongVersionString()));
+			crash_text.Write(wxString::Format("FTL - Beginning stack dump for \"%s\":\n", cause));
+		}
+	}
+
+	/// @brief Callback to format a single frame
+	/// @param frame frame to parse.
+	void OnStackFrame(const wxStackFrame& frame) {
+		if (crash_text.IsOpened()) {
+			wxString dst = wxString::Format("%03u - %p: ", (unsigned)frame.GetLevel(),frame.GetAddress()) + frame.GetName();
+			if (frame.HasSourceLocation())
+				dst = wxString::Format("%s on %s:%u", dst, frame.GetFileName(), (unsigned)frame.GetLine());
+
+			crash_text.Write(wxString::Format("%s\n", dst));
+		}
+	}
+
+	/// @brief Called at the end of walking the stack.
+	~StackWalker() {
+		if (crash_text.IsOpened()) {
+			crash_text.Write("End of stack dump.\n");
+			crash_text.Write("----------------------------------------\n\n");
+		}
+	}
+};
+
+#endif
+
 /// Message displayed when an exception has occurred.
 const static wxString exception_message = _("Oops, Aegisub has crashed!\n\nAn attempt has been made to save a copy of your file to:\n\n%s\n\nAegisub will now close.");
 
@@ -326,7 +364,7 @@ static void UnhandledExeception(bool stackWalk) {
 
 		// Save file
 		wxString filename = wxString::Format("%s/%s_%s.ass", file.GetPath(), wxDateTime::Now().Format("%Y-%m-%d-%H%M%S"), file.GetName());
-		AssFile::top->Save(filename,false,false);
+		AssFile::top->Save(filename, false, false);
 
 #if wxUSE_STACKWALKER == 1
 		if (stackWalk) {
@@ -350,157 +388,48 @@ static void UnhandledExeception(bool stackWalk) {
 #endif
 }
 
-/// @brief Called during an unhandled exception
-void AegisubApp::OnUnhandledException() {
-	UnhandledExeception(false);
-}
-
-
 /// @brief Called during a fatal exception.
 void AegisubApp::OnFatalException() {
 	UnhandledExeception(true);
 }
 
-void AegisubApp::HandleEvent(wxEvtHandler *handler, wxEventFunction func, wxEvent& event) const {
-#define SHOW_EXCEPTION(str) wxMessageBox(str, "Exception in event handler", wxOK | wxICON_ERROR | wxCENTER | wxSTAY_ON_TOP)
-	try {
-		wxApp::HandleEvent(handler, func, event);
-	}
+void AegisubApp::OnUnhandledException() {
+	throw;
+}
+
+bool AegisubApp::OnExceptionInMainLoop() {
+#define SHOW_EXCEPTION(str) wxMessageBox(str, _("Unexpected exception"), wxOK | wxICON_ERROR | wxCENTER | wxSTAY_ON_TOP)
+	// Rethrow so that we can get access to the current exception
+	try { throw; }
+
+	// All Aegisub-thrown errors should be recoverable, so simply display an
+	// error message and continue
 	catch (const agi::Exception &e) {
 		SHOW_EXCEPTION(lagi_wxString(e.GetChainedMessage()));
-	}
-	catch (const std::exception &e) {
-		SHOW_EXCEPTION(wxString(e.what(), wxConvUTF8));
+		return true;
 	}
 	catch (const char *e) {
 		SHOW_EXCEPTION(wxString(e, wxConvUTF8));
+		return true;
 	}
-	catch (const wxString &e) {
+	catch (const wchar_t *e) {
 		SHOW_EXCEPTION(e);
+		return true;
+	}
+	catch (wxString const& e) {
+		SHOW_EXCEPTION(e);
+		return true;
+	}
+
+	// Non-Aegisub thrown errors aren't, so rethrow and let the crash handler
+	// take over
+	catch (const std::exception &e) {
+		SHOW_EXCEPTION(wxString(e.what(), wxConvUTF8));
+		throw;
 	}
 #undef SHOW_EXCEPTION
 }
-
-
-
-#if wxUSE_STACKWALKER == 1
-/// @brief Called at the start of walking the stack.
-/// @param cause cause of the crash.
-///
-StackWalker::StackWalker(wxString cause) {
-
-	wxFileName report_dir("");
-	report_dir.SetPath(StandardPaths::DecodePath("?user/reporter"));
-	if (!report_dir.DirExists()) report_dir.Mkdir();
-
-	crash_text = new wxFile(StandardPaths::DecodePath("?user/crashlog.txt"), wxFile::write_append);
-	crash_xml = new wxFile(StandardPaths::DecodePath("?user/reporter/crash.xml"), wxFile::write);
-
-	if ((crash_text->IsOpened()) && (crash_xml->IsOpened())) {
-		wxDateTime time = wxDateTime::Now();
-
-		crash_text->Write(wxString::Format("--- %s ------------------\n", time.FormatISOCombined()));
-		crash_text->Write(wxString::Format("VER - %s\n", GetAegisubLongVersionString()));
-		crash_text->Write(wxString::Format("FTL - Beginning stack dump for \"%s\":\n", cause));
-
-		crash_xml->Write(                 "<crash>\n");
-		crash_xml->Write(                 "  <info>\n");
-		crash_xml->Write(wxString::Format("    <cause>%s</cause>\n", cause));
-		crash_xml->Write(wxString::Format("    <time>%s</time>\n", time.FormatISOCombined()));
-		crash_xml->Write(wxString::Format("    <version>%s</version>\n", GetAegisubLongVersionString()));
-		crash_xml->Write(                 "  </info>\n");
-		crash_xml->Write(                 "  <trace>\n");
-	}
-}
-
-
-/// @brief Callback to format a single frame
-/// @param frame frame to parse.
-///
-void StackWalker::OnStackFrame(const wxStackFrame &frame) {
-
-	if ((crash_text->IsOpened()) && (crash_xml->IsOpened())) {
-
-		wxString dst = wxString::Format("%03u - %p: ", (unsigned)frame.GetLevel(),frame.GetAddress()) + frame.GetName();
-		if (frame.HasSourceLocation())
-			dst = wxString::Format("%s on %s:%u", dst, frame.GetFileName(), (unsigned)frame.GetLine());
-
-		crash_text->Write(wxString::Format("%s\n", dst));
-
-		crash_xml->Write(wxString::Format("    <frame id='%u' loc='%p'>\n", (int)frame.GetLevel(), frame.GetAddress()));
-		crash_xml->Write(wxString::Format("      <name>%s</name>\n", frame.GetName()));
-		if (frame.HasSourceLocation())
-			crash_xml->Write(wxString::Format("      <file line='%u'>%s</file>\n", (unsigned)frame.GetLine(), frame.GetFileName()));
-		crash_xml->Write(wxString::Format("      <module><![CDATA[%s]]></module>\n", frame.GetModule()));
-		crash_xml->Write(                 "    </frame>\n");
-	}
-}
-
-
-/// @brief Called at the end of walking the stack.
-StackWalker::~StackWalker() {
-
-	if ((crash_text->IsOpened()) && (crash_xml->IsOpened())) {
-
-		crash_text->Write("End of stack dump.\n");
-		crash_text->Write("----------------------------------------\n\n");
-
-		crash_text->Close();
-
-		crash_xml->Write("  </trace>\n");
-		crash_xml->Write("</crash>\n");
-
-		crash_xml->Close();
-	}
-}
 #endif
-
-
-/// @brief Call main loop
-/// @return
-///
-int AegisubApp::OnRun() {
-	wxString error;
-
-	// Run program
-	try {
-		if (m_exitOnFrameDelete == Later) m_exitOnFrameDelete = Yes;
-		return MainLoop();
-	}
-
-	// Catch errors
-	catch (const wxString &err) { error = err; }
-	catch (const char *err) { error = err; }
-	catch (const std::exception &e) { error = wxString("std::exception: ") + wxString(e.what(),wxConvUTF8); }
-	catch (const agi::Exception &e) { error = "agi::exception: " + lagi_wxString(e.GetChainedMessage()); }
-	catch (...) { error = "Program terminated in error."; }
-
-	// Report errors
-	if (!error.IsEmpty()) {
-		std::ofstream file;
-		file.open(wxString(StandardPaths::DecodePath("?user/crashlog.txt")).mb_str(),std::ios::out | std::ios::app);
-		if (file.is_open()) {
-			wxDateTime time = wxDateTime::Now();
-			wxString timeStr = "---" + time.FormatISODate() + " " + time.FormatISOTime() + "------------------";
-			file << std::endl << timeStr.mb_str(csConvLocal);
-			file << "\nVER - " << GetAegisubLongVersionString();
-			file << "\nEXC - Aegisub has crashed with unhandled exception \"" << error.mb_str(csConvLocal) <<"\".\n";
-			int formatLen = timeStr.Length();
-			char dashes[1024];
-			int i = 0;
-			for (i=0;i<formatLen;i++) dashes[i] = '-';
-			dashes[i] = 0;
-			file << dashes;
-			file << "\n";
-			file.close();
-		}
-
-		OnUnhandledException();
-	}
-
-	ExitMainLoop();
-	return 1;
-}
 
 int AegisubApp::FilterEvent(wxEvent& event) {
 	if (event.GetEventType() == wxEVT_KEY_DOWN)
