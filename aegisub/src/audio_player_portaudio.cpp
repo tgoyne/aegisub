@@ -43,10 +43,13 @@
 
 #include "audio_player_portaudio.h"
 
+#include "audio_controller.h"
 #include "compat.h"
 #include "include/aegisub/audio_provider.h"
 #include "main.h"
 #include "utils.h"
+
+DEFINE_SIMPLE_EXCEPTION(PortAudioError, agi::AudioPlayerOpenError, "audio/player/open/portaudio")
 
 // Uncomment to enable extremely spammy debug logging
 //#define PORTAUDIO_DEBUG
@@ -77,7 +80,7 @@ PortAudioPlayer::PortAudioPlayer()
 	PaError err = Pa_Initialize();
 
 	if (err != paNoError)
-		throw PortAudioError(std::string("Failed opening PortAudio:") + Pa_GetErrorText(err));
+		throw PortAudioError(std::string("Failed opening PortAudio:") + Pa_GetErrorText(err), 0);
 
 	// Build a list of host API-specific devices we can use
 	// Some host APIs may not support all devices and some reported devices may
@@ -91,7 +94,7 @@ PortAudioPlayer::PortAudioPlayer()
 	GatherDevices(Pa_GetDefaultHostApi());
 
 	if (devices.empty() || default_device == paNoDevice)
-		throw PortAudioError("No PortAudio output devices found");
+		throw PortAudioError("No PortAudio output devices found", 0);
 }
 
 void PortAudioPlayer::GatherDevices(PaHostApiIndex host_idx) {
@@ -166,7 +169,7 @@ void PortAudioPlayer::OpenStream() {
 		const PaHostErrorInfo *pa_err = Pa_GetLastHostErrorInfo();
 		LOG_D_IF(pa_err->errorCode != 0, "audio/player/portaudio") << "HostError: API: " << pa_err->hostApiType << ", " << pa_err->errorText << ", " << pa_err->errorCode;
 		LOG_D("audio/player/portaudio") << "Failed initializing PortAudio stream with error: " << Pa_GetErrorText(err);
-		throw PortAudioError("Failed initializing PortAudio stream with error: " + std::string(Pa_GetErrorText(err)));
+		throw PortAudioError("Failed initializing PortAudio stream with error: " + std::string(Pa_GetErrorText(err)), 0);
 	}
 }
 
