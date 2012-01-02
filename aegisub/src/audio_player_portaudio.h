@@ -51,6 +51,11 @@ extern "C" {
 /// @brief PortAudio Player
 ///
 class PortAudioPlayer : public AudioPlayer {
+	/// Map of supported output devices from name -> device index
+	std::map<std::string, PaDeviceIndex> devices;
+	/// The index of the default output device using the best host API
+	PaDeviceIndex default_device;
+
 	float volume;    ///< Current volume level
 	int64_t current; ///< Current position
 	int64_t start;   ///< Start position
@@ -81,9 +86,14 @@ class PortAudioPlayer : public AudioPlayer {
 	/// @param userData Local data to be handed to the callback.
 	static void paStreamFinishedCallback(void *userData);
 
+	/// Gather the list of output devices supported by a host API
+	/// @param host_idx Host API ID
+	void GatherDevices(PaHostApiIndex host_idx);
+
 public:
 	/// @brief Constructor
 	PortAudioPlayer();
+
 	/// @brief Destructor
 	~PortAudioPlayer();
 
