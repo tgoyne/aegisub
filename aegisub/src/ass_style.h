@@ -40,6 +40,8 @@
 
 #include "ass_entry.h"
 
+#include <libaegisub/exception.h>
+
 /// DOCME
 /// @class AssColor
 /// @brief DOCME
@@ -117,3 +119,6 @@ public:
 	/// Convert a SSA  alignment to the equivalent ASS alignment
 	static int SsaToAss(int ssa_align);
 };
+
+/// Exception for any sort of style line parse error
+DEFINE_SIMPLE_EXCEPTION(StyleParseError, agi::InvalidInputException, "ass_style/parse");

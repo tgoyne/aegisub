@@ -38,6 +38,8 @@
 #include <vector>
 #endif
 
+#include <libaegisub/exception.h>
+
 #include "ass_entry.h"
 #include "ass_time.h"
 
@@ -138,8 +140,6 @@ public:
 	void ProcessParameters(ProcessParametersCallback callback,void *userData);
 };
 
-
-
 /// DOCME
 /// @class AssDialogue
 /// @brief DOCME
@@ -227,3 +227,6 @@ public:
 	AssDialogue(wxString data,int version=1);
 	~AssDialogue();
 };
+
+/// Exception for any sort of dialogue line parse error
+DEFINE_SIMPLE_EXCEPTION(DialogueParseError, agi::InvalidInputException, "ass_dialogue/parse");

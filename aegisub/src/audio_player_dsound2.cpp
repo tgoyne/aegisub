@@ -625,7 +625,7 @@ void DirectSoundPlayer2Thread::CheckError()
 			throw error_message;
 
 		case WAIT_ABANDONED:
-			throw "The DirectShowPlayer2Thread error signal event was abandoned, somehow. This should not happen.";
+			throw agi::InternalError("The DirectShowPlayer2Thread error signal event was abandoned, somehow. This should not happen.", 0);
 
 		case WAIT_FAILED:
 			throw "Failed checking state of DirectShowPlayer2Thread error signal event.";
@@ -743,7 +743,7 @@ bool DirectSoundPlayer2Thread::IsPlaying()
 	switch (WaitForSingleObject(is_playing, 0))
 	{
 	case WAIT_ABANDONED:
-		throw "The DirectShowPlayer2Thread playback state event was abandoned, somehow. This should not happen.";
+		throw agi::InternalError("The DirectShowPlayer2Thread playback state event was abandoned, somehow. This should not happen.", 0);
 
 	case WAIT_FAILED:
 		throw "Failed checking state of DirectShowPlayer2Thread playback state event.";

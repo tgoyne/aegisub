@@ -96,7 +96,7 @@ AssDialogue::AssDialogue(wxString _data,int version)
 
 	// Not valid
 	if (!valid)
-		throw "Failed parsing line.";
+		throw DialogueParseError("Failed parsing line", 0);
 }
 
 AssDialogue::~AssDialogue () {
@@ -356,7 +356,7 @@ void AssDialogue::UpdateText () {
 }
 
 void AssDialogue::SetMarginString(const wxString origvalue,int which) {
-	if (which < 0 || which >= 4) throw Aegisub::InvalidMarginIdError();
+	if (which < 0 || which >= 4) throw agi::InternalError("Out of bounds margin index", 0);
 
 	// Make it numeric
 	wxString strvalue = origvalue;
@@ -376,7 +376,7 @@ void AssDialogue::SetMarginString(const wxString origvalue,int which) {
 }
 
 wxString AssDialogue::GetMarginString(int which,bool pad) const {
-	if (which < 0 || which >= 4) throw Aegisub::InvalidMarginIdError();
+	if (which < 0 || which >= 4) throw agi::InternalError("Out of bounds margin index", 0);
 	int value = Margin[which];
 	if (pad) return wxString::Format("%04i",value);
 	else return wxString::Format("%i",value);

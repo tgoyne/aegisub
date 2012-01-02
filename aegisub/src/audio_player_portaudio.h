@@ -37,7 +37,6 @@
 #ifdef WITH_PORTAUDIO
 
 #include "include/aegisub/audio_player.h"
-
 extern "C" {
 #include <portaudio.h>
 }

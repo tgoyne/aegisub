@@ -163,8 +163,10 @@ void AssFile::Load(const wxString &_filename, wxString charset, bool addToRecent
 
 void AssFile::Save(wxString filename, bool setfilename, bool addToRecent, wxString encoding) {
 	const SubtitleFormat *writer = SubtitleFormat::GetWriter(filename);
-	if (!writer)
-		throw "Unknown file type.";
+	if (!writer) {
+		wxMessageBox("Unknown file type", "Error saving file", wxICON_ERROR | wxOK);
+		return;
+	}
 
 	if (setfilename) {
 		autosavedCommitId = savedCommitId = commitId;

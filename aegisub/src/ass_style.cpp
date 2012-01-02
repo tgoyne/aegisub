@@ -173,21 +173,21 @@ AssStyle::AssStyle()
 }
 
 static wxString get_next_string(wxStringTokenizer &tok) {
-	if (!tok.HasMoreTokens()) throw "Malformed style: not enough fields";
+	if (!tok.HasMoreTokens()) throw StyleParseError("Malformed style: not enough fields", 0);
 	return tok.GetNextToken();
 }
 
 static int get_next_int(wxStringTokenizer &tok) {
 	long temp;
 	if (!get_next_string(tok).ToLong(&temp))
-		throw "Malformed style: could not parse int field";
+		throw StyleParseError("Malformed style: could not parse int field", 0);
 	return temp;
 }
 
 static double get_next_double(wxStringTokenizer &tok) {
 	double temp;
 	if (!get_next_string(tok).ToDouble(&temp))
-		throw "Malformed style: could not parse double field";
+		throw StyleParseError("Malformed style: could not parse double field", 0);
 	return temp;
 }
 
@@ -276,7 +276,7 @@ AssStyle::AssStyle(wxString rawData, int version)
 		relativeTo = get_next_int(tkn);
 
 	if (tkn.HasMoreTokens())
-		throw "Malformed style: too many fields";
+		throw StyleParseError("Malformed style: too many fields", 0);
 
 	UpdateData();
 }

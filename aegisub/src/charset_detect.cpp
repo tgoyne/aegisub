@@ -76,7 +76,7 @@ wxString GetEncoding(wxString const& filename) {
 		LOG_I("charset/file") << filename << " (" << log_choice << ")";
 
 		int choice = wxGetSingleChoiceIndex(_("Aegisub could not narrow down the character set to a single one.\nPlease pick one below:"),_("Choose character set"),choices);
-		if (choice == -1) throw "Canceled";
+		if (choice == -1) throw agi::UserCancelException("user did not pick a charset");
 		return choices.Item(choice);
 	}
 

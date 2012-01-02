@@ -331,18 +331,7 @@ static void save_subtitles(agi::Context *c, wxString filename) {
 		if (filename.empty()) return;
 	}
 
-	try {
-		c->ass->Save(filename, true, true);
-	}
-	catch (const agi::Exception& err) {
-		wxMessageBox(lagi_wxString(err.GetMessage()), "Error", wxOK | wxICON_ERROR | wxCENTER, c->parent);
-	}
-	catch (const char *err) {
-		wxMessageBox(err, "Error", wxOK | wxICON_ERROR | wxCENTER, c->parent);
-	}
-	catch (...) {
-		wxMessageBox("Unknown error", "Error", wxOK | wxICON_ERROR | wxCENTER, c->parent);
-	}
+	c->ass->Save(filename, true, true);
 }
 
 /// Saves subtitles.

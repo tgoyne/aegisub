@@ -54,21 +54,6 @@ enum ASS_EntryType {
 	ENTRY_ATTACHMENT
 };
 
-/// @see aegisub.h
-namespace Aegisub {
-
-	/// DOCME
-	/// @class InvalidMarginIdError
-	/// @brief DOCME
-	///
-	/// DOCME
-	class InvalidMarginIdError : public agi::InternalError {
-	public:
-		InvalidMarginIdError() : InternalError("Invalid margin id", 0) { }
-		const char *GetName() const { return "internal_error/invalid_margin_id"; }
-	};
-}
-
 /// DOCME
 /// @class AssEntry
 /// @brief DOCME
