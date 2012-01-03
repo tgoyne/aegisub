@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2011, Amar Takhar <verm@aegisub.org>
+// Copyright (c) 2012, Thomas Goyne <plorkyeran@aegisub.org>
 //
 // Permission to use, copy, modify, and distribute this software for any
 // purpose with or without fee is hereby granted, provided that the above
@@ -15,137 +15,125 @@
 // $Id$
 
 /// @file path.cpp
-/// @brief Common paths.
+/// @brief Platform-independent path code
 /// @ingroup libaegisub
 
 #include "../config.h"
 
-#ifndef LAGI_PRE
-#include <vector>
-#endif
-
 #include "libaegisub/path.h"
 
-#include "libaegisub/access.h"
-#include "libaegisub/log.h"
 #include "libaegisub/option.h"
 #include "libaegisub/option_value.h"
+#include "libaegisub/util.h"
+
+namespace {
+	char last(std::string const& str) {
+		return str.empty() ? 0 : str[str.size() - 1];
+	}
+
+	template<class T, class U>
+	typename T::const_iterator last_less_than(T const& cont, U const& value) {
+		T::const_iterator it = cont.upper_bound(value);
+		if (it != cont.begin())
+			--it;
+		return it;
+	}
+}
 
 namespace agi {
 
-Path::Path(const std::string &file, const std::string& default_path)
-: path_file(file)
-, path_default(default_path)
-, opt(new agi::Options(file, default_path, Options::FLUSH_SKIP))
-{
-	opt->ConfigUser();
-	LOG_D("agi/path") << "New Path object";
+Path::Path(Options *opt) : opt(opt) {
+	tokens["?user"] = "";
+	tokens["?local"] = "";
+	tokens["?data"] = "";
+	tokens["?temp"] = "";
+
+	FillPlatformSpecificPaths();
+
+	tokens["?audio"] = "";
+	tokens["?script"] = "";
+	tokens["?video"] = "";
 }
 
-Path::~Path() {
+std::string Path::Decode(std::string const& path) const {
+	if (path[0] != '?') return Normalize(path);
+
+	str_map::const_iterator it = last_less_than(tokens, path);
+
+	std::string suffix;
+	if (it->second.size() && util::begins_with(path, it->first, &suffix))
+		return Combine(it->second, suffix);
+	return Normalize(path);
 }
 
+std::string Path::Encode(std::string path) const {
+	std::string search_path;
+	if (last(path) != dir_sep && last(path) != non_dir_sep)
+		search_path = GetDir(path);
+	else
+		search_path = Normalize(path);
 
-std::string Path::Get(const char *name) {
-	std::string path;
-	try {
-		path = std::string(opt->Get(name)->GetString());
-	} catch (OptionErrorNotFound&) {
-		throw PathErrorNotFound("Invalid path key");
-	}
+	str_map::const_iterator it = last_less_than(paths, search_path);
 
-	Decode(path);
-	return path;
+	std::string suffix;
+	if (!util::begins_with(path, it->first, &suffix))
+		return path;
+
+	if (suffix.empty())
+		return it->second;
+	else
+		return it->second + dir_sep + suffix;
 }
 
-
-void Path::Set(const char *name, const std::string &path) {
-	std::string set(path);
-
-	if (path[0] == 94) {
-		std::string tmp(path);
-		// Check that the used cookie exists.
-		Decode(tmp);
-		agi::acs::CheckDirWrite(path);
-	}
-
-	try {
-		opt->Get(name)->SetString(set);
-	} catch (OptionErrorNotFound&) {
-		throw PathErrorNotFound("Invalid path key");
-	}
+std::string Path::GetPath(std::string const& path_opt_name) const {
+	if (!opt) throw OptionErrorNotFound("Option value not found: " + path_opt_name);
+	return Decode(opt->Get(path_opt_name)->GetString());
 }
 
-
-void Path::ListGet(const char *name, std::vector<std::string> &out) {
-	out = opt->Get(name)->GetListString();
+void Path::SetPath(std::string const& path_opt_name, std::string const& value) {
+	if (!opt) throw OptionErrorNotFound("Option value not found: " + path_opt_name);
+	opt->Get(path_opt_name)->SetString(Encode(value));
 }
 
+void Path::SetToken(std::string const& token_name, std::string const& token_value) {
+	str_map::iterator it = tokens.find(token_name);
+	if (it == tokens.end()) throw agi::InternalError("Bad token: " + token_name, 0);
+	it->second = token_value.empty() ? "" : Normalize(token_value + dir_sep);
 
-void Path::ListSet(const char *name, std::vector<std::string> list) {
-	opt->Get(name)->SetListString(list);
-}
-
-
-void Path::Decode(std::string &path) {
-	if (path[0] != 94) // "^"
-		return;
-	try {
-		if (path.find("^CONFIG") == 0) {
-			path.replace(0, 7, Config());
-			return;
-		}
-
-		if (path.find("^USER") == 0) {
-			path.replace(0, 5, User());
-			return;
-		}
-
-		if (path.find("^DATA") == 0) {
-			path.replace(0, 5, Data());
-			return;
-		}
-
-		if (path.find("^DOC") == 0) {
-			path.replace(0, 4, Doc());
-			return;
-		}
-
-		if (path.find("^TEMP") == 0) {
-			path.replace(0, 5, Temp());
-			return;
-		}
-
-		if (path.find("^AUDIO") == 0) {
-			std::string path_str(opt->Get("Last/Audio")->GetString());
-			Decode(path_str);
-			path.replace(0, 6, path_str);
-			return;
-		}
-
-		if (path.find("^VIDEO") == 0) {
-			std::string path_str(opt->Get("Last/Video")->GetString());
-			Decode(path_str);
-			path.replace(0, 6, path_str);
-			return;
-		}
-
-		if (path.find("^SUBTITLE") == 0) {
-			std::string path_str(opt->Get("Last/Subtitle")->GetString());
-			Decode(path_str);
-			path.replace(0, 5, path_str);
-			return;
-		}
-
-		throw PathErrorInvalid("Invalid cookie used");
-
-	} catch (OptionErrorNotFound&) {
-		throw PathErrorInternal("Failed to find key in Decode");
+	paths.clear();
+	for (str_map::const_iterator t_it = tokens.begin(); t_it != tokens.end(); ++t_it) {
+		if (t_it->second.size())
+			paths[t_it->second] = t_it->first;
 	}
 }
 
-void Path::Encode(std::string &path) {
+void Path::SetTokenFile(std::string const& token_name, std::string const& token_value) {
+	SetToken(token_name, GetDir(token_value));
 }
 
+std::string Path::Combine(std::string const& prefix, std::string const& suffix) {
+	if (IsAbsolute(suffix) || prefix.empty())
+		return Normalize(suffix);
+	return Normalize(prefix + dir_sep + suffix);
+}
 
-} // namespace agi
+std::string Path::GetDir(std::string const& path) {
+	std::string norm(Normalize(path));
+	if (norm.size() < 2) return norm;
+	size_t pos = norm.rfind(dir_sep, norm.size() - 2);
+	if (pos == std::string.npos) return norm;
+
+	norm.resize(pos + 1);
+	return norm;
+}
+
+std::string Path::GetFileName(std::string const& path) {
+	std::string norm(Normalize(path));
+	size_t pos = norm.rfind(dir_sep);
+	if (pos == std::string.npos) return norm;
+
+	norm.erase(0, pos + 1);
+	return norm;
+}
+
+}

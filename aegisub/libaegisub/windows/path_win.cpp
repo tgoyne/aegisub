@@ -1,4 +1,4 @@
-// Copyright (c) 2011, Niels Martin Hansen <nielsm@aegisub.org>
+// Copyright (c) 2012, Thomas Goyne <plorkyeran@aegisub.org>
 //
 // Permission to use, copy, modify, and distribute this software for any
 // purpose with or without fee is hereby granted, provided that the above
@@ -15,8 +15,8 @@
 // $Id$
 
 /// @file path.cpp
-/// @brief Common paths.
-/// @ingroup libaegisub
+/// @brief Windows-specific path code
+/// @ingroup libaegisub windows
 
 #ifndef LAGI_PRE
 #include <string>
@@ -26,7 +26,6 @@
 
 #include <libaegisub/charset_conv_win.h>
 #include <libaegisub/util_win.h>
-
 
 namespace {
 #include <Shlobj.h>
@@ -42,69 +41,68 @@ std::string WinGetFolderPath(int folder) {
 		path    // pszPath
 		);
 	if (FAILED(res))
-		throw agi::PathErrorInternal("SHGetFolderPath() failed"); //< @fixme error message?
+		throw ("SHGetFolderPath() failed"); //< @fixme error message?
 
 	return agi::charset::ConvertW(path);
 }
 
-std::string get_install_path() {
-	static std::string install_path;
-	if (install_path.empty()) {
-		// Excerpt from <http://msdn.microsoft.com/en-us/library/bb776391.aspx>:
-		// lpCmdLine [in]
-		//     If this parameter is an empty string the function returns
-		//     the path to the current executable file.
-		int argc;
-		LPWSTR *argv = CommandLineToArgvW(L"", &argc);
-		
-		wchar_t path[MAX_PATH+1] = {0};
-		wchar_t *fn;
-		DWORD res = GetFullPathNameW(argv[0], MAX_PATH, path, &fn);
-		LocalFree(argv);
-		
-		if (res > 0 && GetLastError() == 0) {
-			*fn = '\0'; // fn points to filename part of path, set an end marker there
-			install_path = agi::charset::ConvertW(std::wstring(path));
-		} else {
-			throw agi::PathErrorInternal(agi::util::ErrorString(GetLastError()));
-		}
-	}
-
-	return install_path;
 }
-
-}
-
 
 namespace agi {
 
-std::string Path::Data() {
-	return get_install_path();
+char Path::dir_sep = '\\';
+char Path::non_dir_sep = '/';
+
+void Path::FillPlatformSpecificPaths() {
+	//tokens["?temp"] = "";
+
+	SetToken("?user", WinGetFolderPath(CSIDL_APPDATA) + "\\Aegisub");
+	SetToken("?local", WinGetFolderPath(CSIDL_LOCAL_APPDATA) + "\\Aegisub");
+
+	/// @todo error checking
+	int argc;
+	LPWSTR *argv = CommandLineToArgvW(L"", &argc);
+	SetTokenFile("?data", charset::ConvertW(argv[0]));
+	LocalFree(argv);
 }
 
-std::string Path::Doc() {
-	return Data() + "docs\\";
+std::string Path::Normalize(std::string const& path) {
+	wchar_t fullpath[32768]; // Max UNC path length plus one
+	DWORD used = GetFullPathNameW(charset::ConvertW(path).c_str(), sizeof(fullpath) / sizeof(wchar_t), fullpath, 0);
+	std::string normalized(charset::ConvertW(std::wstring(fullpath, used)));
+
+	// Special cases where we want to force the path to end with /:
+	// Drive letter + colon
+	if (normalized.size() == 2 && normalized[1] == ':')
+		normalized.push_back('\\');
+	// Trailing . or ..
+	else if (path.size() > 2 && path[path.size() - 1] == '.' && normalized[normalized.size() - 1] != '\\') {
+		char c = path[path.size() - 2];
+		if (c == '.')
+			c = path[path.size() - 3];
+		if (c == '\\' || c == '/')
+			normalized.push_back('\\');
+	}
+	// Original path is just a drive letter, so the normalized path is the
+	// current working directory
+	else if (path.size() == 2 && path[1] == ':')
+		normalized.push_back('\\');
+
+	// De-absolute things starting with a token
+	if (path.size() && path[0] == '?')
+		normalized.erase(0, normalized.find('?'));
+
+	return normalized;
 }
 
-std::string Path::User() {
-	return WinGetFolderPath(CSIDL_PERSONAL);
+bool Path::IsAbsolute(std::string const& path) {
+	if (path.size() < 3) return false;
+
+	return
+		// Network path must be at least two slashes and something
+		(path[0] == '\\' && path[1] == '\\') ||
+		// Local path must be at least drive letter, colon, slash
+		((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z') && path[1] == ':' && (path[2] == '\\' || path[2] == '/'));
 }
 
-std::string Path::Locale() {
-	return Data() + "locale\\";
 }
-
-std::string Path::Config() {
-	return WinGetFolderPath(CSIDL_APPDATA) + "Aegisub3";
-	/// @fixme should get version number in a more dynamic manner
-}
-
-std::string Path::Temp() {
-	wchar_t path[MAX_PATH+1] = {0};
-	if (GetTempPath(MAX_PATH, path) == 0)
-		throw PathErrorInternal(util::ErrorString(GetLastError()));
-	else
-		return charset::ConvertW(path);
-}
-
-} // namespace agi

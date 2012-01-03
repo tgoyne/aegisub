@@ -18,95 +18,99 @@
 /// @brief Common paths.
 /// @ingroup libaegisub
 
+#ifndef LAGI_PRE
+#include <map>
+#include <string>
+#endif
+
 #include <libaegisub/exception.h>
-#include <libaegisub/scoped_ptr.h>
 
 namespace agi {
+	class Options;
 
-DEFINE_BASE_EXCEPTION_NOINNER(PathError, Exception)
-DEFINE_SIMPLE_EXCEPTION_NOINNER(PathErrorNotFound, PathError, "path/not_found")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(PathErrorInvalid, PathError, "path/invalid")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(PathErrorInternal, PathError, "path")
-
-class Options;
-
-/// @class Path
-// Internal representation of all paths in aegisub.
+/// Class for handling everything path-related in Aegisub
 class Path {
+	typedef std::map<std::string, std::string> str_map;
+
+	/// The directory separator character for the platform
+	static char dir_sep;
+	/// The directory separator character for other platforms
+	static char non_dir_sep;
+
+	/// Token -> Path map
+	str_map tokens;
+
+	/// Path -> Token map
+	str_map paths;
+
+	/// Options file for stored paths; may be NULL
+	Options *opt;
+
+	/// Platform-specific code to fill in the default paths, called in the constructor
+	void FillPlatformSpecificPaths();
+
 public:
-	// For unit testing.
-	friend class PathTest;
-
 	/// Constructor
-	Path(const std::string &file, const std::string& default_path);
+	/// @param opt Options object to use for GetPath/SetPath; may be NULL
+	Path(Options *opt);
 
-	/// Destructor
-	~Path();
+	/// Decode and normalize a path which may begin with a registered token
+	/// @param path Path which is either already absolute or begins with a token
+	/// @return Absolute path
+	std::string Decode(std::string const& path) const;
 
-	/// @brief Get a path, this is automatically decoded.
-	/// @param name Path to get
-	/// @return Full path name in UTF-8
-	std::string Get(const char *name);
+	/// Encode an absolute path to begin with a token if there are any applicable
+	/// @param path Absolute path to encode
+	/// @return path untouched, or with some portion of the beginning replaced with a token
+	std::string Encode(std::string path) const;
 
-	/// @brief Set a path, this will be automaticalled encoded if a cookie matches.
-	/// @param[in] name Path name to save to.
-	void Set(const char *name, const std::string &path);
+	/// Get a fully-decoded and normalized path from the configuration
+	/// @param path_opt_name Name of the option to get
+	/// @return Absolute path from the option
+	std::string GetPath(std::string const& path_opt_name) const;
 
-	/// @brief Set a list of paths
-	/// @param name Path name.
-	/// @param out[out] Map to load list into
-	void ListGet(const char *name, std::vector<std::string> &out);
+	/// Store a path in the options, making it relative to a token if possible
+	/// @param path_opt_name Name of the option to set
+	/// @param value New value of the option
+	void SetPath(std::string const& path_opt_name, std::string const& value);
 
-	/// @brief Set a list of paths.
-	/// @param name Path name.
-	/// @param list List to set.
-	void ListSet(const char *name, std::vector<std::string> list);
+	/// Set a prefix token to use for encoding and decoding paths
+	/// @param token_name A single word token beginning with '?'
+	/// @param token_value An absolute path to a directory
+	void SetToken(std::string const& token_name, std::string const& token_value);
 
-	/// @brief Get the default 'open' directory when no alternative is available.
-	/// @return Directory
-	/// This returns several different values based on OS:
-	///   Windows: Documents folder
-	///   OS X: ~/Documents
-	///   Unix: ~ or Documents folder if set in the environment
-	std::string Default();
+	/// Set a prefix token to use for encoding and decoding paths
+	/// @param token_name A single word token beginning with '?'
+	/// @param token_value An absolute path to a file
+	void SetTokenFile(std::string const& token_name, std::string const& token_value);
 
-	/// @brief Decode a path
-	/// @param path Decode a path in-place.
-	void Decode(std::string &path);
+	/// Normalize a path
+	/// @param path Path to normalize
+	/// @return The absolute normalized path
+	///
+	/// Convert a path to an absolute path with slashes in the correct
+	/// direction for the current platform
+	static std::string Normalize(std::string const& path);
 
-	/// Configuration directory
-	static std::string Config();
+	/// Combine and normalize two path chunks, handling trailing/leading slashes
+	/// @param prefix First part of path, with trailing slash optional
+	/// @param suffix Second part of path. If this path is absolute, prefix is ignored
+	/// @return Combined path
+	static std::string Combine(std::string const& prefix, std::string const& suffix);
 
-private:
-	/// Location of path config file.
-	const std::string path_file;
+	/// Get the normalized full path to the directory of the path
+	/// @param path Path to get the containing directory of
+	/// @return Path to the directory containing the passed path, with trailing slash
+	///
+	/// Note that as this returns the containing directory, passing the result
+	/// of it to GetDir again will result in truncating one level of directories.
+	static std::string GetDir(std::string const& path);
 
-	/// Internal default config.
-	const std::string path_default;
+	/// Get the filename from a path
+	static std::string GetFileName(std::string const& path);
 
-	/// @brief Encode a path.
-	/// @param path Encode a path in-place.
-	///   ^CONFIG   - Configuration directory (not changable)
-	///   ^USER     - Users home directory
-	///   ^DATA     - Aegisub data files
-	///   ^VIDEO    - Last opened video directory
-	///   ^SUBTITLE - Last opened subtitle directory
-	///   ^AUDIO    - Last opened audio directory
-	void Encode(std::string &path);
-
-	/// Options object.
-	scoped_ptr<Options> opt;
-
-	/// @brief Locale files
-	/// @return Locale location
-	/// This is directly assessibly as the Locale directory will never change on any platform.
-	std::string Locale();
-
-protected:
-	std::string Data();	///< Shared resources
-	std::string Doc();	///< Documents
-	std::string User();	///< User config directory
-	std::string Temp();	///< Temporary storage
+	/// Is a path absolute?
+	static bool IsAbsolute(std::string const& path);
 };
 
-} // namespace agi
+}

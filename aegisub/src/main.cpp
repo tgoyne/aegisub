@@ -81,7 +81,6 @@
 namespace config {
 	agi::Options *opt;
 	agi::MRUManager *mru;
-	agi::Path *path;
 }
 
 
@@ -151,10 +150,6 @@ bool AegisubApp::OnInit() {
 	emit_stdout = new agi::log::EmitSTDOUT();
 	emit_stdout->Enable();
 #endif
-
-	std::string path(agi::Path::Config());
-	config::path = new agi::Path(path.append("path.json"), GET_DEFAULT_CONFIG(default_path));
-
 
 	// Init commands.
 	cmd::init_builtin_commands();
@@ -302,7 +297,6 @@ int AegisubApp::OnExit() {
 	delete config::opt;
 	delete config::mru;
 	hotkey::clear();
-	delete config::path;
 	cmd::clear();
 
 	delete global_scripts;
