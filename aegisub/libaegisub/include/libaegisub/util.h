@@ -80,5 +80,17 @@ namespace agi {
 		}
 	}
 
+	inline bool begins_with(std::string const& haystack, std::string const& needle) {
+		return haystack.compare(0, needle.size(), needle) == 0;
+	}
+
+	inline bool begins_with(std::string const& haystack, std::string const& needle, std::string *suffix) {
+		if (begins_with(haystack, needle)) {
+			*suffix = haystack.substr(needle.size());
+			return true;
+		}
+		return false;
+	}
+
 	} // namespace util
 } // namespace agi

@@ -80,7 +80,6 @@
 namespace config {
 	agi::Options *opt = 0;
 	agi::MRUManager *mru = 0;
-	agi::Path *path = 0;
 }
 
 
@@ -184,9 +183,6 @@ bool AegisubApp::OnInit() {
 	catch (agi::Exception const& err) {
 		wxMessageBox("Configuration file is invalid. Error reported:\n" + lagi_wxString(err.GetMessage()), "Error");
 	}
-
-	std::string path(agi::Path::Config());
-	config::path = new agi::Path(path.append("path.json"), GET_DEFAULT_CONFIG(default_path));
 
 	// Init commands.
 	cmd::init_builtin_commands();
@@ -299,7 +295,6 @@ int AegisubApp::OnExit() {
 	delete config::opt;
 	delete config::mru;
 	hotkey::clear();
-	delete config::path;
 	cmd::clear();
 
 	delete global_scripts;
