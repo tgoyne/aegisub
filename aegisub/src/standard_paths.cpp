@@ -59,6 +59,7 @@ StandardPaths::StandardPaths() {
 
 	DoSetPathValue("?data", paths.GetDataDir());
 	DoSetPathValue("?user", paths.GetUserDataDir());
+	DoSetPathValue("?local", paths.GetUserLocalDataDir());
 	DoSetPathValue("?temp", paths.GetTempDir());
 
 	// Create paths if they don't exist
