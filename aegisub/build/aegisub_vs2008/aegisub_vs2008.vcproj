@@ -314,6 +314,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\ass_dialogue_parser.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ass_dialogue_parser.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\ass_entry.cpp"
 				>
 			</File>
