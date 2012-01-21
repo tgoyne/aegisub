@@ -3,8 +3,92 @@ namespace agi { struct Context; }
 class AssDialogue;
 class Vector2D;
 
-class ParsedAssDialogue {
 
+enum ASS_BlockType {
+	BLOCK_BASE,
+	BLOCK_PLAIN,
+	BLOCK_OVERRIDE,
+	BLOCK_DRAWING
+};
+
+class AssOverrideParameter;
+class AssOverrideTag;
+
+/// DOCME
+/// @class AssDialogueBlock
+
+/// @brief AssDialogue Blocks
+///
+/// A block is each group in the text field of an AssDialogue
+/// @verbatim
+///  Yes, I {\i1}am{\i0} here.
+///
+/// Gets split in five blocks:
+///  "Yes, I " (Plain)
+///  "\\i1"     (Override)
+///  "am"      (Plain)
+///  "\\i0"     (Override)
+///  " here."  (Plain)
+///
+/// Also note how {}s are discarded.
+/// Override blocks are further divided in AssOverrideTags.
+///
+/// The GetText() method generates a new value for the "text" field from
+/// the other fields in the specific class, and returns the new value.
+/// @endverbatim
+class AssDialogueBlock {
+protected:
+	wxString text;
+public:
+	AssDialogueBlock(wxString const& text) : text(text) { }
+	virtual ~AssDialogueBlock() { }
+
+	virtual ASS_BlockType GetType() = 0;
+	virtual wxString GetText() { return text; }
+};
+
+class AssDialogueBlockPlain : public AssDialogueBlock {
+public:
+	ASS_BlockType GetType() { return BLOCK_PLAIN; }
+	AssDialogueBlockPlain(wxString const& text = "") : AssDialogueBlock(text) { }
+};
+
+class AssDialogueBlockDrawing : public AssDialogueBlock {
+public:
+	int Scale;
+
+	ASS_BlockType GetType() { return BLOCK_DRAWING; }
+	AssDialogueBlockDrawing(wxString const& text = "") : AssDialogueBlock(text) { }
+	void TransformCoords(int trans_x,int trans_y,double mult_x,double mult_y);
+};
+
+class AssDialogueBlockOverride : public AssDialogueBlock {
+public:
+	AssDialogueBlockOverride(wxString const& text = "") : AssDialogueBlock(text) { }
+	~AssDialogueBlockOverride();
+
+	std::vector<AssOverrideTag*> Tags;
+
+
+	ASS_BlockType GetType() { return BLOCK_OVERRIDE; }
+	wxString GetText();
+	void ParseTags();
+	void AddTag(wxString const& tag);
+
+	/// Type of callback function passed to ProcessParameters
+	typedef void (*ProcessParametersCallback)(wxString,int,AssOverrideParameter*,void *);
+
+	/// @brief Process parameters via callback 
+	/// @param callback The callback function to call per tag parameter
+	/// @param userData User data to pass to callback function
+	void ProcessParameters(ProcessParametersCallback callback, void *userData);
+};
+
+class ParsedAssDialogue : private std::vector<AssDialogueBlock*> {
+	AssDialogue *line;
+public:
+	ParsedAssDialogue(AssDialogue *line);
+	~ParsedAssDialogue();
 };
 
 class AssDialogueParser {

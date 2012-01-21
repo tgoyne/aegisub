@@ -221,83 +221,12 @@ const wxString AssDialogue::GetEntryData() const {
 	return GetData(false);
 }
 
-wxString AssDialogue::GetSSAText () const {
+wxString AssDialogue::GetSSAText() const {
 	return GetData(true);
 }
 
 void AssDialogue::ParseASSTags() {
-	ClearBlocks();
 
-	// Empty line, make an empty block
-	if (Text.empty()) {
-		Blocks.push_back(new AssDialogueBlockPlain);
-		return;
-	}
-
-	int drawingLevel = 0;
-
-	for (size_t len = Text.size(), cur = 0; cur < len; ) {
-		// Overrides block
-		if (Text[cur] == '{') {
-			++cur;
-			// Get contents of block
-			wxString work;
-			size_t end = Text.find("}", cur);
-			if (end == wxString::npos) {
-				work = Text.substr(cur);
-				cur = len;
-			}
-			else {
-				work = Text.substr(cur, end - cur);
-				cur = end + 1;
-			}
-			
-			if (work.size() && work.Find("\\") == wxNOT_FOUND) {
-				//We've found an override block with no backslashes
-				//We're going to assume it's a comment and not consider it an override block
-				//Currently we'll treat this as a plain text block, but feel free to create a new class
-				Blocks.push_back(new AssDialogueBlockPlain("{" + work + "}"));
-			}
-			else {
-				// Create block
-				AssDialogueBlockOverride *block = new AssDialogueBlockOverride(work);
-				block->ParseTags();
-				Blocks.push_back(block);
-
-				// Look for \p in block
-				std::vector<AssOverrideTag*>::iterator curTag;
-				for (curTag = block->Tags.begin();curTag != block->Tags.end();curTag++) {
-					if ((*curTag)->Name == "\\p") {
-						drawingLevel = (*curTag)->Params[0]->Get<int>(0);
-					}
-				}
-			}
-		}
-		// Plain-text/drawing block
-		else {
-			wxString work;
-			size_t end = Text.find("{",cur);
-			if (end == wxString::npos) {
-				work = Text.substr(cur);
-				cur = len;
-			}
-			else {
-				work = Text.substr(cur, end - cur);
-				cur = end;
-			}
-
-			// Plain-text
-			if (drawingLevel == 0) {
-				Blocks.push_back(new AssDialogueBlockPlain(work));
-			}
-			// Drawing
-			else {
-				AssDialogueBlockDrawing *block = new AssDialogueBlockDrawing(work);
-				block->Scale = drawingLevel;
-				Blocks.push_back(block);
-			}
-		}
-	}
 }
 
 void AssDialogue::StripTags () {
@@ -372,14 +301,12 @@ wxString AssDialogue::GetMarginString(int which,bool pad) const {
 void AssDialogue::ProcessParameters(AssDialogueBlockOverride::ProcessParametersCallback callback,void *userData) {
 	// Apply for all override blocks
 	AssDialogueBlockOverride *curBlock;
-	//ParseASSTags();
 	for (std::vector<AssDialogueBlock*>::iterator cur=Blocks.begin();cur!=Blocks.end();cur++) {
 		if ((*cur)->GetType() == BLOCK_OVERRIDE) {
 			curBlock = static_cast<AssDialogueBlockOverride*> (*cur);
 			curBlock->ProcessParameters(callback,userData);
 		}
 	}
-	//ClearBlocks();
 }
 
 bool AssDialogue::CollidesWith(AssDialogue *target) {
