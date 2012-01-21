@@ -62,21 +62,6 @@ AssDialogue::AssDialogue()
 	for (int i=0;i<4;i++) Margin[i] = 0;
 }
 
-AssDialogue::AssDialogue(AssDialogue const& that)
-: AssEntry()
-, Comment(that.Comment)
-, Layer(that.Layer)
-, Start(that.Start)
-, End(that.End)
-, Style(that.Style)
-, Actor(that.Actor)
-, Effect(that.Effect)
-, Text(that.Text)
-{
-	group = that.group;
-	for (int i=0;i<4;i++) Margin[i] = that.Margin[i];
-}
-
 /// @brief DOCME
 /// @param _data   
 /// @param version 
