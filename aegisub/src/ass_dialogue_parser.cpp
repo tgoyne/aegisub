@@ -217,30 +217,71 @@ wxString AssDialogueParser::GetLineVectorClip(AssDialogue *diag, int &scale, boo
 	return "";
 }
 
+/// Get the block index in the text of the position
+int block_at_pos(wxString const& text, int pos) {
+	int n = 0;
+	int max = text.size() - 1;
+	for (int i = 0; i <= pos && i <= max; ++i) {
+		if (i > 0 && text[i] == '{')
+			n++;
+		if (text[i] == '}' && i != max && i != pos && i != pos -1 && (i+1 == max || text[i+1] != '{'))
+			n++;
+	}
+
+	return n;
+}
+
 void AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& tag, wxString const& value) {
 	if (!line) return;
 
-	wxString removeTag;
-	if (tag == "\\1c") removeTag = "\\c";
-	else if (tag == "\\frz") removeTag = "\\fr";
-	else if (tag == "\\pos") removeTag = "\\move";
-	else if (tag == "\\move") removeTag = "\\pos";
-	else if (tag == "\\clip") removeTag = "\\iclip";
-	else if (tag == "\\iclip") removeTag = "\\clip";
+	if (line->Blocks.empty())
+		line->ParseASSTags();
+
+	int blockn = block_at_pos(line->Text, pos);
+
+	AssDialogueBlockPlain *plain = 0;
+	AssDialogueBlockOverride *ovr = 0;
+	while (blockn >= 0) {
+		AssDialogueBlock *block = line->Blocks[blockn];
+		if (dynamic_cast<AssDialogueBlockDrawing*>(block))
+			--blockn;
+		else if ((plain = dynamic_cast<AssDialogueBlockPlain*>(block))) {
+			// Cursor is in a comment block, so try the previous block instead
+			if (plain->GetText().StartsWith("{")) {
+				--blockn;
+				pos = line->Text.rfind('{', pos);
+			}
+			else
+				break;
+		}
+		else {
+			ovr = dynamic_cast<AssDialogueBlockOverride*>(block);
+			assert(ovr);
+			break;
+		}
+	}
+
+	// If we didn't hit a suitable block for inserting the override just put
+	// it at the beginning of the line
+	if (blockn < 0)
+		pos = 0;
 
 	wxString insert = tag + value;
+	int shift = insert.size();
+	if (plain || blockn < 0) {
+		line->Text = line->Text.Left(pos) + "{" + insert + "}" + line->Text.Mid(pos);
+		shift += 2;
+		line->ParseASSTags();
+	}
+	else if(ovr) {
+		wxString removeTag;
+		if (tag == "\\1c") removeTag = "\\c";
+		else if (tag == "\\frz") removeTag = "\\fr";
+		else if (tag == "\\pos") removeTag = "\\move";
+		else if (tag == "\\move") removeTag = "\\pos";
+		else if (tag == "\\clip") removeTag = "\\iclip";
+		else if (tag == "\\iclip") removeTag = "\\clip";
 
-	// Get block at start
-	line->ParseASSTags();
-	AssDialogueBlock *block = line->Blocks.front();
-
-	// Get current block as plain or override
-	assert(dynamic_cast<AssDialogueBlockDrawing*>(block) == NULL);
-
-	if (dynamic_cast<AssDialogueBlockPlain*>(block))
-		line->Text = "{" + insert + "}" + line->Text;
-	else if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride*>(block)) {
-		// Remove old of same
 		for (size_t i = 0; i < ovr->Tags.size(); i++) {
 			wxString name = ovr->Tags[i]->Name;
 			if (tag == name || removeTag == name) {
@@ -253,5 +294,6 @@ void AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& 
 
 		line->UpdateText();
 	}
+	else
+		assert(false);
 }
-
