@@ -128,16 +128,6 @@ protected:
 	void Commit(wxString message = "");
 	bool IsDisplayed(AssDialogue *line) const;
 
-	/// Get the line's position if it's set, or it's default based on style if not
-	Vector2D GetLinePosition(AssDialogue *diag);
-	/// Get the line's origin if it's set, or Vector2D::Bad() if not
-	Vector2D GetLineOrigin(AssDialogue *diag);
-	bool GetLineMove(AssDialogue *diag, Vector2D &p1, Vector2D &p2, int &t1, int &t2);
-	void GetLineRotation(AssDialogue *diag, float &rx, float &ry, float &rz);
-	void GetLineScale(AssDialogue *diag, Vector2D &scale);
-	void GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, bool &inverse);
-	wxString GetLineVectorClip(AssDialogue *diag, int &scale, bool &inverse);
-
 	void SetOverride(AssDialogue* line, wxString const& tag, wxString const& value);
 	void SetSelectedOverride(wxString const& tag, wxString const& value);
 
