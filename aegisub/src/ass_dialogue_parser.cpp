@@ -232,7 +232,7 @@ int block_at_pos(wxString const& text, int pos) {
 }
 
 int AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& tag, wxString const& value) {
-	if (!line) return;
+	if (!line) return 0;
 
 	if (line->Blocks.empty())
 		line->ParseASSTags();
@@ -287,14 +287,13 @@ int AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& t
 			wxString name = ovr->Tags[i]->Name;
 			if (tag == name || alt == name) {
 				shift -= ((wxString)*ovr->Tags[i]).size();
+				delete ovr->Tags[i];
 				if (found) {
-					delete ovr->Tags[i];
 					ovr->Tags.erase(ovr->Tags.begin() + i);
 					i--;
 				}
 				else {
-					ovr->Tags[i]->Params[0]->Set(value);
-					ovr->Tags[i]->Params[0]->omitted = false;
+					ovr->Tags[i] = new AssOverrideTag(insert);
 					found = true;
 				}
 			}
