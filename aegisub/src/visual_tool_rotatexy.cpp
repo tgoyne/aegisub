@@ -28,6 +28,8 @@
 
 #include "visual_tool_rotatexy.h"
 
+#include "ass_dialogue_parser.h"
+
 VisualToolRotateXY::VisualToolRotateXY(VideoDisplay *parent, agi::Context *context)
 : VisualTool<VisualDraggableFeature>(parent, context)
 {
@@ -166,9 +168,9 @@ void VisualToolRotateXY::UpdateDrag(feature_iterator feature) {
 void VisualToolRotateXY::DoRefresh() {
 	if (!active_line) return;
 
-	if (!(org->pos = GetLineOrigin(active_line)))
-		org->pos = GetLinePosition(active_line);
+	if (!(org->pos = parser->GetLineOrigin(active_line)))
+		org->pos = parser->GetLinePosition(active_line);
 	org->pos = FromScriptCoords(org->pos);
 
-	GetLineRotation(active_line, angle_x, angle_y, angle_z);
+	parser->GetLineRotation(active_line, angle_x, angle_y, angle_z);
 }

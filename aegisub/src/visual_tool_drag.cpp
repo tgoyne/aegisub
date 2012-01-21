@@ -30,6 +30,7 @@
 #endif
 
 #include "ass_dialogue.h"
+#include "ass_dialogue_parser.h"
 #include "ass_file.h"
 #include "include/aegisub/context.h"
 #include "libresrc/libresrc.h"
@@ -65,7 +66,7 @@ void VisualToolDrag::UpdateToggleButtons() {
 	if (active_line) {
 		Vector2D p1, p2;
 		int t1, t2;
-		to_move = !GetLineMove(active_line, p1, p2, t1, t2);
+		to_move = !parser->GetLineMove(active_line, p1, p2, t1, t2);
 	}
 
 	if (to_move == button_is_move) return;
@@ -83,12 +84,12 @@ void VisualToolDrag::OnSubTool(wxCommandEvent &) {
 		Vector2D p1, p2;
 		int t1, t2;
 
-		bool has_move = GetLineMove(line, p1, p2, t1, t2);
+		bool has_move = parser->GetLineMove(line, p1, p2, t1, t2);
 
 		if (has_move)
 			SetOverride(line, "\\pos", p1.PStr());
 		else {
-			p1 = GetLinePosition(line);
+			p1 = parser->GetLinePosition(line);
 			// Round the start and end times to exact frames
 			int start = vc->TimeAtFrame(vc->FrameAtTime(line->Start, agi::vfr::START)) - line->Start;
 			int end = vc->TimeAtFrame(vc->FrameAtTime(line->Start, agi::vfr::END)) - line->Start;
@@ -209,7 +210,7 @@ void VisualToolDrag::MakeFeatures(AssDialogue *diag) {
 }
 
 void VisualToolDrag::MakeFeatures(AssDialogue *diag, feature_iterator pos) {
-	Vector2D p1 = FromScriptCoords(GetLinePosition(diag));
+	Vector2D p1 = FromScriptCoords(parser->GetLinePosition(diag));
 
 	// Create \pos feature
 	Feature feat;
@@ -229,7 +230,7 @@ void VisualToolDrag::MakeFeatures(AssDialogue *diag, feature_iterator pos) {
 	int t1, t2;
 
 	// Create move destination feature
-	if (GetLineMove(diag, p1, p2, t1, t2)) {
+	if (parser->GetLineMove(diag, p1, p2, t1, t2)) {
 		feat.pos = FromScriptCoords(p2);
 		feat.layer = 1;
 		feat.type = DRAG_END;
@@ -241,7 +242,7 @@ void VisualToolDrag::MakeFeatures(AssDialogue *diag, feature_iterator pos) {
 	}
 
 	// Create org feature
-	if (Vector2D org = GetLineOrigin(diag)) {
+	if (Vector2D org = parser->GetLineOrigin(diag)) {
 		feat.pos = FromScriptCoords(org);
 		feat.layer = -1;
 		feat.type = DRAG_ORIGIN;
@@ -288,22 +289,22 @@ void VisualToolDrag::UpdateDrag(feature_iterator feature) {
 }
 
 void VisualToolDrag::OnDoubleClick() {
-	Vector2D d = ToScriptCoords(mouse_pos) - (primary ? ToScriptCoords(primary->pos) : GetLinePosition(active_line));
+	Vector2D d = ToScriptCoords(mouse_pos) - (primary ? ToScriptCoords(primary->pos) : parser->GetLinePosition(active_line));
 
 	Selection sel = c->selectionController->GetSelectedSet();
 	for (Selection::const_iterator it = sel.begin(); it != sel.end(); ++it) {
 		Vector2D p1, p2;
 		int t1, t2;
-		if (GetLineMove(*it, p1, p2, t1, t2)) {
+		if (parser->GetLineMove(*it, p1, p2, t1, t2)) {
 			if (t1 > 0 || t2 > 0)
 				SetOverride(*it, "\\move", wxString::Format("(%s,%s,%d,%d)", (p1 + d).Str(), (p2 + d).Str(), t1, t2));
 			else
 				SetOverride(*it, "\\move", wxString::Format("(%s,%s)", (p1 + d).Str(), (p2 + d).Str()));
 		}
 		else
-			SetOverride(*it, "\\pos", (GetLinePosition(*it) + d).PStr());
+			SetOverride(*it, "\\pos", (parser->GetLinePosition(*it) + d).PStr());
 
-		if (Vector2D org = GetLineOrigin(*it))
+		if (Vector2D org = parser->GetLineOrigin(*it))
 			SetOverride(*it, "\\org", (org + d).PStr());
 	}
 

@@ -24,6 +24,7 @@
 
 #include "visual_tool_cross.h"
 
+#include "ass_dialogue_parser.h"
 #include "gl_text.h"
 #include "include/aegisub/context.h"
 #include "video_display.h"
@@ -40,22 +41,22 @@ VisualToolCross::~VisualToolCross() {
 }
 
 void VisualToolCross::OnDoubleClick() {
-	Vector2D d = ToScriptCoords(mouse_pos) - GetLinePosition(active_line);
+	Vector2D d = ToScriptCoords(mouse_pos) - parser->GetLinePosition(active_line);
 
 	Selection sel = c->selectionController->GetSelectedSet();
 	for (Selection::const_iterator it = sel.begin(); it != sel.end(); ++it) {
 		Vector2D p1, p2;
 		int t1, t2;
-		if (GetLineMove(*it, p1, p2, t1, t2)) {
+		if (parser->GetLineMove(*it, p1, p2, t1, t2)) {
 			if (t1 > 0 || t2 > 0)
 				SetOverride(*it, "\\move", wxString::Format("(%s,%s,%d,%d)", Text(p1 + d), Text(p2 + d), t1, t2));
 			else
 				SetOverride(*it, "\\move", wxString::Format("(%s,%s)", Text(p1 + d), Text(p2 + d)));
 		}
 		else
-			SetOverride(*it, "\\pos", "(" + Text(GetLinePosition(*it) + d) + ")");
+			SetOverride(*it, "\\pos", "(" + Text(parser->GetLinePosition(*it) + d) + ")");
 
-		if (Vector2D org = GetLineOrigin(*it))
+		if (Vector2D org = parser->GetLineOrigin(*it))
 			SetOverride(*it, "\\org", "(" + Text(org + d) + ")");
 	}
 

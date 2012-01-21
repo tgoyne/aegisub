@@ -45,6 +45,11 @@ static Vector2D vec_or_bad(param_vec tag, size_t x_idx, size_t y_idx) {
 	return Vector2D((*tag)[x_idx]->Get<float>(), (*tag)[y_idx]->Get<float>());
 }
 
+AssDialogueParser::AssDialogueParser(agi::Context *c)
+: c(c)
+{
+}
+
 Vector2D AssDialogueParser::GetLinePosition(AssDialogue *diag) {
 	int script_w, script_h;
 	c->ass->GetResolution(script_w, script_h);

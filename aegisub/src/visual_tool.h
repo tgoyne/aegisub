@@ -34,6 +34,7 @@
 #include <wx/button.h>
 #endif
 
+#include <libaegisub/scoped_ptr.h>
 #include <libaegisub/signal.h>
 
 #include "gl_wrap.h"
@@ -41,6 +42,7 @@
 #include "vector2d.h"
 
 class AssDialogue;
+class AssDialogueParser;
 class SubtitlesGrid;
 class VideoDisplay;
 class wxToolBar;
@@ -122,6 +124,8 @@ protected:
 
 	agi::signal::Connection file_changed_connection;
 	int commit_id; ///< Last used commit id for coalescing
+
+	agi::scoped_ptr<AssDialogueParser> parser;
 
 	/// @brief Commit the current file state
 	/// @param message Description of changes for undo

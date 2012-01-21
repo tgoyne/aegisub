@@ -28,6 +28,7 @@
 
 #include "visual_tool_scale.h"
 
+#include "ass_dialogue_parser.h"
 #include "utils.h"
 
 VisualToolScale::VisualToolScale(VideoDisplay *parent, agi::Context *context)
@@ -111,7 +112,7 @@ void VisualToolScale::UpdateHold() {
 void VisualToolScale::DoRefresh() {
 	if (!active_line) return;
 
-	GetLineScale(active_line, scale);
-	GetLineRotation(active_line, rx, ry, rz);
-	pos = FromScriptCoords(GetLinePosition(active_line));
+	parser->GetLineScale(active_line, scale);
+	parser->GetLineRotation(active_line, rx, ry, rz);
+	pos = FromScriptCoords(parser->GetLinePosition(active_line));
 }

@@ -28,6 +28,7 @@
 
 #include "visual_tool_rotatez.h"
 
+#include "ass_dialogue_parser.h"
 #include "utils.h"
 
 static const float deg2rad = 3.1415926536f / 180.f;
@@ -124,12 +125,12 @@ void VisualToolRotateZ::UpdateDrag(feature_iterator feature) {
 void VisualToolRotateZ::DoRefresh() {
 	if (!active_line) return;
 
-	pos = FromScriptCoords(GetLinePosition(active_line));
-	if (!(org->pos = GetLineOrigin(active_line)))
+	pos = FromScriptCoords(parser->GetLinePosition(active_line));
+	if (!(org->pos = parser->GetLineOrigin(active_line)))
 		org->pos = pos;
 	else
 		org->pos = FromScriptCoords(org->pos);
 
-	GetLineRotation(active_line, rotation_x, rotation_y, angle);
-	GetLineScale(active_line, scale);
+	parser->GetLineRotation(active_line, rotation_x, rotation_y, angle);
+	parser->GetLineScale(active_line, scale);
 }

@@ -28,6 +28,7 @@
 
 #include "visual_tool_clip.h"
 
+#include "ass_dialogue_parser.h"
 #include "utils.h"
 
 VisualToolClip::VisualToolClip(VideoDisplay *parent, agi::Context *context)
@@ -142,7 +143,7 @@ void VisualToolClip::SetFeaturePositions() {
 
 void VisualToolClip::DoRefresh() {
 	if (active_line) {
-		GetLineClip(active_line, cur_1, cur_2, inverse);
+		parser->GetLineClip(active_line, cur_1, cur_2, inverse);
 		cur_1 = FromScriptCoords(cur_1);
 		cur_2 = FromScriptCoords(cur_2);
 		SetFeaturePositions();

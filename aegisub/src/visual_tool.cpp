@@ -29,6 +29,7 @@
 #include "visual_tool.h"
 
 #include "ass_dialogue.h"
+#include "ass_dialogue_parser.h"
 #include "ass_file.h"
 #include "ass_override.h"
 #include "ass_style.h"
@@ -67,6 +68,7 @@ VisualToolBase::VisualToolBase(VideoDisplay *parent, agi::Context *context)
 , alt_down(false)
 , file_changed_connection(c->ass->AddCommitListener(&VisualToolBase::OnCommit, this))
 , commit_id(-1)
+, parser(new AssDialogueParser(c))
 {
 	int script_w, script_h;
 	c->ass->GetResolution(script_w, script_h);

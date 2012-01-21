@@ -31,6 +31,7 @@
 #include "config.h"
 
 #include "ass_dialogue.h"
+#include "ass_dialogue_parser.h"
 #include "libresrc/libresrc.h"
 #include "main.h"
 #include "utils.h"
@@ -381,7 +382,7 @@ void VisualToolVectorClip::DoRefresh() {
 
 	wxString vect;
 	int scale;
-	vect = GetLineVectorClip(active_line, scale, inverse);
+	vect = parser->GetLineVectorClip(active_line, scale, inverse);
 	spline.DecodeFromASS(vect);
 
 	MakeFeatures();
