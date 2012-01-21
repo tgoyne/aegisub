@@ -271,7 +271,6 @@ int AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& t
 	if (plain || blockn < 0) {
 		line->Text = line->Text.Left(pos) + "{" + insert + "}" + line->Text.Mid(pos);
 		shift += 2;
-		line->ParseASSTags();
 	}
 	else if(ovr) {
 		wxString alt;
