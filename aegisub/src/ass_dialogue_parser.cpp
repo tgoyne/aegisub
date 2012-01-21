@@ -115,10 +115,10 @@ Vector2D AssDialogueParser::GetLinePosition(AssDialogue *diag) {
 	c->ass->GetResolution(script_w, script_h);
 	Vector2D script_res(script_w, script_h);
 
-	ParsedAssDialogue parse(diag);
+	ParsedAssDialogue parsed(diag);
 
-	if (Vector2D ret = vec_or_bad(find_tag(diag, "\\pos"), 0, 1)) return ret;
-	if (Vector2D ret = vec_or_bad(find_tag(diag, "\\move"), 0, 1)) return ret;
+	if (Vector2D ret = vec_or_bad(find_tag(parsed, "\\pos"), 0, 1)) return ret;
+	if (Vector2D ret = vec_or_bad(find_tag(parsed, "\\move"), 0, 1)) return ret;
 
 	// Get default position
 	int margin[4];
@@ -134,9 +134,9 @@ Vector2D AssDialogueParser::GetLinePosition(AssDialogue *diag) {
 	}
 
 	param_vec align_tag;
-	if ((align_tag = find_tag(diag, "\\an")) && !(*align_tag)[0]->omitted)
+	if ((align_tag = find_tag(parsed, "\\an")) && !(*align_tag)[0]->omitted)
 		align = (*align_tag)[0]->Get<int>();
-	else if ((align_tag = find_tag(diag, "\\a"))) {
+	else if ((align_tag = find_tag(parsed, "\\a"))) {
 		align = (*align_tag)[0]->Get<int>(2);
 
 		// \a -> \an values mapping
@@ -171,14 +171,13 @@ Vector2D AssDialogueParser::GetLinePosition(AssDialogue *diag) {
 }
 
 Vector2D AssDialogueParser::GetLineOrigin(AssDialogue *diag) {
-	ParsedAssDialogue parse(diag);
-	return vec_or_bad(find_tag(diag, "\\org"), 0, 1);
+	return vec_or_bad(find_tag(ParsedAssDialogue(diag), "\\org"), 0, 1);
 }
 
 bool AssDialogueParser::GetLineMove(AssDialogue *diag, Vector2D &p1, Vector2D &p2, int &t1, int &t2) {
-	ParsedAssDialogue parse(diag);
+	ParsedAssDialogue parsed(diag);
 
-	param_vec tag = find_tag(diag, "\\move");
+	param_vec tag = find_tag(parsed, "\\move");
 	if (!tag)
 		return false;
 
@@ -197,15 +196,15 @@ void AssDialogueParser::GetLineRotation(AssDialogue *diag, float &rx, float &ry,
 	if (AssStyle *style = c->ass->GetStyle(diag->Style))
 		rz = style->angle;
 
-	ParsedAssDialogue parse(diag);
+	ParsedAssDialogue parsed(diag);
 
-	if (param_vec tag = find_tag(diag, "\\frx"))
+	if (param_vec tag = find_tag(parsed, "\\frx"))
 		rx = tag->front()->Get<float>(rx);
-	if (param_vec tag = find_tag(diag, "\\fry"))
+	if (param_vec tag = find_tag(parsed, "\\fry"))
 		ry = tag->front()->Get<float>(ry);
-	if (param_vec tag = find_tag(diag, "\\frz"))
+	if (param_vec tag = find_tag(parsed, "\\frz"))
 		rz = tag->front()->Get<float>(rz);
-	else if ((tag = find_tag(diag, "\\fr")))
+	else if ((tag = find_tag(parsed, "\\fr")))
 		rz = tag->front()->Get<float>(rz);
 }
 
@@ -217,11 +216,11 @@ void AssDialogueParser::GetLineScale(AssDialogue *diag, Vector2D &scale) {
 		y = style->scaley;
 	}
 
-	ParsedAssDialogue parse(diag);
+	ParsedAssDialogue parsed(diag);
 
-	if (param_vec tag = find_tag(diag, "\\fscx"))
+	if (param_vec tag = find_tag(parsed, "\\fscx"))
 		x = tag->front()->Get<float>(x);
-	if (param_vec tag = find_tag(diag, "\\fscy"))
+	if (param_vec tag = find_tag(parsed, "\\fscy"))
 		y = tag->front()->Get<float>(y);
 
 	scale = Vector2D(x, y);
@@ -233,12 +232,12 @@ void AssDialogueParser::GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p
 	Vector2D script_res(script_w, script_h);
 	inverse = false;
 
-	ParsedAssDialogue parse(diag);
-	param_vec tag = find_tag(diag, "\\iclip");
+	ParsedAssDialogue parsed(diag);
+	param_vec tag = find_tag(parsed, "\\iclip");
 	if (tag)
 		inverse = true;
 	else
-		tag = find_tag(diag, "\\clip");
+		tag = find_tag(parsed, "\\clip");
 
 	if (tag && tag->size() == 4) {
 		p1 = vec_or_bad(tag, 0, 1);
@@ -251,16 +250,16 @@ void AssDialogueParser::GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p
 }
 
 wxString AssDialogueParser::GetLineVectorClip(AssDialogue *diag, int &scale, bool &inverse) {
-	ParsedAssDialogue parse(diag);
+	ParsedAssDialogue parsed(diag);
 
 	scale = 1;
 	inverse = false;
 
-	param_vec tag = find_tag(diag, "\\iclip");
+	param_vec tag = find_tag(parsed, "\\iclip");
 	if (tag)
 		inverse = true;
 	else
-		tag = find_tag(diag, "\\clip");
+		tag = find_tag(parsed, "\\clip");
 
 	if (tag && tag->size() == 4) {
 		return wxString::Format("m %d %d l %d %d %d %d %d %d",
@@ -294,13 +293,13 @@ int block_at_pos(wxString const& text, int pos) {
 int AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& tag, wxString const& value) {
 	if (!line) return 0;
 
-	ParsedAssDialogue parse(line);
+	ParsedAssDialogue parsed(line);
 	int blockn = block_at_pos(line->Text, pos);
 
 	AssDialogueBlockPlain *plain = 0;
 	AssDialogueBlockOverride *ovr = 0;
 	while (blockn >= 0) {
-		AssDialogueBlock *block = parse[blockn];
+		AssDialogueBlock *block = parsed[blockn];
 		if (dynamic_cast<AssDialogueBlockDrawing*>(block))
 			--blockn;
 		else if ((plain = dynamic_cast<AssDialogueBlockPlain*>(block))) {

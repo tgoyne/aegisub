@@ -90,7 +90,7 @@ class ParsedAssDialogue : private std::vector<AssDialogueBlock*> {
 	ParsedAssDialogue(ParsedAssDialogue const&);
 	ParsedAssDialogue& operator=(ParsedAssDialogue const&);
 public:
-	ParsedAssDialogue(AssDialogue *line);
+	explicit ParsedAssDialogue(AssDialogue *line);
 	~ParsedAssDialogue();
 
 	using std::vector<AssDialogueBlock*>::size;
