@@ -221,14 +221,6 @@ void AssDialogue::StripTags() {
 	Text = GetStrippedText();
 }
 
-void AssDialogue::UpdateText() {
-	if (Blocks.empty()) return;
-	Text.clear();
-	for (std::vector<AssDialogueBlock*>::iterator cur=Blocks.begin();cur!=Blocks.end();cur++) {
-		Text += (*cur)->GetText();
-	}
-}
-
 void AssDialogue::SetMarginString(const wxString origvalue,int which) {
 	if (which < 0 || which >= 4) throw Aegisub::InvalidMarginIdError();
 

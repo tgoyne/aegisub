@@ -98,6 +98,8 @@ public:
 	using std::vector<AssDialogueBlock*>::begin;
 	using std::vector<AssDialogueBlock*>::end;
 	using std::vector<AssDialogueBlock*>::clear;
+
+	void UpdateText();
 };
 
 class AssDialogueParser {

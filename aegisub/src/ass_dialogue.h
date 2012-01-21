@@ -86,8 +86,6 @@ public:
 	/// Get text without tags
 	wxString GetStrippedText() const;
 
-	/// If blocks have been parsed, update the text from their current value
-	void UpdateText();
 	const wxString GetEntryData() const;
 	/// Do nothing
 	void SetEntryData(wxString const&) { }

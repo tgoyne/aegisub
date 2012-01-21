@@ -73,6 +73,12 @@ ParsedAssDialogue::~ParsedAssDialogue() {
 	delete_clear(*this);
 }
 
+void ParsedAssDialogue::UpdateText() {
+	line->Text.clear();
+	for (size_t i = 0; i < size(); ++i)
+		line->Text += (*this)[i]->GetText();
+}
+
 typedef const std::vector<AssOverrideParameter*> * param_vec;
 
 // Find a tag's parameters in a line or return NULL if it's not found
@@ -354,7 +360,7 @@ int AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& t
 		if (!found)
 			ovr->AddTag(insert);
 
-		line->UpdateText();
+		parsed.UpdateText();
 		return shift;
 	}
 	else {
