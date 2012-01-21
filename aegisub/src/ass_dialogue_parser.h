@@ -89,6 +89,12 @@ class ParsedAssDialogue : private std::vector<AssDialogueBlock*> {
 public:
 	ParsedAssDialogue(AssDialogue *line);
 	~ParsedAssDialogue();
+
+	using std::vector<AssDialogueBlock*>::size;
+	using std::vector<AssDialogueBlock*>::operator[];
+	using std::vector<AssDialogueBlock*>::begin;
+	using std::vector<AssDialogueBlock*>::end;
+	using std::vector<AssDialogueBlock*>::clear;
 };
 
 class AssDialogueParser {

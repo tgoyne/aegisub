@@ -79,9 +79,9 @@ ParsedAssDialogue::~ParsedAssDialogue() {
 typedef const std::vector<AssOverrideParameter*> * param_vec;
 
 // Find a tag's parameters in a line or return NULL if it's not found
-static param_vec find_tag(const AssDialogue *line, wxString tag_name) {
-	for (size_t i = 0; i < line->Blocks.size(); ++i) {
-		const AssDialogueBlockOverride *ovr = dynamic_cast<const AssDialogueBlockOverride*>(line->Blocks[i]);
+static param_vec find_tag(ParsedAssDialogue const& line, wxString tag_name) {
+	for (size_t i = 0; i < line.size(); ++i) {
+		const AssDialogueBlockOverride *ovr = dynamic_cast<const AssDialogueBlockOverride*>(line[i]);
 		if (!ovr) continue;
 
 		for (size_t j = 0; j < ovr->Tags.size(); ++j) {
@@ -300,7 +300,7 @@ int AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& t
 	AssDialogueBlockPlain *plain = 0;
 	AssDialogueBlockOverride *ovr = 0;
 	while (blockn >= 0) {
-		AssDialogueBlock *block = line->Blocks[blockn];
+		AssDialogueBlock *block = parse[blockn];
 		if (dynamic_cast<AssDialogueBlockDrawing*>(block))
 			--blockn;
 		else if ((plain = dynamic_cast<AssDialogueBlockPlain*>(block))) {
