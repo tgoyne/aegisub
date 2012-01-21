@@ -132,7 +132,6 @@ protected:
 	void Commit(wxString message = "");
 	bool IsDisplayed(AssDialogue *line) const;
 
-	void SetOverride(AssDialogue* line, wxString const& tag, wxString const& value);
 	void SetSelectedOverride(wxString const& tag, wxString const& value);
 
 	VisualToolBase(VideoDisplay *parent, agi::Context *context);

@@ -119,7 +119,7 @@ void VisualToolRotateZ::UpdateHold() {
 }
 
 void VisualToolRotateZ::UpdateDrag(feature_iterator feature) {
-	SetOverride(active_line, "\\org", ToScriptCoords(feature->pos).PStr());
+	parser->SetOverride(active_line, 0, "\\org", ToScriptCoords(feature->pos).PStr());
 }
 
 void VisualToolRotateZ::DoRefresh() {

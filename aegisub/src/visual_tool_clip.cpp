@@ -114,7 +114,7 @@ void VisualToolClip::UpdateHold() {
 }
 
 void VisualToolClip::CommitHold() {
-	SetOverride(active_line, inverse ? "\\iclip" : "\\clip",
+	parser->SetOverride(active_line, 0, inverse ? "\\iclip" : "\\clip",
 		wxString::Format("(%s,%s)", ToScriptCoords(cur_1.Min(cur_2)).Str(), ToScriptCoords(cur_1.Max(cur_2)).Str()));
 }
 

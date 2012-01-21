@@ -197,7 +197,7 @@ void VisualToolVectorClip::MakeFeatures() {
 }
 
 void VisualToolVectorClip::Save() {
-	SetOverride(active_line, inverse ? "\\iclip" : "\\clip", "(" + spline.EncodeToASS() + ")");
+	parser->SetOverride(active_line, 0, inverse ? "\\iclip" : "\\clip", "(" + spline.EncodeToASS() + ")");
 }
 
 void VisualToolVectorClip::UpdateDrag(feature_iterator feature) {

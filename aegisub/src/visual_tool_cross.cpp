@@ -49,15 +49,15 @@ void VisualToolCross::OnDoubleClick() {
 		int t1, t2;
 		if (parser->GetLineMove(*it, p1, p2, t1, t2)) {
 			if (t1 > 0 || t2 > 0)
-				SetOverride(*it, "\\move", wxString::Format("(%s,%s,%d,%d)", Text(p1 + d), Text(p2 + d), t1, t2));
+				parser->SetOverride(*it, 0, "\\move", wxString::Format("(%s,%s,%d,%d)", Text(p1 + d), Text(p2 + d), t1, t2));
 			else
-				SetOverride(*it, "\\move", wxString::Format("(%s,%s)", Text(p1 + d), Text(p2 + d)));
+				parser->SetOverride(*it, 0, "\\move", wxString::Format("(%s,%s)", Text(p1 + d), Text(p2 + d)));
 		}
 		else
-			SetOverride(*it, "\\pos", "(" + Text(parser->GetLinePosition(*it) + d) + ")");
+			parser->SetOverride(*it, 0, "\\pos", "(" + Text(parser->GetLinePosition(*it) + d) + ")");
 
 		if (Vector2D org = parser->GetLineOrigin(*it))
-			SetOverride(*it, "\\org", "(" + Text(org + d) + ")");
+			parser->SetOverride(*it, 0, "\\org", "(" + Text(org + d) + ")");
 	}
 
 	Commit(_("positioning"));

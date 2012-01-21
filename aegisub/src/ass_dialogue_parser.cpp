@@ -216,3 +216,42 @@ wxString AssDialogueParser::GetLineVectorClip(AssDialogue *diag, int &scale, boo
 
 	return "";
 }
+
+void AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& tag, wxString const& value) {
+	if (!line) return;
+
+	wxString removeTag;
+	if (tag == "\\1c") removeTag = "\\c";
+	else if (tag == "\\frz") removeTag = "\\fr";
+	else if (tag == "\\pos") removeTag = "\\move";
+	else if (tag == "\\move") removeTag = "\\pos";
+	else if (tag == "\\clip") removeTag = "\\iclip";
+	else if (tag == "\\iclip") removeTag = "\\clip";
+
+	wxString insert = tag + value;
+
+	// Get block at start
+	line->ParseASSTags();
+	AssDialogueBlock *block = line->Blocks.front();
+
+	// Get current block as plain or override
+	assert(dynamic_cast<AssDialogueBlockDrawing*>(block) == NULL);
+
+	if (dynamic_cast<AssDialogueBlockPlain*>(block))
+		line->Text = "{" + insert + "}" + line->Text;
+	else if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride*>(block)) {
+		// Remove old of same
+		for (size_t i = 0; i < ovr->Tags.size(); i++) {
+			wxString name = ovr->Tags[i]->Name;
+			if (tag == name || removeTag == name) {
+				delete ovr->Tags[i];
+				ovr->Tags.erase(ovr->Tags.begin() + i);
+				i--;
+			}
+		}
+		ovr->AddTag(insert);
+
+		line->UpdateText();
+	}
+}
+

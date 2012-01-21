@@ -87,13 +87,13 @@ void VisualToolDrag::OnSubTool(wxCommandEvent &) {
 		bool has_move = parser->GetLineMove(line, p1, p2, t1, t2);
 
 		if (has_move)
-			SetOverride(line, "\\pos", p1.PStr());
+			parser->SetOverride(line, 0, "\\pos", p1.PStr());
 		else {
 			p1 = parser->GetLinePosition(line);
 			// Round the start and end times to exact frames
 			int start = vc->TimeAtFrame(vc->FrameAtTime(line->Start, agi::vfr::START)) - line->Start;
 			int end = vc->TimeAtFrame(vc->FrameAtTime(line->Start, agi::vfr::END)) - line->Start;
-			SetOverride(line, "\\move", wxString::Format("(%s,%s,%d,%d)", p1.Str(), p1.Str(), start, end));
+			parser->SetOverride(line, 0, "\\move", wxString::Format("(%s,%s,%d,%d)", p1.Str(), p1.Str(), start, end));
 		}
 	}
 
@@ -270,7 +270,7 @@ bool VisualToolDrag::InitializeDrag(feature_iterator feature) {
 
 void VisualToolDrag::UpdateDrag(feature_iterator feature) {
 	if (feature->type == DRAG_ORIGIN) {
-		SetOverride(feature->line, "\\org", ToScriptCoords(feature->pos).PStr());
+		parser->SetOverride(feature->line, 0, "\\org", ToScriptCoords(feature->pos).PStr());
 		return;
 	}
 
@@ -279,9 +279,9 @@ void VisualToolDrag::UpdateDrag(feature_iterator feature) {
 		std::swap(feature, end_feature);
 
 	if (feature->parent == features.end())
-		SetOverride(feature->line, "\\pos", ToScriptCoords(feature->pos).PStr());
+		parser->SetOverride(feature->line, 0, "\\pos", ToScriptCoords(feature->pos).PStr());
 	else
-		SetOverride(feature->line, "\\move",
+		parser->SetOverride(feature->line, 0, "\\move",
 			wxString::Format("(%s,%s,%d,%d)",
 				ToScriptCoords(feature->pos).Str(),
 				ToScriptCoords(end_feature->pos).Str(),
@@ -297,15 +297,15 @@ void VisualToolDrag::OnDoubleClick() {
 		int t1, t2;
 		if (parser->GetLineMove(*it, p1, p2, t1, t2)) {
 			if (t1 > 0 || t2 > 0)
-				SetOverride(*it, "\\move", wxString::Format("(%s,%s,%d,%d)", (p1 + d).Str(), (p2 + d).Str(), t1, t2));
+				parser->SetOverride(*it, 0, "\\move", wxString::Format("(%s,%s,%d,%d)", (p1 + d).Str(), (p2 + d).Str(), t1, t2));
 			else
-				SetOverride(*it, "\\move", wxString::Format("(%s,%s)", (p1 + d).Str(), (p2 + d).Str()));
+				parser->SetOverride(*it, 0, "\\move", wxString::Format("(%s,%s)", (p1 + d).Str(), (p2 + d).Str()));
 		}
 		else
-			SetOverride(*it, "\\pos", (parser->GetLinePosition(*it) + d).PStr());
+			parser->SetOverride(*it, 0, "\\pos", (parser->GetLinePosition(*it) + d).PStr());
 
 		if (Vector2D org = parser->GetLineOrigin(*it))
-			SetOverride(*it, "\\org", (org + d).PStr());
+			parser->SetOverride(*it, 0, "\\org", (org + d).PStr());
 	}
 
 	Commit(_("positioning"));
