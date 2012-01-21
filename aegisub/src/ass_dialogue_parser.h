@@ -23,5 +23,5 @@ public:
 	void GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, bool &inverse);
 	wxString GetLineVectorClip(AssDialogue *diag, int &scale, bool &inverse);
 
-	void SetOverride(AssDialogue* line, int pos, wxString const& tag, wxString const& value);
+	int SetOverride(AssDialogue* line, int pos, wxString const& tag, wxString const& value);
 };

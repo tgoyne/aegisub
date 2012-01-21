@@ -579,79 +579,14 @@ void SubsEditBox::OnCommentChange(wxCommandEvent &) {
 
 void SubsEditBox::SetTag(wxString tag, wxString value, bool atEnd) {
 	assert(line);
-	if (line->Blocks.empty())
-		line->ParseASSTags();
 
 	std::pair<int, int> sel = get_selection(TextEdit);
 	int start = atEnd ? sel.second : sel.first;
-	int blockn = block_at_pos(line->Text, start);
-
-	AssDialogueBlockPlain *plain = 0;
-	AssDialogueBlockOverride *ovr = 0;
-	while (blockn >= 0) {
-		AssDialogueBlock *block = line->Blocks[blockn];
-		if (dynamic_cast<AssDialogueBlockDrawing*>(block))
-			--blockn;
-		else if ((plain = dynamic_cast<AssDialogueBlockPlain*>(block))) {
-			// Cursor is in a comment block, so try the previous block instead
-			if (plain->GetText().StartsWith("{")) {
-				--blockn;
-				start = line->Text.rfind('{', start);
-			}
-			else
-				break;
-		}
-		else {
-			ovr = dynamic_cast<AssDialogueBlockOverride*>(block);
-			assert(ovr);
-			break;
-		}
-	}
-
-	// If we didn't hit a suitable block for inserting the override just put
-	// it at the beginning of the line
-	if (blockn < 0)
-		start = 0;
-
-	wxString insert = tag + value;
-	int shift = insert.size();
-	if (plain || blockn < 0) {
-		line->Text = line->Text.Left(start) + "{" + insert + "}" + line->Text.Mid(start);
-		shift += 2;
-		line->ParseASSTags();
-	}
-	else if(ovr) {
-		wxString alt;
-		if (tag == "\\c") alt = "\\1c";
-		// Remove old of same
-		bool found = false;
-		for (size_t i = 0; i < ovr->Tags.size(); i++) {
-			wxString name = ovr->Tags[i]->Name;
-			if (tag == name || alt == name) {
-				shift -= ((wxString)*ovr->Tags[i]).size();
-				if (found) {
-					delete ovr->Tags[i];
-					ovr->Tags.erase(ovr->Tags.begin() + i);
-					i--;
-				}
-				else {
-					ovr->Tags[i]->Params[0]->Set(value);
-					ovr->Tags[i]->Params[0]->omitted = false;
-					found = true;
-				}
-			}
-		}
-		if (!found) {
-			ovr->AddTag(insert);
-		}
-
-		line->UpdateText();
-	}
-	else
-		assert(false);
+	AssDialogueParser parser(c);
+	int shift = parser.SetOverride(line, start, tag, value);
 
 	TextEdit->SetTextTo(line->Text);
-	if (!atEnd) TextEdit->SetSelectionU(sel.first+shift,sel.second+shift);
+	if (!atEnd) TextEdit->SetSelectionU(sel.first+shift, sel.second+shift);
 	TextEdit->SetFocus();
 }
 

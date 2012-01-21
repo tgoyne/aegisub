@@ -231,7 +231,7 @@ int block_at_pos(wxString const& text, int pos) {
 	return n;
 }
 
-void AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& tag, wxString const& value) {
+int AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& tag, wxString const& value) {
 	if (!line) return;
 
 	if (line->Blocks.empty())
@@ -274,26 +274,38 @@ void AssDialogueParser::SetOverride(AssDialogue* line, int pos, wxString const& 
 		line->ParseASSTags();
 	}
 	else if(ovr) {
-		wxString removeTag;
-		if (tag == "\\1c") removeTag = "\\c";
-		else if (tag == "\\frz") removeTag = "\\fr";
-		else if (tag == "\\pos") removeTag = "\\move";
-		else if (tag == "\\move") removeTag = "\\pos";
-		else if (tag == "\\clip") removeTag = "\\iclip";
-		else if (tag == "\\iclip") removeTag = "\\clip";
+		wxString alt;
+		if (tag == "\\1c") alt = "\\c";
+		else if (tag == "\\frz") alt = "\\fr";
+		else if (tag == "\\pos") alt = "\\move";
+		else if (tag == "\\move") alt = "\\pos";
+		else if (tag == "\\clip") alt = "\\iclip";
+		else if (tag == "\\iclip") alt = "\\clip";
 
+		bool found = false;
 		for (size_t i = 0; i < ovr->Tags.size(); i++) {
 			wxString name = ovr->Tags[i]->Name;
-			if (tag == name || removeTag == name) {
-				delete ovr->Tags[i];
-				ovr->Tags.erase(ovr->Tags.begin() + i);
-				i--;
+			if (tag == name || alt == name) {
+				shift -= ((wxString)*ovr->Tags[i]).size();
+				if (found) {
+					delete ovr->Tags[i];
+					ovr->Tags.erase(ovr->Tags.begin() + i);
+					i--;
+				}
+				else {
+					ovr->Tags[i]->Params[0]->Set(value);
+					ovr->Tags[i]->Params[0]->omitted = false;
+					found = true;
+				}
 			}
 		}
-		ovr->AddTag(insert);
+		if (!found)
+			ovr->AddTag(insert);
 
 		line->UpdateText();
 	}
 	else
 		assert(false);
+
+	return shift;
 }
