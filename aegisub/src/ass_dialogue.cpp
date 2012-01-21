@@ -91,14 +91,6 @@ AssDialogue::AssDialogue(wxString _data,int version)
 		throw "Failed parsing line.";
 }
 
-AssDialogue::~AssDialogue () {
-	delete_clear(Blocks);
-}
-
-void AssDialogue::ClearBlocks() {
-	delete_clear(Blocks);
-}
-
 bool AssDialogue::Parse(wxString rawData, int version) {
 	size_t pos = 0;
 	wxString temp;
@@ -225,49 +217,15 @@ wxString AssDialogue::GetSSAText() const {
 	return GetData(true);
 }
 
-void AssDialogue::ParseASSTags() {
-
-}
-
-void AssDialogue::StripTags () {
+void AssDialogue::StripTags() {
 	Text = GetStrippedText();
 }
 
-void AssDialogue::StripTag (wxString tagName) {
-	using std::list;
-	using std::vector;
-	ParseASSTags();
-	wxString final;
-
-	// Look for blocks
-	for (vector<AssDialogueBlock*>::iterator cur=Blocks.begin();cur!=Blocks.end();cur++) {
-		if ((*cur)->GetType() == BLOCK_OVERRIDE) {
-			AssDialogueBlockOverride *over = dynamic_cast<AssDialogueBlockOverride*>(*cur);
-			wxString temp;
-			for (size_t i=0;i<over->Tags.size();i++) {
-				if (over->Tags[i]->Name != tagName) temp += *over->Tags[i];
-			}
-
-			// Insert
-			if (!temp.IsEmpty()) final += "{" + temp + "}";
-		}
-		else final += (*cur)->GetText();
-	}
-
-	ClearBlocks();
-	Text = final;
-}
-
-void AssDialogue::UpdateText () {
+void AssDialogue::UpdateText() {
 	if (Blocks.empty()) return;
 	Text.clear();
 	for (std::vector<AssDialogueBlock*>::iterator cur=Blocks.begin();cur!=Blocks.end();cur++) {
-		if ((*cur)->GetType() == BLOCK_OVERRIDE) {
-			Text += "{";
-			Text += (*cur)->GetText();
-			Text += "}";
-		}
-		else Text += (*cur)->GetText();
+		Text += (*cur)->GetText();
 	}
 }
 

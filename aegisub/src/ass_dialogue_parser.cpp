@@ -25,25 +25,22 @@ ParsedAssDialogue::ParsedAssDialogue(AssDialogue *line)
 	for (wxString::iterator it = line->Text.begin(); it != end; ) {
 		// Overrides block
 		if (*it == '{') {
-			++it;
+			wxString::iterator block_end = std::find(it + 1, end, '}');
+			wxString block(it, block_end);
+			block += '}';
 
-			// Get contents of block
-			wxString::iterator block_end = std::find(it, end, '}');
-			
-			if (std::distance(it, block_end) <= 1)
-				push_back(new AssDialogueBlockOverride);
 			//We've found an override block with no backslashes
 			//We're going to assume it's a comment and not consider it an override block
 			//Currently we'll treat this as a plain text block, but feel free to create a new class
-			else if (std::find(it, block_end, '\\') == block_end)
-				push_back(new AssDialogueBlockPlain("{" + wxString(it, block_end) + "}"));
+			if (block.size() > 2 && block.find('\\') == wxString::npos)
+				push_back(new AssDialogueBlockPlain(block));
 			else {
-				AssDialogueBlockOverride *block = new AssDialogueBlockOverride(wxString(it, block_end));
-				block->ParseTags();
-				push_back(block);
+				AssDialogueBlockOverride *ovr = new AssDialogueBlockOverride(block);
+				ovr->ParseTags();
+				push_back(ovr);
 
 				// Look for \p in block
-				for (std::vector<AssOverrideTag*>::iterator  curTag = block->Tags.begin(); curTag != block->Tags.end(); ++curTag) {
+				for (std::vector<AssOverrideTag*>::iterator curTag = ovr->Tags.begin(); curTag != ovr->Tags.end(); ++curTag) {
 					if ((*curTag)->Name == "\\p")
 						drawingLevel = (*curTag)->Params[0]->Get<int>(0);
 				}

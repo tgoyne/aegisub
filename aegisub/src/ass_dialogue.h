@@ -76,10 +76,6 @@ public:
 	/// @param version ASS version to try first (4, 4+, ASS2)
 	/// @return Did it successfully parse?
 	bool Parse(wxString data,int version=1);
-	/// Parse text as ASS to generate block information
-	void ParseASSTags();
-	/// Clear all blocks, ALWAYS call this after you're done processing tags
-	void ClearBlocks();
 
 	/// @brief Process parameters via callback 
 	/// @param callback The callback function to call per tag parameter
@@ -87,8 +83,6 @@ public:
 	void ProcessParameters(AssDialogueBlockOverride::ProcessParametersCallback callback,void *userData=NULL);
 	/// Strip all ASS tags from the text
 	void StripTags();
-	/// Strip a specific ASS tag from the text
-	void StripTag(wxString tagName);
 	/// Get text without tags
 	wxString GetStrippedText() const;
 
@@ -117,5 +111,4 @@ public:
 
 	AssDialogue();
 	AssDialogue(wxString data,int version=1);
-	~AssDialogue();
 };
