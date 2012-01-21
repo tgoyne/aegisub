@@ -86,6 +86,9 @@ public:
 
 class ParsedAssDialogue : private std::vector<AssDialogueBlock*> {
 	AssDialogue *line;
+
+	ParsedAssDialogue(ParsedAssDialogue const&);
+	ParsedAssDialogue& operator=(ParsedAssDialogue const&);
 public:
 	ParsedAssDialogue(AssDialogue *line);
 	~ParsedAssDialogue();
