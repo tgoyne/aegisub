@@ -27,6 +27,7 @@
 #include "ass_karaoke.h"
 
 #include "ass_dialogue.h"
+#include "ass_dialogue_parser.h"
 #include "ass_file.h"
 #include "ass_override.h"
 #include "include/aegisub/context.h"
@@ -61,7 +62,7 @@ AssKaraoke::AssKaraoke(AssDialogue *line, bool auto_split)
 
 void AssKaraoke::SetLine(AssDialogue *line, bool auto_split) {
 	active_line = line;
-	line->ParseASSTags();
+	ParsedAssDialogue parser(line);
 
 	syls.clear();
 	Syllable syl;
@@ -69,8 +70,8 @@ void AssKaraoke::SetLine(AssDialogue *line, bool auto_split) {
 	syl.duration = 0;
 	syl.tag_type = "\\k";
 
-	for (size_t i = 0; i < line->Blocks.size(); ++i) {
-		AssDialogueBlock *block = line->Blocks[i];
+	for (size_t i = 0; i < parser.size(); ++i) {
+		AssDialogueBlock *block = parser[i];
 		wxString text = block->GetText();
 
 		if (dynamic_cast<AssDialogueBlockPlain*>(block)) {
@@ -130,8 +131,6 @@ void AssKaraoke::SetLine(AssDialogue *line, bool auto_split) {
 	}
 
 	syls.push_back(syl);
-
-	line->ClearBlocks();
 
 	// Normalize the syllables so that the total duration is equal to the line length
 	int end_time = active_line->End;

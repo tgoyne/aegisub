@@ -248,7 +248,7 @@ wxString AssDialogue::GetMarginString(int which,bool pad) const {
 	else return wxString::Format("%i",value);
 }
 
-void AssDialogue::ProcessParameters(AssDialogueBlockOverride::ProcessParametersCallback callback,void *userData) {
+/*void AssDialogue::ProcessParameters(AssDialogueBlockOverride::ProcessParametersCallback callback,void *userData) {
 	// Apply for all override blocks
 	AssDialogueBlockOverride *curBlock;
 	for (std::vector<AssDialogueBlock*>::iterator cur=Blocks.begin();cur!=Blocks.end();cur++) {
@@ -257,7 +257,7 @@ void AssDialogue::ProcessParameters(AssDialogueBlockOverride::ProcessParametersC
 			curBlock->ProcessParameters(callback,userData);
 		}
 	}
-}
+}*/
 
 bool AssDialogue::CollidesWith(AssDialogue *target) {
 	if (!target) return false;

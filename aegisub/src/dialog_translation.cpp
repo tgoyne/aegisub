@@ -29,6 +29,7 @@
 #include "include/aegisub/hotkey.h"
 
 #include "ass_dialogue.h"
+#include "ass_dialogue_parser.h"
 #include "ass_file.h"
 #include "audio_controller.h"
 #include "command/command.h"
@@ -67,6 +68,7 @@ DialogTranslation::DialogTranslation(agi::Context *c)
 : wxDialog(c->parent, -1, _("Translation Assistant"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMINIMIZE_BOX, "TranslationAssistant")
 , c(c)
 , active_line(c->selectionController->GetActiveLine())
+, parsed(new ParsedAssDialogue(active_line))
 , cur_block(0)
 , line_count(count_if(c->ass->Line.begin(), c->ass->Line.end(), cast<AssDialogue*>()))
 , line_number(count_if(c->ass->Line.begin(), find(c->ass->Line.begin(), c->ass->Line.end(), active_line), cast<AssDialogue*>()) + 1)
@@ -157,8 +159,7 @@ DialogTranslation::DialogTranslation(agi::Context *c)
 
 	Bind(wxEVT_KEY_DOWN, &DialogTranslation::OnKeyDown, this);
 
-	active_line->ParseASSTags();
-	if (bad_block(active_line->Blocks[0])) {
+	if (bad_block((*parsed)[0])) {
 		if (!NextBlock())
 			throw NothingToTranslate(STD_STR(_("There is nothing to translate in the file.")));
 	}
@@ -170,20 +171,19 @@ DialogTranslation::~DialogTranslation() { }
 
 bool DialogTranslation::NextBlock() {
 	do {
-		if (cur_block == active_line->Blocks.size() - 1) {
+		if (cur_block == parsed->size() - 1) {
 			c->selectionController->NextLine();
 			AssDialogue *new_line = c->selectionController->GetActiveLine();
 			if (active_line == new_line || !new_line) return false;
 
-			active_line->ClearBlocks();
 			active_line = new_line;
-			active_line->ParseASSTags();
+			parsed.reset(new ParsedAssDialogue(active_line));
 			cur_block = 0;
 			++line_number;
 		}
 		else
 			++cur_block;
-	} while (bad_block(active_line->Blocks[cur_block]));
+	} while (bad_block((*parsed)[cur_block]));
 
 	UpdateDisplay();
 	return true;
@@ -196,15 +196,14 @@ bool DialogTranslation::PrevBlock() {
 			AssDialogue *new_line = c->selectionController->GetActiveLine();
 			if (active_line == new_line || !new_line) return false;
 
-			active_line->ClearBlocks();
 			active_line = new_line;
-			active_line->ParseASSTags();
-			cur_block = active_line->Blocks.size() - 1;
+			parsed.reset(new ParsedAssDialogue(active_line));
+			cur_block = parsed->size() - 1;
 			--line_number;
 		}
 		else
 			--cur_block;
-	} while (bad_block(active_line->Blocks[cur_block]));
+	} while (bad_block((*parsed)[cur_block]));
 
 	UpdateDisplay();
 	return true;
@@ -216,8 +215,8 @@ void DialogTranslation::UpdateDisplay() {
 	original_text->SetReadOnly(false);
 	original_text->ClearAll();
 
-	for (size_t i = 0; i < active_line->Blocks.size(); ++i) {
-		AssDialogueBlock *block = active_line->Blocks[i];
+	for (size_t i = 0; i < parsed->size(); ++i) {
+		AssDialogueBlock *block = (*parsed)[i];
 		if (block->GetType() == BLOCK_PLAIN) {
 			int cur_size = original_text->GetReverseUnicodePosition(original_text->GetLength());
 			original_text->AppendText(block->GetText());
@@ -239,8 +238,8 @@ void DialogTranslation::UpdateDisplay() {
 }
 
 void DialogTranslation::Commit(bool next) {
-	*active_line->Blocks[cur_block] = AssDialogueBlockPlain(translated_text->GetValue());
-	active_line->UpdateText();
+	*(*parsed)[cur_block] = AssDialogueBlockPlain(translated_text->GetValue());
+	parsed->UpdateText();
 	c->ass->Commit(_("translation assistant"), AssFile::COMMIT_DIAG_TEXT);
 
 	if (next) {
@@ -255,7 +254,7 @@ void DialogTranslation::Commit(bool next) {
 }
 
 void DialogTranslation::InsertOriginal() {
-	translated_text->AddText(active_line->Blocks[cur_block]->GetText());
+	translated_text->AddText((*parsed)[cur_block]->GetText());
 }
 
 

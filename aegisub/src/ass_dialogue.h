@@ -80,7 +80,7 @@ public:
 	/// @brief Process parameters via callback 
 	/// @param callback The callback function to call per tag parameter
 	/// @param userData User data to pass to callback function
-	void ProcessParameters(AssDialogueBlockOverride::ProcessParametersCallback callback,void *userData=NULL);
+	//void ProcessParameters(AssDialogueBlockOverride::ProcessParametersCallback callback,void *userData=NULL);
 	/// Strip all ASS tags from the text
 	void StripTags();
 	/// Get text without tags

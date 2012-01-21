@@ -14,7 +14,7 @@ ParsedAssDialogue::ParsedAssDialogue(AssDialogue *line)
 : line(line)
 {
 	// Empty line, make an empty block
-	if (line->Text.empty()) {
+	if (!line || line->Text.empty()) {
 		push_back(new AssDialogueBlockPlain);
 		return;
 	}

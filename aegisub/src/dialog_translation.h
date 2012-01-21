@@ -29,6 +29,7 @@
 
 namespace agi { struct Context; }
 class AssDialogue;
+class ParsedAssDialogue;
 class PersistLocation;
 class ScintillaTextCtrl;
 class wxStaticText;
@@ -43,7 +44,11 @@ class DialogTranslation : public wxDialog {
 
 	/// The active line
 	AssDialogue *active_line;
-	/// Which dialogue block in the active line is currrently being translated
+
+	/// Parsed form of the active line
+	agi::scoped_ptr<ParsedAssDialogue> parsed;
+
+	/// Which dialogue block in the active line is currently being translated
 	size_t cur_block;
 
 	/// Total number of dialogue lines in the file
