@@ -37,6 +37,8 @@
 
 #include "config.h"
 
+#include "ass_override.h"
+
 #ifndef AGI_PRE
 #include <wx/log.h>
 #include <wx/tokenzr.h>
@@ -44,8 +46,7 @@
 
 #include <libaegisub/log.h>
 
-#include "ass_dialogue.h"
-#include "ass_override.h"
+#include "ass_dialogue_parser.h"
 #include "utils.h"
 
 AssOverrideParameter::AssOverrideParameter()
