@@ -205,7 +205,7 @@ namespace agi {
 #define DEFINE_SIMPLE_EXCEPTION(classname,baseclass,displayname)                     \
 	class classname : public baseclass {                                             \
 	public:                                                                          \
-		classname(const std::string &msg, Exception *inner) : baseclass(msg, inner) { } \
+		classname(const std::string &msg, Exception *inner=0) : baseclass(msg, inner) { } \
 		const char * GetName() const { return displayname; }                   \
 		Exception * Copy() const { return new classname(*this); }                    \
 	};
@@ -234,7 +234,7 @@ namespace agi {
 #define DEFINE_BASE_EXCEPTION(classname,baseclass)                                   \
 	class classname : public baseclass {                                             \
 	public:                                                                          \
-		classname(const std::string &msg, Exception *inner) : baseclass(msg, inner) { } \
+		classname(const std::string &msg, Exception *inner=0) : baseclass(msg, inner) { } \
 	};
 
 
