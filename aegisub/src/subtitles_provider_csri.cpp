@@ -77,9 +77,10 @@ void CSRISubtitlesProvider::LoadSubtitles(AssFile *subs) {
 	// Matching renderer not found, fallback to default
 	if (!renderer) {
 		renderer = csri_renderer_default();
-		if (!renderer)
-			throw agi::SubtitleProviderLoadError("Could not initialize CSRI renderer",
-				new agi::NoSubtitleProvidersError("No CSRI renderer available, cannot show subtitles. Try installing one or switch to another subtitle provider."));
+		if (!renderer) {
+			agi::NoSubtitleProvidersError e("No CSRI renderer available, cannot show subtitles. Try installing one or switch to another subtitle provider."))
+			throw agi::SubtitleProviderLoadError("Could not initialize CSRI renderer", &e);
+		}
 	}
 
 	// Open from memory
