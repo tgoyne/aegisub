@@ -54,18 +54,6 @@ AssOverrideParameter::AssOverrideParameter()
 {
 }
 
-AssOverrideParameter::AssOverrideParameter(const AssOverrideParameter &param)
-: VariableData(param)
-, classification(param.classification)
-, omitted(param.omitted)
-{
-}
-
-void AssOverrideParameter::operator=(const AssOverrideParameter &param) {
-	DeleteValue();
-	new(this) AssOverrideParameter(param);
-}
-
 // From ass_dialogue.h
 AssDialogueBlockOverride::~AssDialogueBlockOverride() {
 	delete_clear(Tags);
@@ -111,7 +99,7 @@ void AssDialogueBlockOverride::ProcessParameters(AssDialogueBlockOverride::Proce
 		for (unsigned n = 0; n < curTag->Params.size(); n++) {
 			AssOverrideParameter *curPar = curTag->Params[n];
 
-			if (curPar->GetType() != VARDATA_NONE && !curPar->omitted) {
+			if (curPar->HasValue() && !curPar->omitted) {
 				(*callback)(curTag->Name,n,curPar,userData);
 
 				// Go recursive if it's a block parameter
@@ -453,7 +441,7 @@ AssOverrideTag::operator wxString() const {
 	// Add parameters
 	bool any = false;
 	for (std::vector<AssOverrideParameter*>::const_iterator cur=Params.begin();cur!=Params.end();cur++) {
-		if ((*cur)->GetType() != VARDATA_NONE && !(*cur)->omitted) {
+		if ((*cur)->HasValue() && !(*cur)->omitted) {
 			result += (*cur)->Get<wxString>();
 			result += ",";
 			any = true;

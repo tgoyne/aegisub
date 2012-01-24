@@ -34,92 +34,84 @@
 /// @ingroup utility subs_storage
 ///
 
-
 #pragma once
 
+#include <libaegisub/exception.h>
 
-///////////
-// Headers
-#ifndef AGI_PRE
-#include <wx/colour.h>
-#endif
+class AssDialogueBlockOverride;
+class wxColour;
 
-
-/// DOCME
+/// Type of data which can be stored in VariableData
 enum VariableDataType {
-
-	/// DOCME
 	VARDATA_NONE,
-
-	/// DOCME
 	VARDATA_INT,
-
-	/// DOCME
 	VARDATA_FLOAT,
-
-	/// DOCME
 	VARDATA_TEXT,
-
-	/// DOCME
 	VARDATA_BOOL,
-
-	/// DOCME
 	VARDATA_COLOUR,
-
-	/// DOCME
 	VARDATA_BLOCK
 };
 
-class AssDialogueBlockOverride;
-
-
-/// DOCME
 /// @class VariableData
-/// @brief DOCME
-///
-/// DOCME
+/// @brief A variant class with automatic coercion used to store tag parameters
 class VariableData {
-private:
 	union {
-		/// DOCME
 		void *value;
-
-		/// DOCME
 		int *value_int;
-
-		/// DOCME
 		double *value_float;
-
-		/// DOCME
 		bool *value_bool;
-
-		/// DOCME
 		wxString *value_text;
-
-		/// DOCME
 		wxColour *value_colour;
-
-		/// DOCME
 		AssDialogueBlockOverride **value_block;
 	};
 
-	/// DOCME
+	/// The current type of this variant
 	VariableDataType type;
 
+	void operator=(VariableData const& param);
+	VariableData(VariableData const&);
+
 protected:
+	/// Delete the stored value
 	void DeleteValue();
 
 public:
+	/// @class VariableData::BadCast
+	/// @brief An invalid conversion was requested
+	DEFINE_SIMPLE_EXCEPTION(BadCast, agi::InternalError, "variable_data/bad_cast")
+		/// @class VariableData::NoData
+		/// @brief Get() was called with no default on a variant with no data
+	DEFINE_SIMPLE_EXCEPTION(NoData, agi::InternalError, "variable_data/no_data")
+
+	/// Constructor
 	VariableData();
+	/// Destructor
 	virtual ~VariableData();
 
-	VariableDataType GetType() const;
-	template<class T> void Set(T param);
-	void ResetWith(wxString value);
+	/// Set the variant to a value
+	/// @param new_value New value of the variant
+	///
+	/// new_value must be of type int, double, bool, wxString, wxColour or
+	/// AssDialogueBlockOverride*
+	template<class T> void Set(T new_value);
+
+	/// Get the value, coercing it if needed and possible
+	/// @return The value coerced to the requested type
+	/// @throw VariableData::BadCast if the value could not be coerced to the requested type
+	/// @throw VariableData::NoData if there is no data currently stored
 	template<class T> T Get() const;
+
+	/// Get the value, coercing it if needed and possible, or def if no value
+	/// @param def Default value to use if this variant has none
+	/// @return The value coerced to the requested type
+	/// @throw VariableData::BadCast if the value could not be coerced to the requested type
 	template<class T> T Get(T def) const {
 		return value ? Get<T>() : def;
 	}
 
-	void operator= (const VariableData &param);
+	/// Does this variant currently have a value?
+	bool HasValue() const { return !!value; }
+
+	/// Get the current type of this variant
+	VariableDataType GetType() const { return type; }
 };

@@ -81,8 +81,6 @@ public:
 	bool omitted;
 
 	AssOverrideParameter();
-	AssOverrideParameter(const AssOverrideParameter&);
-	void operator=(const AssOverrideParameter &param);
 };
 
 /// DOCME

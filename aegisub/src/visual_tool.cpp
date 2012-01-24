@@ -393,7 +393,7 @@ static Vector2D vec_or_bad(param_vec tag, size_t x_idx, size_t y_idx) {
 	if (!tag ||
 		tag->size() <= x_idx || tag->size() <= y_idx ||
 		(*tag)[x_idx]->omitted || (*tag)[y_idx]->omitted ||
-		(*tag)[x_idx]->GetType() == VARDATA_NONE || (*tag)[y_idx]->GetType() == VARDATA_NONE)
+		!(*tag)[x_idx]->HasValue() || !(*tag)[y_idx]->HasValue())
 	{
 		return Vector2D();
 	}
