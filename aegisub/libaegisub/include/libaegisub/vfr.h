@@ -48,7 +48,7 @@ enum Time {
 	END
 };
 
-DEFINE_BASE_EXCEPTION_NOINNER(Error, Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(Error, NonFatalException)
 /// FPS specified is not a valid frame rate
 DEFINE_SIMPLE_EXCEPTION_NOINNER(BadFPS, Error, "vfr/badfps")
 /// Unknown timecode file format

@@ -33,7 +33,7 @@ class wxButton;
 class wxTreebook;
 namespace agi { class OptionValue; }
 
-DEFINE_BASE_EXCEPTION_NOINNER(PreferencesError, agi::Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(PreferencesError, agi::NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(PreferenceIncorrectType, PreferencesError, "preferences/incorrect_type")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(PreferenceNotSupported, PreferencesError, "preferences/not_supported")
 

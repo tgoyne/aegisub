@@ -34,7 +34,7 @@ namespace json {
 
 namespace agi {
 
-DEFINE_BASE_EXCEPTION_NOINNER(MRUError,Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(MRUError, NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(MRUErrorInvalidKey, MRUError, "mru/invalid")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(MRUErrorIndexOutOfRange, MRUError, "mru/invalid")
 

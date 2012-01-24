@@ -32,7 +32,7 @@
 
 namespace agi { struct Context; }
 
-DEFINE_BASE_EXCEPTION_NOINNER(CommandError, agi::Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(CommandError, agi::NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(CommandNotFound, CommandError, "command/notfound")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(CommandIconNone, CommandError, "command/icon")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(CommandIconInvalid, CommandError, "command/icon/invalid")

@@ -29,7 +29,7 @@
 
 namespace agi {
 
-DEFINE_BASE_EXCEPTION_NOINNER(OptionJsonValueError, Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(OptionJsonValueError, NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(OptionJsonValueArray, OptionJsonValueError, "options/value/array")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(OptionJsonValueSingle, OptionJsonValueError, "options/value")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(OptionJsonValueNull, OptionJsonValueError, "options/value")

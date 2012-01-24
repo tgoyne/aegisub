@@ -30,7 +30,7 @@ namespace agi {
 	/// Character set conversion and detection.
 	namespace charset {
 
-DEFINE_BASE_EXCEPTION_NOINNER(CharsetError, agi::Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(CharsetError, agi::NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(UnknownCharset, CharsetError, "charset/unknown")
 
 /// List of detected encodings.

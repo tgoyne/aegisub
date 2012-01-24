@@ -32,7 +32,7 @@ class wxMenuBar;
 class wxWindow;
 
 namespace menu {
-	DEFINE_BASE_EXCEPTION_NOINNER(Error, agi::Exception)
+	DEFINE_BASE_EXCEPTION_NOINNER(Error, agi::NonFatalException)
 	DEFINE_SIMPLE_EXCEPTION_NOINNER(UnknownMenu, Error, "menu/unknown")
 	DEFINE_SIMPLE_EXCEPTION_NOINNER(InvalidMenu, Error, "menu/invalid")
 

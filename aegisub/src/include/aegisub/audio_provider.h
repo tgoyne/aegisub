@@ -97,6 +97,6 @@ public:
 	static AudioProvider *GetProvider(wxString const& filename, int cache=-1);
 };
 
-DEFINE_BASE_EXCEPTION_NOINNER(AudioProviderError, agi::Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(AudioProviderError, agi::NonFatalException)
 /// Error of some sort occurred while decoding a frame
 DEFINE_SIMPLE_EXCEPTION_NOINNER(AudioDecodeError, AudioProviderError, "audio/error")

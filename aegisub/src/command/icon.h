@@ -24,7 +24,7 @@
 
 #include <libaegisub/exception.h>
 
-DEFINE_BASE_EXCEPTION_NOINNER(IconError, agi::Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(IconError, agi::NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(IconInvalid, IconError, "icon/invalid")
 
 namespace icon {

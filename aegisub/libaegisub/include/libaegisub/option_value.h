@@ -33,7 +33,7 @@
 namespace agi {
 
 
-DEFINE_BASE_EXCEPTION_NOINNER(OptionValueError, Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(OptionValueError, NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(OptionValueErrorNotFound, OptionValueError, "options/not_found")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(OptionValueErrorInvalidType, OptionValueError, "options/invalid_type")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(OptionValueErrorInvalidListType, OptionValueError, "options/array/invalid_type")

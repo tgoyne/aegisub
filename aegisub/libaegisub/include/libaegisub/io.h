@@ -28,17 +28,8 @@
 namespace agi {
 	namespace io {
 
-DEFINE_BASE_EXCEPTION_NOINNER(IOError, Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(IOError, NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(IOFatal, IOError, "io/fatal")
-
-/*
-DEFINE_SIMPLE_EXCEPTION_NOINNER(IOAccess, IOError, "io/access")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(IONotFound, IOError, "io/notfound")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(IONotAFile, IOError, "io/file")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(IONotADirectory, IOError, "io/directory")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(IOAccessRead, IOError, "io/read")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(IOAccessWrite, IOError, "io/write")
-*/
 
 std::ifstream* Open(const std::string &file, bool binary = false);
 
@@ -55,5 +46,3 @@ public:
 
 	} // namespace io
 } // namespace agi
-
-

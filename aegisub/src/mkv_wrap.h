@@ -40,7 +40,7 @@
 
 #include <libaegisub/exception.h>
 
-DEFINE_SIMPLE_EXCEPTION_NOINNER(MatroskaException, agi::Exception, "matroksa_wrapper/generic")
+DEFINE_SIMPLE_EXCEPTION_NOINNER(MatroskaException, agi::NonFatalException, "matroksa_wrapper/generic")
 
 class AssFile;
 

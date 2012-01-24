@@ -104,7 +104,7 @@ public:
 /// @class VideoOutException
 /// @extends Aegisub::Exception
 /// @brief Base class for all exceptions thrown by VideoOutGL
-DEFINE_BASE_EXCEPTION_NOINNER(VideoOutException, agi::Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(VideoOutException, agi::NonFatalException)
 
 /// @class VideoOutRenderException
 /// @extends VideoOutException

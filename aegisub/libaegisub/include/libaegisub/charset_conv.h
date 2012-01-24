@@ -32,7 +32,7 @@
 namespace agi {
 	namespace charset {
 
-DEFINE_BASE_EXCEPTION_NOINNER(ConvError, Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(ConvError, NonFatalException)
 DEFINE_SIMPLE_EXCEPTION_NOINNER(UnsupportedConversion, ConvError, "iconv/unsupported")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(ConversionFailure, ConvError, "iconv/failed")
 DEFINE_SIMPLE_EXCEPTION_NOINNER(BufferTooSmall, ConversionFailure, "iconv/failed/E2BIG")

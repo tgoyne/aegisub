@@ -80,7 +80,7 @@ public:
 	virtual bool WantsCaching() const { return false; }
 };
 
-DEFINE_BASE_EXCEPTION_NOINNER(VideoProviderError, agi::Exception)
+DEFINE_BASE_EXCEPTION_NOINNER(VideoProviderError, agi::NonFatalException)
 /// File could be opened, but is not a supported format
 DEFINE_SIMPLE_EXCEPTION_NOINNER(VideoNotSupported, VideoProviderError, "video/open/notsupported")
 /// File appears to be a supported format, but could not be opened

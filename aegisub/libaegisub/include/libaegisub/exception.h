@@ -237,9 +237,20 @@ namespace agi {
 		classname(const std::string &msg, Exception *inner=0) : baseclass(msg, inner) { } \
 	};
 
+	/// @class agi::NonFatalException
+	/// @extends agi::Exception
+	/// @brief Exception that represents a non-fatal error that should not terminate the program
+	///
+	/// All exceptions that are expected to occur during normal execution of
+	/// the program which represent recoverable errors should derive from this.
+	/// If an error of this type makes it up to the top level handler, the user
+	/// should simply be notified of the error, and the program should continue
+	/// on
+	DEFINE_BASE_EXCEPTION(NonFatalException, Exception)
+
 
 	/// @class agi::UserCancelException
-	/// @extends agi::Exception
+	/// @extends agi::NonFatalException
 	/// @brief Exception for "user cancel" events
 	///
 	/// I.e. when we want to abort an operation because the user requested that we do so.
@@ -250,7 +261,7 @@ namespace agi {
 	/// possible, user cancel exceptions should unwind anything that was going on at the
 	/// moment. For this to work, RAII methodology has to be used consequently in the
 	/// code in question.
-	DEFINE_SIMPLE_EXCEPTION_NOINNER(UserCancelException,Exception,"nonerror/user_cancel")
+	DEFINE_SIMPLE_EXCEPTION_NOINNER(UserCancelException, NonFatalException, "nonerror/user_cancel")
 
 
 	/// @class agi::InternalError
@@ -266,13 +277,13 @@ namespace agi {
 
 
 	/// @class agi::FileSystemError
-	/// @extends agi::Exception
+	/// @extends agi::NonFatalException
 	/// @brief Base class for errors related to the file system
 	///
 	/// This base class can not be instantiated.
 	/// File system errors do not support inner exceptions, as they are always originating
 	/// causes for errors.
-	DEFINE_BASE_EXCEPTION_NOINNER(FileSystemError,Exception)
+	DEFINE_BASE_EXCEPTION_NOINNER(FileSystemError, NonFatalException)
 
 	/// @class agi::FileNotAccessibleError
 	/// @extends agi::FileSystemError
@@ -298,8 +309,7 @@ namespace agi {
 
 
 	/// @class agi::InvalidInputException
-	/// @extends agi::Exception
+	/// @extends agi::NonFatalException
 	/// @brief Some input data were invalid and could not be processed
-	DEFINE_BASE_EXCEPTION(InvalidInputException,Exception)
-
+	DEFINE_BASE_EXCEPTION(InvalidInputException, NonFatalException)
 }

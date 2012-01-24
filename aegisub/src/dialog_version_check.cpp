@@ -142,7 +142,7 @@ AegisubVersionCheckResultEvent::AegisubVersionCheckResultEvent(wxString message)
 }
 
 
-DEFINE_SIMPLE_EXCEPTION_NOINNER(VersionCheckError, agi::Exception, "versioncheck")
+DEFINE_SIMPLE_EXCEPTION_NOINNER(VersionCheckError, agi::NonFatalException, "versioncheck")
 
 static void register_event_handler();
 

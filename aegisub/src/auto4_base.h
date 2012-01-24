@@ -74,7 +74,7 @@ namespace cmd { class Command; }
 
 /// DOCME
 namespace Automation4 {
-	DEFINE_BASE_EXCEPTION_NOINNER(AutomationError, agi::Exception)
+	DEFINE_BASE_EXCEPTION_NOINNER(AutomationError, agi::NonFatalException)
 	DEFINE_SIMPLE_EXCEPTION_NOINNER(ScriptLoadError, AutomationError, "automation/load/generic")
 	DEFINE_SIMPLE_EXCEPTION_NOINNER(MacroRunError, AutomationError, "automation/macro/generic")
 

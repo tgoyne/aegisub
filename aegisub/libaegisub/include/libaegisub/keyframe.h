@@ -37,6 +37,6 @@ namespace agi {
 		/// @param keyframes List of keyframes to save
 		void Save(std::string const& filename, std::vector<int> const& keyframes);
 
-		DEFINE_SIMPLE_EXCEPTION_NOINNER(Error, Exception, "keyframe/error")
+		DEFINE_SIMPLE_EXCEPTION_NOINNER(Error, NonFatalException, "keyframe/error")
 	}
 }
