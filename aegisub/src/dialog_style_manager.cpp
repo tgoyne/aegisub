@@ -51,6 +51,8 @@
 #include <wx/choicdlg.h> // Keep this last so wxUSE_CHOICEDLG is set.
 #endif
 
+#include <libaegisub/access.h>
+
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_style.h"

@@ -48,14 +48,10 @@
 #include "include/aegisub/subtitles_provider.h"
 #endif
 
-/// @brief Get provider
-/// @return
-///
 SubtitlesProvider* SubtitlesProviderFactory::GetProvider() {
 	std::vector<std::string> list = GetClasses(OPT_GET("Subtitle/Provider")->GetString());
-	if (list.empty()) throw wxString("No subtitle providers are available.");
+	if (list.empty()) throw agi::NoSubtitleProvidersError("No subtitle providers are available.");
 
-	// Get provider
 	wxString error;
 	for (unsigned int i=0;i<list.size();i++) {
 		try {
@@ -70,12 +66,9 @@ SubtitlesProvider* SubtitlesProviderFactory::GetProvider() {
 		catch (...) { error += list[i] + " factory: Unknown error\n"; }
 	}
 
-	// Failed
 	throw error;
 }
 
-/// @brief Register providers
-///
 void SubtitlesProviderFactory::RegisterProviders() {
 #ifdef WITH_CSRI
 	Register<CSRISubtitlesProvider>("CSRI", false, CSRISubtitlesProvider::GetSubTypes());

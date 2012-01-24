@@ -38,8 +38,26 @@
 
 #include "factory_manager.h"
 
+#include <libaegisub/exception.h>
+
 class AssFile;
 class AegiVideoFrame;
+
+namespace agi {
+	DEFINE_BASE_EXCEPTION(SubtitleProviderError, NonFatalException)
+
+	/// There are no subtitle providers available
+	DEFINE_SIMPLE_EXCEPTION(NoSubtitleProvidersError, SubtitleProviderError, "subtitle_provide/none")
+
+	/// Initializing the subtitle provider failed
+	DEFINE_SIMPLE_EXCEPTION(SubtitleProviderInitError, SubtitleProviderError, "subtitle_provider/init")
+
+	/// Sending subtitles to the provider failed. The inner exception may have more details.
+	DEFINE_SIMPLE_EXCEPTION(SubtitleProviderLoadError, SubtitleProviderError, "subtitle_provider/load")
+
+	/// Rendering the subtitles on the video frame failed
+	DEFINE_SIMPLE_EXCEPTION(SubtitleProviderDrawError, SubtitleProviderError, "subtitle_provider/draw")
+}
 
 /// @class SubtitlesProvider
 /// @brief DOCME
@@ -47,15 +65,22 @@ class AegiVideoFrame;
 /// DOCME
 class SubtitlesProvider {
 public:
+	/// Virtual destructor for polymorphic base class
 	virtual ~SubtitlesProvider() { };
 
+	/// Load subtitles to be used in DrawSubtitles
+	/// @param subs File to load
+	/// @throw SubtitleProviderLoadError if an error occurs
 	virtual void LoadSubtitles(AssFile *subs)=0;
 
-	/// @brief DOCME
-	/// @param dst
-	/// @param time
+	/// Draw subtitles on a frame
+	/// @param dst Frame to draw on
+	/// @param time Time in milliseconds
+	/// @throw SubtitleProviderDrawError if an error occurs
 	///
-	virtual void DrawSubtitles(AegiVideoFrame &dst,double time)=0;
+	/// If no subtitles have been loaded this should do nothing and return
+	/// without errors
+	virtual void DrawSubtitles(AegiVideoFrame &dst, double time)=0;
 };
 
 /// DOCME
@@ -65,6 +90,10 @@ public:
 /// DOCME
 class SubtitlesProviderFactory : public Factory1<SubtitlesProvider, std::string> {
 public:
+	/// Get a subtitle provider
+	/// @throw agi::NoSubtitleProvidersError if none are available
 	static SubtitlesProvider *GetProvider();
+
+	/// Initialize all subtitle providers
 	static void RegisterProviders();
 };

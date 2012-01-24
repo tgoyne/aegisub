@@ -61,8 +61,7 @@
 #include "video_frame.h"
 
 
-/// @brief Handle libass messages
-///
+/// Log messages from libass
 static void msg_callback(int level, const char *fmt, va_list args, void *) {
 	if (level >= 7) return;
 	char buf[1024];
@@ -134,30 +133,23 @@ static void wait_for_cache_thread(FontConfigCacheThread const * const * const ca
 	progress.Run(bind(do_wait, std::tr1::placeholders::_1, cache_worker));
 }
 
-/// @brief Constructor
-///
 LibassSubtitlesProvider::LibassSubtitlesProvider(std::string) {
 	wait_for_cache_thread(&cache_worker);
 
 	// Initialize renderer
 	ass_track = NULL;
 	ass_renderer = ass_renderer_init(ass_library);
-	if (!ass_renderer) throw "ass_renderer_init failed";
+	if (!ass_renderer) throw agi::SubtitleProviderInitError("ass_renderer_init failed");
 	ass_set_font_scale(ass_renderer, 1.);
 	new FontConfigCacheThread(ass_renderer, &cache_worker);
 	wait_for_cache_thread(&cache_worker);
 }
 
-/// @brief Destructor
-///
 LibassSubtitlesProvider::~LibassSubtitlesProvider() {
 	if (ass_track) ass_free_track(ass_track);
 	if (ass_renderer) ass_renderer_done(ass_renderer);
 }
 
-/// @brief Load subtitles
-/// @param subs
-///
 void LibassSubtitlesProvider::LoadSubtitles(AssFile *subs) {
 	// Prepare subtitles
 	std::vector<char> data;
@@ -166,27 +158,15 @@ void LibassSubtitlesProvider::LoadSubtitles(AssFile *subs) {
 	// Load file
 	if (ass_track) ass_free_track(ass_track);
 	ass_track = ass_read_memory(ass_library, &data[0], data.size(),(char *)"UTF-8");
-	if (!ass_track) throw "libass failed to load subtitles.";
+	if (!ass_track)
+		throw agi::SubtitleProviderLoadError("libass failed to load subtitles");
 }
 
-/// DOCME
 #define _r(c)  ((c)>>24)
-
-/// DOCME
 #define _g(c)  (((c)>>16)&0xFF)
-
-/// DOCME
 #define _b(c)  (((c)>>8)&0xFF)
-
-/// DOCME
 #define _a(c)  ((c)&0xFF)
 
-
-/// @brief Draw subtitles
-/// @param frame
-/// @param time
-/// @return
-///
 void LibassSubtitlesProvider::DrawSubtitles(AegiVideoFrame &frame,double time) {
 	// Set size
 	ass_set_frame_size(ass_renderer, frame.w, frame.h);

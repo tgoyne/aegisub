@@ -78,54 +78,68 @@ std::tr1::shared_ptr<AegiVideoFrame> ThreadedFrameSource::ProcFrame(int frameNum
 	// This deliberately results in a call to LoadSubtitles while a render
 	// is pending making the queued render use the new file
 	if (!raw && provider) {
-		try {
+		{
 			wxMutexLocker locker(fileMutex);
 			if (subs.get() && singleFrame != frameNum) {
-				// Generally edits and seeks come in groups; if the last thing done
-				// was seek it is more likely that the user will seek again and
-				// vice versa. As such, if this is the first frame requested after
-				// an edit, only export the currently visible lines (because the
-				// other lines will probably not be viewed before the file changes
-				// again), and if it's a different frame, export the entire file.
-				if (singleFrame == -1) {
-					// This will crash if any of the export filters try to use
-					// anything but the subtitles, but that wouldn't be safe to
-					// do anyway
-					agi::Context c;
-					memset(&c, 0, sizeof c);
-					c.ass = subs.get();
+				// Generally edits and seeks come in groups; if the last thing
+				// done was seek it is more likely that the user will seek
+				// again and vice versa. As such, if this is the first frame
+				// requested after an edit, only export the currently visible
+				// lines (because the other lines will probably not be viewed
+				// before the file changes
+				// again), and if it's a different frame, export the entire
+				// file.
 
-					AssExporter exporter(&c);
-					exporter.AddAutoFilters();
-					exporter.ExportTransform();
+				try {
+					if (singleFrame == -1) {
+						// This will crash if any of the export filters try to
+						// use anything but the subtitles, but that wouldn't be
+						// safe to do anyway
+						agi::Context c;
+						memset(&c, 0, sizeof c);
+						c.ass = subs.get();
 
-					singleFrame = frameNum;
-					// Copying a nontrivially sized AssFile is fairly slow, so
-					// instead muck around with its innards to just temporarily
-					// remove the non-visible lines without deleting them
-					std::list<AssEntry*> visible;
-					std::remove_copy_if(subs->Line.begin(), subs->Line.end(),
-						std::back_inserter(visible),
-						invisible_line(time));
-					try {
-						std::swap(subs->Line, visible);
-						provider->LoadSubtitles(subs.get());
-						std::swap(subs->Line, visible);
+						AssExporter exporter(&c);
+						exporter.AddAutoFilters();
+						exporter.ExportTransform();
+
+						singleFrame = frameNum;
+						// Copying a nontrivially sized AssFile is fairly slow,
+						// so instead muck around with its innards to just
+						// temporarily remove the non-visible lines without
+						// deleting them
+						std::list<AssEntry*> visible;
+						remove_copy_if(subs->Line.begin(), subs->Line.end(),
+							back_inserter(visible),
+							invisible_line(time));
+
+						swap(subs->Line, visible);
+						try {
+							provider->LoadSubtitles(subs.get());
+							swap(subs->Line, visible);
+						}
+						catch(...) {
+							swap(subs->Line, visible);
+							throw;
+						}
 					}
-					catch(...) {
-						std::swap(subs->Line, visible);
-						throw;
+					else {
+						provider->LoadSubtitles(subs.get());
+						subs.reset();
 					}
 				}
-				else {
-					provider->LoadSubtitles(subs.get());
-					subs.reset();
+				catch (agi::SubtitleProviderError const& e) {
+					throw SubtitlesProviderErrorEvent(e);
 				}
 			}
 		}
-		catch (wxString const& err) { throw SubtitlesProviderErrorEvent(err); }
 
-		provider->DrawSubtitles(*frame, time);
+		try {
+			provider->DrawSubtitles(*frame, time);
+		}
+		catch (agi::SubtitleProviderError const& e) {
+			throw SubtitlesProviderErrorEvent(e);
+		}
 	}
 	return frame;
 }
@@ -173,7 +187,7 @@ static SubtitlesProvider *get_subs_provider(wxEvtHandler *parent) {
 	try {
 		return SubtitlesProviderFactory::GetProvider();
 	}
-	catch (wxString const& err) {
+	catch (agi::SubtitleProviderError const& err) {
 		parent->AddPendingEvent(SubtitlesProviderErrorEvent(err));
 		return 0;
 	}
@@ -222,12 +236,13 @@ wxDEFINE_EVENT(EVT_VIDEO_ERROR, VideoProviderErrorEvent);
 wxDEFINE_EVENT(EVT_SUBTITLES_ERROR, SubtitlesProviderErrorEvent);
 
 VideoProviderErrorEvent::VideoProviderErrorEvent(VideoProviderError const& err)
-: agi::Exception(err.GetMessage(), &err)
+: agi::NonFatalException(err.GetChainedMessage(), &err)
 {
 	SetEventType(EVT_VIDEO_ERROR);
 }
-SubtitlesProviderErrorEvent::SubtitlesProviderErrorEvent(wxString err)
-: agi::Exception(STD_STR(err), NULL)
+
+SubtitlesProviderErrorEvent::SubtitlesProviderErrorEvent(agi::SubtitleProviderError const& err)
+: agi::NonFatalException(err.GetChainedMessage(), &err)
 {
 	SetEventType(EVT_SUBTITLES_ERROR);
 }

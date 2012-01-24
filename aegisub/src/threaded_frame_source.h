@@ -50,6 +50,8 @@ class SubtitlesProvider;
 class VideoProvider;
 class VideoProviderError;
 
+namespace agi { class SubtitleProviderError; }
+
 /// @class ThreadedFrameSource
 /// @brief An asynchronous video decoding and subtitle rendering wrapper
 class ThreadedFrameSource : public wxThread {
@@ -129,7 +131,7 @@ public:
 
 // These exceptions are wxEvents so that they can be passed directly back to
 // the parent thread as events
-class VideoProviderErrorEvent : public wxEvent, public agi::Exception {
+class VideoProviderErrorEvent : public wxEvent, public agi::NonFatalException {
 public:
 	const char * GetName() const { return "video/error"; }
 	wxEvent *Clone() const { return new VideoProviderErrorEvent(*this); };
@@ -137,12 +139,12 @@ public:
 	VideoProviderErrorEvent(VideoProviderError const& err);
 };
 
-class SubtitlesProviderErrorEvent : public wxEvent, public agi::Exception {
+class SubtitlesProviderErrorEvent : public wxEvent, public agi::NonFatalException {
 public:
 	const char * GetName() const { return "subtitles/error"; }
 	wxEvent *Clone() const { return new SubtitlesProviderErrorEvent(*this); };
 	agi::Exception *Copy() const { return new SubtitlesProviderErrorEvent(*this); };
-	SubtitlesProviderErrorEvent(wxString msg);
+	SubtitlesProviderErrorEvent(agi::SubtitleProviderError const& err);
 };
 
 wxDECLARE_EVENT(EVT_FRAME_READY, FrameReadyEvent);
