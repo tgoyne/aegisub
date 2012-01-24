@@ -67,7 +67,7 @@ void CSRISubtitlesProvider::LoadSubtitles(AssFile *subs) {
 	// Select renderer
 	bool canOpenMem = true;
 	for (renderer = csri_renderer_default(); renderer; renderer = csri_renderer_next(renderer)) {
-		std::string name(csri_renderer_info(cur)->name);
+		std::string name(csri_renderer_info(renderer)->name);
 		if (name == subType) {
 			if (name.find("vsfilter") != name.npos) canOpenMem = false;
 			break;
@@ -78,7 +78,7 @@ void CSRISubtitlesProvider::LoadSubtitles(AssFile *subs) {
 	if (!renderer) {
 		renderer = csri_renderer_default();
 		if (!renderer) {
-			agi::NoSubtitleProvidersError e("No CSRI renderer available, cannot show subtitles. Try installing one or switch to another subtitle provider."))
+			agi::NoSubtitleProvidersError e("No CSRI renderer available, cannot show subtitles. Try installing one or switch to another subtitle provider.");
 			throw agi::SubtitleProviderLoadError("Could not initialize CSRI renderer", &e);
 		}
 	}
