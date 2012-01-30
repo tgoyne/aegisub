@@ -25,9 +25,7 @@
   <!-- Project specific configuration -->
   <PropertyGroup>
     <OutDir>$(ProjectDir)</OutDir>
-    <TargetName>respack</TargetName>
-	<TargetName Condition="'$(Platform)'=='x64'">%(TargetName)64</TargetName>
-    <TargetName Condition="'$(Configuration)'=='Debug'">%(TargetName)d</TargetName>
+    <TargetPath>$(ProjectDir)$(TargetName)$(TargetExt)</TargetPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
