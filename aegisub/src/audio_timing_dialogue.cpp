@@ -50,6 +50,37 @@
 #include "selection_controller.h"
 #include "utils.h"
 
+/// @class InactiveLineMarker
+/// @brief Markers for the beginning and ends of inactive lines
+class InactiveLineMarker : public AudioMarker {
+	int position;
+	Pen style;
+	FeetStyle feet;
+	AssDialogue *line;
+
+public:
+	int GetPosition() const { return position; }
+	wxPen GetStyle() const { return style; }
+	FeetStyle GetFeet() const { return feet; }
+	bool CanSnap() const { return true; }
+
+	InactiveLineMarker(AssDialogue *line, bool start)
+	: position(start ? line->Start : line->End)
+	, style("Colour/Audio Display/Line Boundary Inactive Line", "Audio/Line Boundaries Thickness")
+	, feet(start ? Feet_Right : Feet_Left)
+	, line(line)
+	{
+	}
+
+	void SetPosition(int new_position)
+	{
+		position = new_position;
+	}
+
+	/// Implicit decay to the position of the marker
+	operator int() const { return position; }
+};
+
 /// @class AudioMarkerDialogueTiming
 /// @brief AudioMarker implementation for AudioTimingControllerDialogue
 ///
@@ -72,6 +103,8 @@ class AudioMarkerDialogueTiming : public AudioMarker {
 	/// Draw style for the right marker
 	Pen style_right;
 
+	/// Markers which should be moved along with this one
+	std::vector<InactiveLineMarker*> grouped_markers;
 
 public:
 	// AudioMarker interface
@@ -89,7 +122,45 @@ public:
 	/// If the marker moves to the opposite side of the other marker in the pair,
 	/// the styles of the two markers will be changed to match the new start/end
 	/// relationship of them.
-	void SetPosition(int new_position);
+	void SetPosition(int new_position)
+	{
+		position = new_position;
+
+		if (other)
+		{
+			if (position < other->position)
+			{
+				feet = Feet_Right;
+				other->feet = Feet_Left;
+				style = style_left;
+				other->style = style_right;
+			}
+			else if (position > other->position)
+			{
+				feet = Feet_Left;
+				other->feet = Feet_Right;
+				style = style_right;
+				other->style = style_left;
+			}
+		}
+
+		for (size_t i = 0; i < grouped_markers.size(); ++i)
+		{
+			grouped_markers[i]->SetPosition(position);
+		}
+	}
+
+	/// Add a marker to the group of markers which will be moved when this one is
+	void AddGroupedMarker(InactiveLineMarker *m)
+	{
+		grouped_markers.push_back(m);
+	}
+
+	/// Clear the grouped markers
+	void ClearGroupedMarkers()
+	{
+		grouped_markers.clear();
+	}
 
 
 	/// @brief Constructor
@@ -109,31 +180,6 @@ public:
 	/// Implicit decay to the position of the marker
 	operator int() const { return position; }
 };
-
-/// @class InactiveLineMarker
-/// @brief Markers for the beginning and ends of inactive lines
-class InactiveLineMarker : public AudioMarker {
-	int position;
-	Pen style;
-	FeetStyle feet;
-
-public:
-	int GetPosition() const { return position; }
-	wxPen GetStyle() const { return style; }
-	FeetStyle GetFeet() const { return feet; }
-	bool CanSnap() const { return true; }
-
-	InactiveLineMarker(int position, bool start)
-	: position(position)
-	, style("Colour/Audio Display/Line Boundary Inactive Line", "Audio/Line Boundaries Thickness")
-	, feet(start ? Feet_Right : Feet_Left)
-	{
-	}
-
-	/// Implicit decay to the position of the marker
-	operator int() const { return position; }
-};
-
 
 /// @class AudioTimingControllerDialogue
 /// @brief Default timing mode for dialogue subtitles
@@ -246,30 +292,6 @@ public:
 AudioTimingController *CreateDialogueTimingController(agi::Context *c)
 {
 	return new AudioTimingControllerDialogue(c);
-}
-
-// AudioMarkerDialogueTiming
-void AudioMarkerDialogueTiming::SetPosition(int new_position)
-{
-	position = new_position;
-
-	if (other)
-	{
-		if (position < other->position)
-		{
-			feet = Feet_Right;
-			other->feet = Feet_Left;
-			style = style_left;
-			other->style = style_right;
-		}
-		else if (position > other->position)
-		{
-			feet = Feet_Left;
-			other->feet = Feet_Right;
-			style = style_right;
-			other->style = style_left;
-		}
-	}
 }
 
 AudioMarkerDialogueTiming::AudioMarkerDialogueTiming()
@@ -647,7 +669,7 @@ int AudioTimingControllerDialogue::SnapPosition(int position, int snap_range) co
 
 void AudioTimingControllerDialogue::AddInactiveMarkers(AssDialogue *line)
 {
-	inactive_markers.push_back(InactiveLineMarker(line->Start, true));
-	inactive_markers.push_back(InactiveLineMarker(line->End, false));
+	inactive_markers.push_back(InactiveLineMarker(line, true));
+	inactive_markers.push_back(InactiveLineMarker(line, false));
 	inactive_ranges.push_back(std::pair<int, int>(line->Start, line->End));
 }
