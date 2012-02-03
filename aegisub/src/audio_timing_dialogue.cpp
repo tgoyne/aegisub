@@ -150,6 +150,16 @@ public:
 		}
 	}
 
+	template<class Iter>
+	void SetGroup(std::pair<Iter, Iter> r)
+	{
+		grouped_markers.clear();
+		for (Iter it = r.first; it != r.second; ++it)
+		{
+			grouped_markers.push_back(&*it);
+		}
+	}
+
 	/// Add a marker to the group of markers which will be moved when this one is
 	void AddGroupedMarker(InactiveLineMarker *m)
 	{
@@ -530,6 +540,8 @@ AudioMarker * AudioTimingControllerDialogue::OnLeftClick(int ms, int sensitivity
 
 	if (dist_l < dist_r && dist_l <= sensitivity)
 	{
+		left->SetGroup(equal_range(inactive_markers.begin(), inactive_markers.end(), left->GetPosition()));
+
 		// Clicked near the left marker:
 		// Insta-move it and start dragging it
 		SetMarker(left, SnapPosition(ms, snap_range));
