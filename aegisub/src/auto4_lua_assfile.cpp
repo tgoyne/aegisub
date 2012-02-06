@@ -56,64 +56,16 @@
 #include "ass_override.h"
 #include "ass_style.h"
 #include "auto4_lua.h"
+#include "auto4_lua_utils.h"
 #include "utils.h"
 
-// This must be below the headers above.
-#ifdef __WINDOWS__
-#include "../../contrib/lua51/src/lualib.h"
-#include "../../contrib/lua51/src/lauxlib.h"
-#else
-#include <lua.hpp>
-#endif
-
 namespace {
-	void set_field(lua_State *L, const char *name, wxString const& value)
-	{
-		lua_pushstring(L, value.utf8_str());
-		lua_setfield(L, -2, name);
-	}
-
-	void set_field(lua_State *L, const char *name, const char *value)
-	{
-		lua_pushstring(L, value);
-		lua_setfield(L, -2, name);
-	}
-
-	// Userdata object must be just above the target table
-	void set_field(lua_State *L, const char *name, lua_CFunction value)
-	{
-		assert(lua_type(L, -2) == LUA_TUSERDATA);
-		lua_pushvalue(L, -2);
-		lua_pushcclosure(L, value, 1);
-		lua_setfield(L, -2, name);
-	}
-
-	void set_field(lua_State *L, const char *name, bool value)
-	{
-		lua_pushboolean(L, value);
-		lua_setfield(L, -2, name);
-	}
-
-	void set_field(lua_State *L, const char *name, double value)
-	{
-		lua_pushnumber(L, value);
-		lua_setfield(L, -2, name);
-	}
-
-	void set_field(lua_State *L, const char *name, int value)
-	{
-		lua_pushinteger(L, value);
-		lua_setfield(L, -2, name);
-	}
-
 	DEFINE_SIMPLE_EXCEPTION_NOINNER(BadField, Automation4::MacroRunError, "automation/macro/bad_field")
-	BadField bad_field(const char *expected_type, const char *name, const char *line_clasee)
-	{
-		return BadField(std::string("Invalid or missing field '") + name + "' in '" + line_clasee + "' class subtitle line (expected " + expected_type + ")");
+		BadField bad_field(const char *expected_type, const char *name, const char *line_clasee) {
+			return BadField(std::string("Invalid or missing field '") + name + "' in '" + line_clasee + "' class subtitle line (expected " + expected_type + ")");
 	}
 
-	wxString get_string_field(lua_State *L, const char *name, const char *line_class)
-	{
+	wxString get_string_field(lua_State *L, const char *name, const char *line_class) {
 		lua_getfield(L, -1, name);
 		if (!lua_isstring(L, -1))
 			throw bad_field("string", name, line_class);
@@ -122,8 +74,7 @@ namespace {
 		return ret;
 	}
 
-	double get_double_field(lua_State *L, const char *name, const char *line_class)
-	{
+	double get_double_field(lua_State *L, const char *name, const char *line_class) {
 		lua_getfield(L, -1, name);
 		if (!lua_isnumber(L, -1))
 			throw bad_field("number", name, line_class);
@@ -132,8 +83,7 @@ namespace {
 		return ret;
 	}
 
-	int get_int_field(lua_State *L, const char *name, const char *line_class)
-	{
+	int get_int_field(lua_State *L, const char *name, const char *line_class) {
 		lua_getfield(L, -1, name);
 		if (!lua_isnumber(L, -1))
 			throw bad_field("number", name, line_class);
@@ -142,28 +92,13 @@ namespace {
 		return ret;
 	}
 
-	bool get_bool_field(lua_State *L, const char *name, const char *line_class)
-	{
+	bool get_bool_field(lua_State *L, const char *name, const char *line_class) {
 		lua_getfield(L, -1, name);
 		if (!lua_isboolean(L, -1))
 			throw bad_field("boolean", name, line_class);
 		bool ret = !!lua_toboolean(L, -1);
 		lua_pop(L, 1);
 		return ret;
-	}
-
-	using namespace Automation4;
-	template<int (LuaAssFile::*closure)(lua_State *)>
-	int closure_wrapper(lua_State *L)
-	{
-		return (LuaAssFile::GetObjPointer(L, lua_upvalueindex(1))->*closure)(L);
-	}
-
-	template<void (LuaAssFile::*closure)(lua_State *)>
-	int closure_wrapper_v(lua_State *L)
-	{
-		(LuaAssFile::GetObjPointer(L, lua_upvalueindex(1))->*closure)(L);
-		return 0;
 	}
 
 	int modification_mask(AssEntry *e)
@@ -418,13 +353,13 @@ namespace Automation4 {
 
 				lua_pushvalue(L, 1);
 				if (strcmp(idx, "delete") == 0)
-					lua_pushcclosure(L, closure_wrapper_v<&LuaAssFile::ObjectDelete>, 1);
+					lua_pushcclosure(L, closure_wrapper_v<LuaAssFile, &LuaAssFile::ObjectDelete>, 1);
 				else if (strcmp(idx, "deleterange") == 0)
-					lua_pushcclosure(L, closure_wrapper_v<&LuaAssFile::ObjectDeleteRange>, 1);
+					lua_pushcclosure(L, closure_wrapper_v<LuaAssFile, &LuaAssFile::ObjectDeleteRange>, 1);
 				else if (strcmp(idx, "insert") == 0)
-					lua_pushcclosure(L, closure_wrapper_v<&LuaAssFile::ObjectInsert>, 1);
+					lua_pushcclosure(L, closure_wrapper_v<LuaAssFile, &LuaAssFile::ObjectInsert>, 1);
 				else if (strcmp(idx, "append") == 0)
-					lua_pushcclosure(L, closure_wrapper_v<&LuaAssFile::ObjectAppend>, 1);
+					lua_pushcclosure(L, closure_wrapper_v<LuaAssFile, &LuaAssFile::ObjectAppend>, 1);
 				else {
 					// idiot
 					lua_pop(L, 1);
@@ -673,13 +608,6 @@ namespace Automation4 {
 		}
 	}
 
-	LuaAssFile *LuaAssFile::GetObjPointer(lua_State *L, int idx)
-	{
-		assert(lua_type(L, idx) == LUA_TUSERDATA);
-		void *ud = lua_touserdata(L, idx);
-		return *((LuaAssFile**)ud);
-	}
-
 	void LuaAssFile::ProcessingComplete(wxString const& undo_description)
 	{
 		// Apply any pending commits
@@ -722,18 +650,18 @@ namespace Automation4 {
 
 		// make the metatable
 		lua_newtable(L);
-		set_field(L, "__index", closure_wrapper<&LuaAssFile::ObjectIndexRead>);
-		set_field(L, "__newindex", closure_wrapper_v<&LuaAssFile::ObjectIndexWrite>);
-		set_field(L, "__len", closure_wrapper<&LuaAssFile::ObjectGetLen>);
-		set_field(L, "__gc", closure_wrapper_v<&LuaAssFile::ObjectGarbageCollect>);
+		set_field(L, "__index", closure_wrapper<LuaAssFile, &LuaAssFile::ObjectIndexRead>);
+		set_field(L, "__newindex", closure_wrapper_v<LuaAssFile, &LuaAssFile::ObjectIndexWrite>);
+		set_field(L, "__len", closure_wrapper<LuaAssFile, &LuaAssFile::ObjectGetLen>);
+		set_field(L, "__gc", closure_wrapper_v<LuaAssFile, &LuaAssFile::ObjectGarbageCollect>);
 		lua_setmetatable(L, -2);
 
 		// register misc functions
 		// assume the "aegisub" global table exists
 		lua_getglobal(L, "aegisub");
 
-		set_field(L, "parse_karaoke_data", closure_wrapper<&LuaAssFile::LuaParseKaraokeData>);
-		set_field(L, "set_undo_point", closure_wrapper_v<&LuaAssFile::LuaSetUndoPoint>);
+		set_field(L, "parse_karaoke_data", closure_wrapper<LuaAssFile, &LuaAssFile::LuaParseKaraokeData>);
+		set_field(L, "set_undo_point", closure_wrapper_v<LuaAssFile, &LuaAssFile::LuaSetUndoPoint>);
 
 		lua_pop(L, 1); // pop "aegisub" table
 

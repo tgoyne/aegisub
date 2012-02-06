@@ -61,7 +61,9 @@
 #include "ass_file.h"
 #include "ass_style.h"
 #include "auto4_lua_factory.h"
+#include "auto4_lua_options.h"
 #include "auto4_lua_scriptreader.h"
+#include "auto4_lua_utils.h"
 #include "compat.h"
 #include "include/aegisub/context.h"
 #include "main.h"
@@ -70,52 +72,7 @@
 #include "video_context.h"
 #include "utils.h"
 
-// This must be below the headers above.
-#ifdef __WINDOWS__
-#include "../../contrib/lua51/src/lualib.h"
-#include "../../contrib/lua51/src/lauxlib.h"
-#else
-#include <lua.hpp>
-#endif
-
 namespace {
-	inline void push_value(lua_State *L, lua_CFunction fn)
-	{
-		lua_pushcfunction(L, fn);
-	}
-
-	inline void push_value(lua_State *L, int n)
-	{
-		lua_pushinteger(L, n);
-	}
-
-	template<class T>
-	inline void set_field(lua_State *L, const char *name, T value)
-	{
-		push_value(L, value);
-		lua_setfield(L, -2, name);
-	}
-
-	inline wxString get_wxstring(lua_State *L, int idx)
-	{
-		return wxString(lua_tostring(L, idx), wxConvUTF8);
-	}
-
-	inline wxString check_wxstring(lua_State *L, int idx)
-	{
-		return wxString(luaL_checkstring(L, idx), wxConvUTF8);
-	}
-
-	wxString get_global_string(lua_State *L, const char *name)
-	{
-		lua_getglobal(L, name);
-		wxString ret;
-		if (lua_isstring(L, -1))
-			ret = get_wxstring(L, -1);
-		lua_pop(L, 1);
-		return ret;
-	}
-
 	void set_context(lua_State *L, const agi::Context *c)
 	{
 		// Explicit cast is needed to discard the const
@@ -135,47 +92,6 @@ namespace {
 		return c;
 	}
 }
-
-	// LuaStackcheck
-#if 0
-	struct LuaStackcheck {
-		lua_State *L;
-		int startstack;
-		void check_stack(int additional)
-		{
-			int top = lua_gettop(L);
-			if (top - additional != startstack) {
-				LOG_D("automation/lua") << "lua stack size mismatch.";
-				dump();
-				assert(top - additional == startstack);
-			}
-		}
-		void dump()
-		{
-			int top = lua_gettop(L);
-			LOG_D("automation/lua/stackdump") << "--- dumping lua stack...";
-			for (int i = top; i > 0; i--) {
-				lua_pushvalue(L, i);
-				wxString type(lua_typename(L, lua_type(L, -1)), wxConvUTF8);
-				if (lua_isstring(L, i)) {
-					LOG_D("automation/lua/stackdump") << type << ": " << luatostring(L, -1);
-				} else {
-					LOG_D("automation/lua/stackdump") << type;
-				}
-				lua_pop(L, 1);
-			}
-			LOG_D("automation/lua") << "--- end dump";
-		}
-		LuaStackcheck(lua_State *L) : L(L) { startstack = lua_gettop(L); }
-		~LuaStackcheck() { check_stack(0); }
-	};
-#else
-	struct LuaStackcheck {
-		void check_stack(int) { }
-		void dump() { }
-		LuaStackcheck(lua_State*) { }
-	};
-#endif
 
 namespace Automation4 {
 	// LuaScript

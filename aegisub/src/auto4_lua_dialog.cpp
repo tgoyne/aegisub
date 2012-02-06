@@ -59,70 +59,11 @@
 #include <libaegisub/log.h>
 
 #include "ass_style.h"
+#include "auto4_lua_utils.h"
 #include "colour_button.h"
 #include "compat.h"
 #include "string_codec.h"
 #include "utils.h"
-
-// These must be after the headers above.
-#ifdef __WINDOWS__
-#include "../../contrib/lua51/src/lualib.h"
-#include "../../contrib/lua51/src/lauxlib.h"
-#else
-#include <lua.hpp>
-#endif
-
-namespace {
-	inline void get_if_right_type(lua_State *L, wxString &def)
-	{
-		if (lua_isstring(L, -1))
-			def = wxString(lua_tostring(L, -1), wxConvUTF8);
-	}
-
-	inline void get_if_right_type(lua_State *L, double &def)
-	{
-		if (lua_isnumber(L, -1))
-			def = std::max(lua_tonumber(L, -1), def);
-	}
-
-	inline void get_if_right_type(lua_State *L, int &def)
-	{
-		if (lua_isnumber(L, -1))
-			def = std::max<int>(lua_tointeger(L, -1), def);
-	}
-
-	inline void get_if_right_type(lua_State *L, bool &def)
-	{
-		if (lua_isboolean(L, -1))
-			def = !!lua_toboolean(L, -1);
-	}
-
-	template<class T>
-	T get_field(lua_State *L, const char *name, T def)
-	{
-		lua_getfield(L, -1, name);
-		get_if_right_type(L, def);
-		lua_pop(L, 1);
-		return def;
-	}
-
-	inline wxString get_field(lua_State *L, const char *name)
-	{
-		return get_field(L, name, wxString());
-	}
-
-	template<class T>
-	void read_string_array(lua_State *L, T &cont)
-	{
-		lua_pushnil(L);
-		while (lua_next(L, -2)) {
-			if (lua_isstring(L, -1))
-				cont.push_back(wxString(lua_tostring(L, -1), wxConvUTF8));
-			lua_pop(L, 1);
-		}
-		lua_pop(L, 1);
-	}
-}
 
 namespace Automation4 {
 	// LuaDialogControl
