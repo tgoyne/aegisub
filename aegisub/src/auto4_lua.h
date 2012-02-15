@@ -246,11 +246,15 @@ namespace Automation4 {
 	/// @throws agi::UserCancelException if the function fails to run to completion (either due to cancelling or errors)
 	void LuaThreadedCall(lua_State *L, int nargs, int nresults, wxString const& title, wxWindow *parent, bool can_open_config);
 
+	class LuaOptions;
+
 	class LuaCommand : public cmd::Command, private LuaFeature {
 		std::string cmd_name;
 		wxString display;
 		wxString help;
 		int cmd_type;
+
+		LuaOptions *options;
 
 		LuaCommand(lua_State *L);
 	public:
@@ -273,6 +277,7 @@ namespace Automation4 {
 	class LuaExportFilter : public ExportFilter, private LuaFeature {
 		bool has_config;
 		LuaDialog *config_dialog;
+		LuaOptions *options;
 
 	protected:
 		LuaExportFilter(lua_State *L);
@@ -296,6 +301,8 @@ namespace Automation4 {
 
 		std::vector<cmd::Command*> macros;
 		std::vector<ExportFilter*> filters;
+
+		LuaOptions *options;
 
 		/// load script and create internal structures etc.
 		void Create();
@@ -321,6 +328,7 @@ namespace Automation4 {
 		void RegisterFilter(LuaExportFilter *filter);
 
 		static LuaScript* GetScriptObject(lua_State *L);
+		static LuaOptions* GetOptionsObject(lua_State *L);
 
 		// Script implementation
 		void Reload();

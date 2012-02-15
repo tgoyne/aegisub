@@ -553,6 +553,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\src\auto4_lua_options.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\auto4_lua_options.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\auto4_lua_progresssink.cpp"
 					>
 				</File>
