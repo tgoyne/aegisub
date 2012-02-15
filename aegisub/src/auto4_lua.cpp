@@ -64,6 +64,7 @@
 #include "ass_file.h"
 #include "ass_style.h"
 #include "auto4_lua_factory.h"
+#include "auto4_lua_options.h"
 #include "auto4_lua_scriptreader.h"
 #include "compat.h"
 #include "include/aegisub/context.h"
@@ -463,6 +464,9 @@ namespace Automation4 {
 			set_field(L, "file_name", get_file_name);
 			set_field(L, "gettext", get_translation);
 
+			options = LuaOptions::Init(L);
+			lua_setfield(L, -2, "options");
+
 			// store aegisub table to globals
 			lua_settable(L, LUA_GLOBALSINDEX);
 			_stackcheck.check_stack(0);
@@ -560,6 +564,11 @@ namespace Automation4 {
 		void *ptr = lua_touserdata(L, -1);
 		lua_pop(L, 1);
 		return (LuaScript*)ptr;
+	}
+
+	LuaOptions* LuaScript::GetOptionsObject(lua_State *L)
+	{
+		return GetScriptObject(L)->options;
 	}
 
 	int LuaScript::LuaTextExtents(lua_State *L)
@@ -795,6 +804,7 @@ namespace Automation4 {
 	, display(check_wxstring(L, 1))
 	, help(get_wxstring(L, 2))
 	, cmd_type(cmd::COMMAND_NORMAL)
+	, options(LuaScript::GetOptionsObject(L))
 	{
 		lua_getfield(L, LUA_REGISTRYINDEX, "filename");
 		cmd_name = STD_STR(wxString::Format("automation/lua/%s/%s", get_wxstring(L, -1), check_wxstring(L, 1)));
@@ -897,6 +907,8 @@ namespace Automation4 {
 
 	void LuaCommand::operator()(agi::Context *c)
 	{
+		options->Cancel();
+
 		LuaStackcheck stackcheck(L);
 		set_context(L, c);
 		stackcheck.check_stack(0);
@@ -967,6 +979,8 @@ namespace Automation4 {
 			subsobj->Cancel();
 		}
 		stackcheck.check_stack(0);
+
+		options->Apply();
 	}
 
 	bool LuaCommand::IsActive(const agi::Context *c)
@@ -1002,6 +1016,7 @@ namespace Automation4 {
 	LuaExportFilter::LuaExportFilter(lua_State *L)
 	: ExportFilter(check_wxstring(L, 1), get_wxstring(L, 2), lua_tointeger(L, 3))
 	, LuaFeature(L)
+	, options(LuaScript::GetOptionsObject(L))
 	{
 		if (!lua_isfunction(L, 4))
 			luaL_error(L, "The filter processing function must be a function");
@@ -1035,6 +1050,8 @@ namespace Automation4 {
 
 	void LuaExportFilter::ProcessSubs(AssFile *subs, wxWindow *export_dialog)
 	{
+		options->Cancel();
+
 		LuaStackcheck stackcheck(L);
 
 		GetFeatureFunction("run");
@@ -1068,6 +1085,8 @@ namespace Automation4 {
 			subsobj->Cancel();
 			throw;
 		}
+
+		options->Apply();
 	}
 
 	ScriptDialog* LuaExportFilter::GenerateConfigDialog(wxWindow *parent, agi::Context *c)
