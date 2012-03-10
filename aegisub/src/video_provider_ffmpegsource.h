@@ -84,6 +84,6 @@ public:
 	wxString GetDecoderName() const { return "FFmpegSource"; }
 	/// @brief Gets the desired cache behavior.
 	/// @return Returns true.
-	bool WantsCaching() const { return true; }
+	bool WantsCaching() const { return false; }
 };
 #endif /* WITH_FFMS2 */
