@@ -107,14 +107,24 @@ void AudioController::OnPlaybackTimer(wxTimerEvent &)
 void AudioController::OnComputerSuspending(wxPowerEvent &)
 {
 	Stop();
-	player->CloseStream();
+	delete player;
+	player = 0;
 }
 
 
 void AudioController::OnComputerResuming(wxPowerEvent &)
 {
 	if (provider)
-		player->OpenStream();
+	{
+		try
+		{
+			player = AudioPlayerFactory::GetAudioPlayer(provider);
+		}
+		catch (...)
+		{
+			CloseAudio();
+		}
+	}
 }
 #endif
 
@@ -128,9 +138,7 @@ void AudioController::OnAudioPlayerChanged()
 
 	try
 	{
-		player = AudioPlayerFactory::GetAudioPlayer();
-		player->SetProvider(provider);
-		player->OpenStream();
+		player = AudioPlayerFactory::GetAudioPlayer(provider);
 	}
 	catch (...)
 	{
@@ -228,15 +236,11 @@ void AudioController::OpenAudio(const wxString &url)
 
 	try
 	{
-		player = AudioPlayerFactory::GetAudioPlayer();
-		player->SetProvider(provider);
-		player->OpenStream();
+		player = AudioPlayerFactory::GetAudioPlayer(provider);
 	}
 	catch (...)
 	{
-		delete player;
 		delete provider;
-		player = 0;
 		provider = 0;
 		throw;
 	}
