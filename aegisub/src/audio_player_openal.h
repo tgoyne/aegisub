@@ -62,7 +62,6 @@ class OpenALPlayer : public AudioPlayer, wxTimer {
 	/// Number of OpenAL buffers to use
 	static const ALsizei num_buffers = 8;
 
-	bool open; ///< Is the player ready to play?
 	bool playing; ///< Is audio currently playing?
 
 	float volume; ///< Current audio volume
@@ -104,11 +103,8 @@ protected:
 	void Notify();
 
 public:
-	OpenALPlayer();
+	OpenALPlayer(AudioProvider *provider);
 	~OpenALPlayer();
-
-	void OpenStream();
-	void CloseStream();
 
 	void Play(int64_t start,int64_t count);
 	void Stop();
