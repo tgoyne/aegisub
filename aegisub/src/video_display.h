@@ -139,8 +139,8 @@ class VideoDisplay : public wxGLCanvas {
 	/// Set the zoom level to that indicated by the text
 	void SetZoomFromBoxText(wxCommandEvent&);
 
-	/// @brief Key event handler
 	void OnKeyDown(wxKeyEvent &event);
+	void OnCharHook(wxKeyEvent &event);
 	/// @brief Mouse event handler
 	void OnMouseEvent(wxMouseEvent& event);
 	void OnMouseWheel(wxMouseEvent& event);

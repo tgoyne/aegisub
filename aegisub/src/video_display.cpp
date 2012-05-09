@@ -65,6 +65,7 @@
 #include "include/aegisub/menu.h"
 #include "main.h"
 #include "spline_curve.h"
+#include "subs_grid.h"
 #include "threaded_frame_source.h"
 #include "utils.h"
 #include "video_out_gl.h"
@@ -122,7 +123,8 @@ VideoDisplay::VideoDisplay(
 	Bind(wxEVT_SIZE, &VideoDisplay::OnSizeEvent, this);
 	Bind(wxEVT_CONTEXT_MENU, &VideoDisplay::OnContextMenu, this);
 	Bind(wxEVT_ENTER_WINDOW, &VideoDisplay::OnMouseEvent, this);
-	Bind(wxEVT_CHAR_HOOK, &VideoDisplay::OnKeyDown, this);
+	Bind(wxEVT_CHAR_HOOK, &VideoDisplay::OnCharHook, this);
+	Bind(wxEVT_KEY_DOWN, &VideoDisplay::OnKeyDown, this);
 	Bind(wxEVT_LEAVE_WINDOW, &VideoDisplay::OnMouseLeave, this);
 	Bind(wxEVT_LEFT_DCLICK, &VideoDisplay::OnMouseEvent, this);
 	Bind(wxEVT_LEFT_DOWN, &VideoDisplay::OnMouseEvent, this);
@@ -376,8 +378,14 @@ void VideoDisplay::OnContextMenu(wxContextMenuEvent&) {
 	menu::OpenPopupMenu(context_menu.get(), this);
 }
 
-void VideoDisplay::OnKeyDown(wxKeyEvent &event) {
+void VideoDisplay::OnCharHook(wxKeyEvent &event) {
 	hotkey::check("Video", con, event);
+}
+
+void VideoDisplay::OnKeyDown(wxKeyEvent &event) {
+	// Forward up/down to grid as those aren't yet handled by commands
+	if (event.GetKeyCode() == WXK_UP || event.GetKeyCode() == WXK_DOWN)
+		con->subsGrid->GetEventHandler()->ProcessEvent(event);
 }
 
 void VideoDisplay::SetZoom(double value) {
