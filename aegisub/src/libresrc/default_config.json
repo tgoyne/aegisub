@@ -349,11 +349,13 @@
 	},
 
 	"Subtitle" : {
+		"Default Catalog" : "Default",
 		"Default Resolution" : {
 			"Auto" : true,
 			"Height" : 720,
 			"Width" : 1280
 		},
+		"Default Style" : "Default",
 		"Edit Box" : {
 			"Font Face" : "",
 			"Font Size" : 10

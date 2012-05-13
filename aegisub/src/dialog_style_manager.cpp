@@ -66,6 +66,7 @@
 #include "persist_location.h"
 #include "selection_controller.h"
 #include "standard_paths.h"
+#include "utils.h"
 
 using std::tr1::placeholders::_1;
 
@@ -181,7 +182,12 @@ DialogStyleManager::DialogStyleManager(agi::Context *context)
 	CatalogBox->Add(CatalogDelete,0,0,0);
 
 	// Storage styles list
+	StorageMakeDefault = new wxButton(this, -1, _("Set &as default"));
 	wxSizer *StorageButtons = make_edit_buttons(this, _("Copy to &current script ->"), &MoveToLocal, &StorageNew, &StorageEdit, &StorageCopy, &StorageDelete);
+
+	wxSizer *DefaultMoveSizer = new wxBoxSizer(wxHORIZONTAL);
+	DefaultMoveSizer->Add(StorageMakeDefault,1,wxEXPAND | wxRIGHT,5);
+	DefaultMoveSizer->Add(MoveToLocal,1,wxEXPAND,0);
 
 	wxSizer *StorageListSizer = new wxBoxSizer(wxHORIZONTAL);
 	StorageList = new wxListBox(this, -1, wxDefaultPosition, wxSize(240,250), 0, NULL, wxLB_EXTENDED);
@@ -190,7 +196,7 @@ DialogStyleManager::DialogStyleManager(agi::Context *context)
 
 	wxSizer *StorageBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Storage"));
 	StorageBox->Add(StorageListSizer,1,wxEXPAND | wxBOTTOM,5);
-	StorageBox->Add(MoveToLocal,0,wxEXPAND | wxBOTTOM,5);
+	StorageBox->Add(DefaultMoveSizer,0,wxEXPAND | wxBOTTOM,5);
 	StorageBox->Add(StorageButtons,0,wxEXPAND | wxBOTTOM,0);
 
 	// Local styles list
@@ -268,6 +274,8 @@ DialogStyleManager::DialogStyleManager(agi::Context *context)
 
 	MoveToLocal->Bind(wxEVT_COMMAND_BUTTON_CLICKED, bind(&DialogStyleManager::OnCopyToCurrent, this));
 	MoveToStorage->Bind(wxEVT_COMMAND_BUTTON_CLICKED, bind(&DialogStyleManager::OnCopyToStorage, this));
+
+	StorageMakeDefault->Bind(wxEVT_COMMAND_BUTTON_CLICKED, bind(&DialogStyleManager::OnStorageMakeDefault, this));
 
 	CatalogList->Bind(wxEVT_COMMAND_COMBOBOX_SELECTED, bind(&DialogStyleManager::OnChangeCatalog, this));
 
@@ -354,18 +362,22 @@ void DialogStyleManager::LoadCatalog() {
 		CatalogList->Append("Default");
 	}
 
-	// Set to default if available
-	wxString pickStyle = c->ass->GetScriptInfo("Last Style Storage");
-	if (pickStyle.empty())
-		pickStyle = "Default";
+	// Select the catalog specified in the ASS file if available,
+	// otherwise select the default one.
+	wxArrayString defaultCatalogAndStyle = GetDefaultCatalogAndStyle();
+	wxString pickCatalog = c->ass->GetScriptInfo("Last Style Storage");
 
-	int opt = CatalogList->FindString(pickStyle, false);
-	if (opt != wxNOT_FOUND)
-		CatalogList->SetSelection(opt);
-	else
-		CatalogList->SetSelection(0);
+	int opt = CatalogList->FindString(pickCatalog, false);
+	if (pickCatalog.empty() || opt == wxNOT_FOUND) {
+		opt = CatalogList->FindString(defaultCatalogAndStyle[0], false);
+	}
+	CatalogList->SetSelection(opt);
 
 	OnChangeCatalog();
+
+	// Select the default style if we ended up in the default catalog.
+	if (CatalogList->GetStringSelection() == defaultCatalogAndStyle[0])
+		StorageList->SetStringSelection(defaultCatalogAndStyle[1]);
 }
 
 void DialogStyleManager::OnCatalogNew() {
@@ -548,6 +560,15 @@ void DialogStyleManager::OnStorageDelete() {
 	}
 }
 
+void DialogStyleManager::OnStorageMakeDefault() {
+	OPT_SET("Subtitle/Default Catalog")->SetString(STD_STR(CatalogList->GetStringSelection()));
+	wxArrayInt selections;
+	int n = StorageList->GetSelections(selections);
+	if (n == 1) {
+		OPT_SET("Subtitle/Default Style")->SetString(STD_STR(StorageList->GetString(selections[0])));
+	}
+}
+
 void DialogStyleManager::ShowCurrentEditor(AssStyle *style, wxString const& new_name) {
 	DialogStyleEditor editor(this, style, c, 0, new_name);
 	if (editor.ShowModal()) {
@@ -661,6 +682,7 @@ void DialogStyleManager::UpdateButtons() {
 	StorageCopy->Enable(n == 1);
 	StorageDelete->Enable(n > 0);
 	MoveToLocal->Enable(n > 0);
+	StorageMakeDefault->Enable(n == 1);
 
 	int firstStor = -1;
 	int lastStor = -1;

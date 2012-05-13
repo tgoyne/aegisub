@@ -54,7 +54,7 @@ AssDialogue::AssDialogue()
 , Layer(0)
 , Start(0)
 , End(5000)
-, Style("Default")
+, Style(GetDefaultCatalogAndStyle()[1])
 {
 	for (int i=0;i<4;i++) Margin[i] = 0;
 }
@@ -82,7 +82,7 @@ AssDialogue::AssDialogue(wxString _data,int version)
 , Layer(0)
 , Start(0)
 , End(5000)
-, Style("Default")
+, Style(GetDefaultCatalogAndStyle()[1])
 {
 	bool valid = false;
 	// Try parsing in different ways

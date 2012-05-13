@@ -182,3 +182,8 @@ struct cast {
 		return dynamic_cast<Out>(in);
 	}
 };
+
+/// Get the default catalog and style names from the config,
+/// or "Default" for both if those in the config aren't valid.
+/// Catalog first, style second.
+wxArrayString GetDefaultCatalogAndStyle();

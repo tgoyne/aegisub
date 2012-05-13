@@ -86,6 +86,7 @@ class DialogStyleManager : public wxDialog, private SelectionListener<AssDialogu
 	wxButton *StorageEdit;
 	wxButton *StorageCopy;
 	wxButton *StorageDelete;
+	wxButton *StorageMakeDefault;
 	wxButton *StorageMoveUp;
 	wxButton *StorageMoveDown;
 	wxButton *StorageMoveTop;
@@ -142,6 +143,7 @@ class DialogStyleManager : public wxDialog, private SelectionListener<AssDialogu
 	void OnStorageCopy();
 	void OnStorageDelete();
 	void OnStorageEdit();
+	void OnStorageMakeDefault();
 	void OnStorageNew();
 
 	void OnKeyDown(wxKeyEvent &event);
