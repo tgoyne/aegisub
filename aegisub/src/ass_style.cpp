@@ -44,6 +44,7 @@
 #endif
 
 #include "ass_style.h"
+#include "ass_style_storage.h"
 #include "utils.h"
 
 AssColor::AssColor () {
@@ -166,8 +167,42 @@ AssStyle::AssStyle()
 , encoding(1)
 , relativeTo(1)
 {
-	for (int i = 0; i < 4; i++)
-		Margin[i] = 10;
+	AssStyleStorage style_storage;
+	AssStyle *default_style;
+
+	wxArrayString defaults = GetDefaultCatalogAndStyle();
+
+	style_storage.Load(defaults[0]);
+	default_style = style_storage.GetStyle(defaults[1]);
+
+	if (default_style) {
+		name = default_style->name;
+		font = default_style->font;
+		fontsize = default_style->fontsize;
+		primary = default_style->primary;
+		secondary = default_style->secondary;
+		outline = default_style->outline;
+		shadow = default_style->shadow;
+		bold = default_style->bold;
+		italic = default_style->italic;
+		underline = default_style->underline;
+		strikeout = default_style->strikeout;
+		scalex = default_style->scalex;
+		scaley = default_style->scaley;
+		spacing = default_style->spacing;
+		angle = default_style->angle;
+		borderstyle = default_style->borderstyle;
+		outline_w = default_style->outline_w;
+		shadow_w = default_style->shadow_w;
+		alignment = default_style->alignment;
+		encoding = default_style->encoding;
+		relativeTo = default_style->relativeTo;
+		for (int i = 0; i < 4; i++)
+			Margin[i] = default_style->Margin[i];
+	} else {
+		for (int i = 0; i < 4; i++)
+			Margin[i] = 10;
+	}
 
 	UpdateData();
 }

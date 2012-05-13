@@ -56,6 +56,8 @@
 #include <libaegisub/util_osx.h>
 #endif
 
+#include "ass_style.h"
+#include "ass_style_storage.h"
 #include "compat.h"
 #include "main.h"
 
@@ -424,8 +426,30 @@ void CleanCache(wxString const& directory, wxString const& file_type, int64_t ma
 	LOG_D("utils/clean_cache") << "thread started successfully";
 }
 
+
 // OS X implementation in osx_utils.mm
 #ifndef __WXOSX_COCOA__
 void AddFullScreenButton(wxWindow *) { }
 void SetFloatOnParent(wxWindow *) { }
 #endif
+
+
+// Seems like a good place to stick this function.
+wxArrayString GetDefaultCatalogAndStyle() {
+	wxArrayString ret;
+
+	AssStyleStorage style_storage;
+	AssStyle *default_style;
+
+	ret.Add(OPT_GET("Subtitle/Default Catalog")->GetString());
+	ret.Add(OPT_GET("Subtitle/Default Style")->GetString());
+
+	style_storage.Load(ret[0]);
+	default_style = style_storage.GetStyle(ret[1]);
+
+	if (!default_style) {
+		ret[0] = ret[1] = "Default";
+	}
+	
+	return ret;
+}
