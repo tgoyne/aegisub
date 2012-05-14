@@ -700,8 +700,8 @@ DialogColorPicker::DialogColorPicker(wxWindow *parent, wxColour initial_color, C
 	for (int i = 0; i < 3; ++i)
 		rgb_input[i] = new wxSpinCtrl(this, -1, "", wxDefaultPosition, colorinput_size, wxSP_ARROW_KEYS, 0, 255);
 
-	ass_input = new wxTextCtrl(this, -1, "", wxDefaultPosition, colorinput_size);
-	html_input = new wxTextCtrl(this, -1, "", wxDefaultPosition, colorinput_size);
+	ass_input = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxDefaultSize);
+	html_input = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxDefaultSize);
 
 	for (int i = 0; i < 3; ++i)
 		hsl_input[i] = new wxSpinCtrl(this, -1, "", wxDefaultPosition, colorinput_size, wxSP_ARROW_KEYS, 0, 255);
