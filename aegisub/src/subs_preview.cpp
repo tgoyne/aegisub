@@ -48,6 +48,7 @@
 #include "ass_style.h"
 #include "subs_preview.h"
 #include "include/aegisub/subtitles_provider.h"
+#include "utils.h"
 #include "video_provider_dummy.h"
 
 SubtitlesPreview::SubtitlesPreview(wxWindow *parent, wxSize size, int winStyle, wxColour col)
@@ -79,7 +80,7 @@ SubtitlesPreview::~SubtitlesPreview() {
 
 void SubtitlesPreview::SetStyle(AssStyle const& newStyle) {
 	*style = newStyle;
-	style->name = "Default";
+	style->name = GetDefaultCatalogAndStyle()[1];
 	style->alignment = 5;
 	memset(style->Margin, 0, 4 * sizeof(int));
 	style->UpdateData();
