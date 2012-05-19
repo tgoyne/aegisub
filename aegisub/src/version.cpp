@@ -38,9 +38,7 @@
 
 #include "version.h"
 
-#ifdef __WINDOWS__
 #include "../build/svn-revision.h"
-#endif
 
 #define STR_INT2(x) #x
 #define STR_INT(x) STR_INT2(x)
@@ -61,32 +59,20 @@
 #define BUILD_SVN_DATE __DATE__ " " __TIME__
 #endif
 
-#ifndef BUILD_SVN_LOCALMODS
-#define BUILD_SVN_LOCALMODS ""
-#endif
-
 // Define FINAL_RELEASE to mark a build as a "final" version, ie. not pre-release version
 // In that case it won't include the SVN revision information
 #ifdef FINAL_RELEASE
 #define VERSION_NUMBER "3.0.0"
 #else
-#define VERSION_NUMBER "r" STR_INT(BUILD_SVN_REVISION) BUILD_SVN_LOCALMODS
+#define VERSION_NUMBER BUILD_VERSION_STR
 #endif
 
 const char *GetAegisubLongVersionString() {
-#ifdef FINAL_RELEASE
 	return VERSION_NUMBER DEBUG_SUFFIX;
-#else
-	return VERSION_NUMBER " (development version" BUILD_CREDIT_SUFFIX ")" DEBUG_SUFFIX;
-#endif
 }
 
 const char *GetAegisubShortVersionString() {
-#ifdef FINAL_RELEASE
-	return VERSION_NUMBER " (built from SVN revision r" #BUILD_SVN_REVISION BUILD_SVN_LOCALMODS ")" DEBUG_SUFFIX;
-#else
-	return VERSION_NUMBER " (development version" BUILD_CREDIT_SUFFIX ")" DEBUG_SUFFIX;
-#endif
+	return VERSION_NUMBER DEBUG_SUFFIX;
 }
 
 const char *GetAegisubBuildTime() {

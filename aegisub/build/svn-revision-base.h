@@ -6,5 +6,5 @@
 // Do not add or commit the resulting file to SVN.
 
 #define BUILD_SVN_REVISION $WCREV$
+#define BUILD_VERSION_STR "$GITVERSIONSTR$"
 #define BUILD_SVN_DATE "$WCDATE$"
-#define BUILD_SVN_LOCALMODS $WCMODS?"M":""$
