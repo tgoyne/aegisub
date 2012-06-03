@@ -488,7 +488,7 @@ WX_CONFIG_OPTIONS
 WX_STANDARD_OPTIONS([debug])
 WX_DEBUG=$DEBUG
 WX_UNICODE=$UNICODE
-WX_CONFIG_CHECK([wx_required_version],,,[std,gl,stc],[$WXCONFIG_FLAGS])
+WX_CONFIG_CHECK([wx_required_version],,,[adv,gl,net,stc,xml],[$WXCONFIG_FLAGS])
 AC_SUBST(WX_CONFIG_PATH)
 
 AS_IF([test x$WX_VERSION = x],
