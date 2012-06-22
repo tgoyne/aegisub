@@ -23,6 +23,7 @@
 #include "libaegisub/util_osx.h"
 
 #import <ApplicationServices/ApplicationServices.h>
+#import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 
 static std::string EmptyIfNil(NSString *string) {
@@ -86,6 +87,13 @@ void OSX_OpenLocation(std::string const& location) {
 		NSURL *url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:location.c_str()]];
 		LSOpenCFURLRef((__bridge CFURLRef)url, NULL);
 	}
+}
+
+void EnableHiDPIOpenGL() {
+	NSOpenGLContext *context = [NSOpenGLContext currentContext];
+	NSView *view = [context view];
+	if ([view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+		[view setWantsBestResolutionOpenGLSurface:YES];
 }
 
 	}

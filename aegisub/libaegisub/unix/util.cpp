@@ -43,7 +43,6 @@
 namespace agi {
 	namespace util {
 
-
 const std::string DirName(const std::string& path) {
     if (path.find('/') == std::string::npos) {
 		return ".";
@@ -85,6 +84,11 @@ uint64_t freespace(std::string const& path, PathType type) {
 	}
 }
 
+#ifndef __APPLE__
+void EnableHiDPIOpenGL() {
+	// Nothing to do here
+}
+#endif
 
-	} // namespace io
+	} // namespace util
 } // namespace agi

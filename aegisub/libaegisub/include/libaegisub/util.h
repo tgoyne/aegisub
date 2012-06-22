@@ -66,6 +66,9 @@ namespace agi {
 	// @param type     PathType (default is TypeDir)
 	uint64_t freespace(std::string const& path, PathType type=TypeDir);
 
+	/// Enable HiDPI mode for the current OpenGL context
+	void EnableHiDPIOpenGL();
+
 	struct delete_ptr {
 		template<class T>
 		void operator()(T* ptr) const {

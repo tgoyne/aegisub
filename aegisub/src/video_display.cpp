@@ -73,6 +73,8 @@
 #include "video_frame.h"
 #include "visual_tool.h"
 
+#include <libaegisub/util.h>
+
 /// Attribute list for gl canvases; set the canvases to doublebuffered rgba with an 8 bit stencil buffer
 int attribList[] = { WX_GL_RGBA , WX_GL_DOUBLEBUFFER, WX_GL_STENCIL_SIZE, 8, 0 };
 
@@ -157,6 +159,7 @@ bool VideoDisplay::InitContext() {
 		glContext.reset(new wxGLContext(this));
 
 	SetCurrent(*glContext.get());
+	agi::util::EnableHiDPIOpenGL();
 	return true;
 }
 

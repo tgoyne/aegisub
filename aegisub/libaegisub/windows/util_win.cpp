@@ -125,5 +125,9 @@ uint64_t freespace(std::string const& path, PathType type) {
 	throw "Unknown error getting free space";
 }
 
-	} // namespace io
+void EnableHiDPIOpenGL() {
+	// Nothing to do here
+}
+
+	} // namespace util
 } // namespace agi
