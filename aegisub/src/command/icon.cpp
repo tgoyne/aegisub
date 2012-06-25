@@ -61,9 +61,9 @@ wxBitmap const& get(std::string const& name, const int size) {
 }
 
 #define INSERT_ICON(a, b) \
-	icon16.insert(std::make_pair(a, GETIMAGE(b##_16))); \
-	icon24.insert(std::make_pair(a, GETIMAGE(b##_24))); \
-	icon32.insert(std::make_pair(a, GETIMAGE(b##_32)));
+	icon16.insert(std::make_pair(a, GETIMAGE(b##_32))); \
+	icon24.insert(std::make_pair(a, GETIMAGE(b##_48))); \
+	icon32.insert(std::make_pair(a, GETIMAGE(b##_64)));
 
 void icon_init() {
 	// Seems that WX doesn't install the handlers early enough for our use.
