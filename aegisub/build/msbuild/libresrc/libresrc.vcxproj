@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- VC boilerplate -->
   <ItemGroup Label="ProjectConfigurations">
@@ -22,12 +22,25 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BD00D65F-24DA-4784-8860-3B972EA125FC}</ProjectGuid>
     <RootNamespace>libresrc</RootNamespace>
+    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VSVersion)' == '' and $(VisualStudioVersion) == ''">$(VCTargetsPath11)</VCTargetsPath>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <!-- Aegisub project configuration -->
   <PropertyGroup Label="AegisubConfiguration">
     <AegisubProjectType>lib</AegisubProjectType>
-	<AegisubUseWxWidgets>true</AegisubUseWxWidgets>
-	<SrcDir>..\..\..\src\libresrc\</SrcDir>
+    <AegisubUseWxWidgets>true</AegisubUseWxWidgets>
+    <SrcDir>..\..\..\src\libresrc\</SrcDir>
   </PropertyGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(MSBuildThisFileDirectory)..\aegisub.props" />
@@ -37,23 +50,23 @@
     <ClCompile>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-	<ResPack>
-		<OutputDir>$(MSBuildThisFileDirectory)..\..\..\src\libresrc\</OutputDir>
-	</ResPack>
+    <ResPack>
+      <OutputDir>$(MSBuildThisFileDirectory)..\..\..\src\libresrc\</OutputDir>
+    </ResPack>
   </ItemDefinitionGroup>
   <ImportGroup Label="ExtensionTargets">
-	<Import Project="$(MSBuildThisFileDirectory)..\respack\Aegisub.ResPack.targets" />
+    <Import Project="$(MSBuildThisFileDirectory)..\respack\Aegisub.ResPack.targets" />
   </ImportGroup>
   <!-- Source files -->
   <ItemGroup>
-	<ResPack Include="..\..\..\src\libresrc\manifest.respack">
-		<OutputName>default_config.cpp</OutputName>
-		<OutputHeader>default_config.h</OutputHeader>
-	</ResPack>
-	<ResPack Include="..\..\..\src\bitmaps\manifest.respack">
-		<OutputName>bitmap.cpp</OutputName>
-		<OutputHeader>bitmap.h</OutputHeader>
-	</ResPack>
+    <ResPack Include="..\..\..\src\libresrc\manifest.respack">
+      <OutputName>default_config.cpp</OutputName>
+      <OutputHeader>default_config.h</OutputHeader>
+    </ResPack>
+    <ResPack Include="..\..\..\src\bitmaps\manifest.respack">
+      <OutputName>bitmap.cpp</OutputName>
+      <OutputHeader>bitmap.h</OutputHeader>
+    </ResPack>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)libresrc.cpp" />

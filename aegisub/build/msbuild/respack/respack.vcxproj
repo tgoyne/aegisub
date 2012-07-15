@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- VC boilerplate -->
   <ItemGroup Label="ProjectConfigurations">
@@ -14,6 +14,13 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{08AF2BCC-FCDD-4F0E-8B41-59A6E634F2E8}</ProjectGuid>
     <RootNamespace>respack</RootNamespace>
+    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VSVersion)' == '' and $(VisualStudioVersion) == ''">$(VCTargetsPath11)</VCTargetsPath>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <!-- Aegisub project configuration -->
   <PropertyGroup Label="AegisubConfiguration">
@@ -26,7 +33,7 @@
   <PropertyGroup>
     <OutDir>$(ProjectDir)</OutDir>
     <TargetName>respack</TargetName>
-	<TargetName Condition="'$(Platform)'=='x64'">%(TargetName)64</TargetName>
+    <TargetName Condition="'$(Platform)'=='x64'">%(TargetName)64</TargetName>
     <TargetName Condition="'$(Configuration)'=='Debug'">%(TargetName)d</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup>
