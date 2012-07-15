@@ -31,9 +31,9 @@
 
   $Id$
 -->
-<Rule Name="SubWCRev" 
-    DisplayName="Aegisub" 
-    Order="1" 
+<Rule Name="SubWCRev"
+    DisplayName="Aegisub"
+    Order="1"
     PageTemplate="tool"
     xmlns="http://schemas.microsoft.com/build/2009/properties">
 
@@ -46,7 +46,7 @@
     <Category Name="Paths" DisplayName="Library paths" Description="Configure third-party library paths" />
     <Category Name="BuildInfo" DisplayName="Build information" Description="Embed build information" />
   </Rule.Categories>
-  
+
   <BoolProperty
     Name="AegisubUseConfigWindowsH"
     Category="Features"
@@ -301,7 +301,7 @@
       <DataSource Persistence="UserFile" ItemType="" HasConfigurationCondition="false" />
     </StringProperty.DataSource>
   </StringProperty>
-  
+
   <StringProperty
     Name="InputFile"
     Subtype="file"
