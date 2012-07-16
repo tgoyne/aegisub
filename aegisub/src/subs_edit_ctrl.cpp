@@ -36,19 +36,16 @@
 
 #include "config.h"
 
+#include "subs_edit_ctrl.h"
+
 #ifndef AGI_PRE
-#ifdef _WIN32
 #include <functional>
-#else
-#include <tr1/functional>
-#endif
+
 #include <wx/clipbrd.h>
 #include <wx/intl.h>
 #include <wx/menu.h>
 #include <wx/settings.h>
 #endif
-
-#include "subs_edit_ctrl.h"
 
 #include "ass_dialogue.h"
 #include "ass_file.h"
@@ -164,7 +161,7 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 	proto.Add("fax;Factor");
 	proto.Add("fay;Factor");
 
-	using namespace std::tr1;
+	using std::bind;
 
 	Bind(wxEVT_CHAR_HOOK, &SubsTextEditCtrl::OnKeyDown, this);
 
@@ -198,7 +195,7 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 
 	OPT_SUB("Subtitle/Highlight/Syntax", &SubsTextEditCtrl::UpdateStyle, this);
 	static wxStyledTextEvent evt;
-	OPT_SUB("App/Call Tips", &SubsTextEditCtrl::UpdateCallTip, this, ref(evt));
+	OPT_SUB("App/Call Tips", &SubsTextEditCtrl::UpdateCallTip, this, std::ref(evt));
 }
 
 SubsTextEditCtrl::~SubsTextEditCtrl() {

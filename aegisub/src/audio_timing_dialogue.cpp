@@ -435,9 +435,9 @@ AudioTimingControllerDialogue::AudioTimingControllerDialogue(agi::Context *c)
 , inactive_line_comment_connection(OPT_SUB("Audio/Display/Draw/Inactive Comments", &AudioTimingControllerDialogue::RegenerateInactiveLines, this))
 {
 	c->selectionController->AddSelectionListener(this);
-	keyframes_provider.AddMarkerMovedListener(std::tr1::bind(std::tr1::ref(AnnounceMarkerMoved)));
-	video_position_provider.AddMarkerMovedListener(std::tr1::bind(std::tr1::ref(AnnounceMarkerMoved)));
-	seconds_provider.AddMarkerMovedListener(std::tr1::bind(std::tr1::ref(AnnounceMarkerMoved)));
+	keyframes_provider.AddMarkerMovedListener(std::bind(std::ref(AnnounceMarkerMoved)));
+	video_position_provider.AddMarkerMovedListener(std::bind(std::ref(AnnounceMarkerMoved)));
+	seconds_provider.AddMarkerMovedListener(std::bind(std::ref(AnnounceMarkerMoved)));
 
 	Revert();
 }
@@ -502,10 +502,10 @@ TimeRange AudioTimingControllerDialogue::GetPrimaryPlaybackRange() const
 void AudioTimingControllerDialogue::GetRenderingStyles(AudioRenderingStyleRanges &ranges) const
 {
 	active_line.GetStyleRange(&ranges);
-	for_each(selected_lines.begin(), selected_lines.end(),
-		bind(&TimeableLine::GetStyleRange, std::tr1::placeholders::_1, &ranges));
-	for_each(inactive_lines.begin(), inactive_lines.end(),
-		bind(&TimeableLine::GetStyleRange, std::tr1::placeholders::_1, &ranges));
+	for (auto line : selected_lines)
+		line.GetStyleRange(&ranges);
+	for (auto line : inactive_lines)
+		line.GetStyleRange(&ranges);
 }
 
 void AudioTimingControllerDialogue::Next(NextMode mode)
@@ -548,7 +548,7 @@ void AudioTimingControllerDialogue::DoCommit(bool user_triggered)
 	if (modified_lines.size())
 	{
 		for_each(modified_lines.begin(), modified_lines.end(),
-			std::tr1::mem_fn(&TimeableLine::Apply));
+			std::mem_fn(&TimeableLine::Apply));
 
 		commit_connection.Block();
 		if (user_triggered)
@@ -826,9 +826,9 @@ void AudioTimingControllerDialogue::RegenerateMarkers()
 
 	active_line.GetMarkers(&markers);
 	for_each(selected_lines.begin(), selected_lines.end(),
-		bind(&TimeableLine::GetMarkers, std::tr1::placeholders::_1, &markers));
+		bind(&TimeableLine::GetMarkers, std::placeholders::_1, &markers));
 	for_each(inactive_lines.begin(), inactive_lines.end(),
-		bind(&TimeableLine::GetMarkers, std::tr1::placeholders::_1, &markers));
+		bind(&TimeableLine::GetMarkers, std::placeholders::_1, &markers));
 	sort(markers.begin(), markers.end(), marker_ptr_cmp());
 
 	AnnounceMarkerMoved();
@@ -840,7 +840,7 @@ std::vector<AudioMarker*> AudioTimingControllerDialogue::GetLeftMarkers()
 	ret.reserve(selected_lines.size() + 1);
 	ret.push_back(active_line.GetLeftMarker());
 	transform(selected_lines.begin(), selected_lines.end(), back_inserter(ret),
-		bind(&TimeableLine::GetLeftMarker, std::tr1::placeholders::_1));
+		[] (TimeableLine &line) { return line.GetLeftMarker(); });
 	return ret;
 }
 
@@ -850,7 +850,7 @@ std::vector<AudioMarker*> AudioTimingControllerDialogue::GetRightMarkers()
 	ret.reserve(selected_lines.size() + 1);
 	ret.push_back(active_line.GetRightMarker());
 	transform(selected_lines.begin(), selected_lines.end(), back_inserter(ret),
-		bind(&TimeableLine::GetRightMarker, std::tr1::placeholders::_1));
+		[] (TimeableLine &line) { return line.GetRightMarker(); });
 	return ret;
 }
 

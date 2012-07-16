@@ -36,7 +36,7 @@
 
 #ifndef AGI_PRE
 #include <map>
-#include <tr1/memory>
+#include <memory>
 #include <vector>
 
 #include <wx/colour.h>
@@ -47,7 +47,7 @@ struct OpenGLTextGlyph;
 class OpenGLTextTexture;
 
 /// DOCME
-typedef std::map<int,OpenGLTextGlyph> glyphMap;
+typedef std::map<int, std::unique_ptr<OpenGLTextGlyph>> glyphMap;
 
 /// DOCME
 /// @class OpenGLText
@@ -87,7 +87,7 @@ class OpenGLText {
 	glyphMap glyphs;
 
 	/// DOCME
-	std::vector<std::tr1::shared_ptr<OpenGLTextTexture> > textures;
+	std::vector<std::unique_ptr<OpenGLTextTexture>> textures;
 
 	OpenGLText(OpenGLText const&);
 	OpenGLText& operator=(OpenGLText const&);

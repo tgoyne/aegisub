@@ -43,7 +43,7 @@
 
 #ifndef AGI_PRE
 #include <algorithm>
-#include <tr1/functional>
+#include <functional>
 #endif
 
 /// A video frame and its frame number
@@ -54,22 +54,23 @@ struct CachedFrame : public AegiVideoFrame {
 VideoProviderCache::VideoProviderCache(VideoProvider *parent)
 : master(parent)
 , max_cache_size(OPT_GET("Provider/Video/Cache/Size")->GetInt() << 20) // convert MB to bytes
+, cache(new std::list<CachedFrame>)
 {
 }
 
 VideoProviderCache::~VideoProviderCache() {
-	for_each(cache.begin(), cache.end(), std::tr1::mem_fn(&AegiVideoFrame::Clear));
+	for_each(cache->begin(), cache->end(), std::mem_fn(&AegiVideoFrame::Clear));
 }
 
 const AegiVideoFrame VideoProviderCache::GetFrame(int n) {
 	size_t total_size = 0;
 
 	// See if frame is cached
-	for (std::list<CachedFrame>::iterator cur = cache.begin(); cur != cache.end(); ++cur) {
+	for (auto cur = cache->begin(); cur != cache->end(); ++cur) {
 		if (cur->frame_number == n) {
-			cache.push_front(*cur);
-			cache.erase(cur);
-			return cache.front();
+			cache->push_front(*cur);
+			cache->erase(cur);
+			return cache->front();
 		}
 
 		total_size += cur->memSize;
@@ -80,15 +81,15 @@ const AegiVideoFrame VideoProviderCache::GetFrame(int n) {
 
 	// Cache full, use oldest frame
 	if (total_size >= max_cache_size) {
-		cache.push_front(cache.back());
-		cache.pop_back();
+		cache->push_front(cache->back());
+		cache->pop_back();
 	}
 	// Cache not full, insert new one
 	else
-		cache.push_front(CachedFrame());
+		cache->emplace_front();
 
 	// Cache
-	cache.front().frame_number = n;
-	cache.front().CopyFrom(frame);
-	return cache.front();
+	cache->front().frame_number = n;
+	cache->front().CopyFrom(frame);
+	return cache->front();
 }

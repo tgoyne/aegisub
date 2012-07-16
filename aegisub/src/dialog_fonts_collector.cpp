@@ -79,9 +79,9 @@ class FontsCollectorThread : public wxThread {
 	FcMode oper;             ///< Copying mode
 
 	void Collect() {
-		using namespace std::tr1::placeholders;
-
-		FontCollectorStatusCallback callback(bind(&FontsCollectorThread::AppendText, this, _1, _2));
+		FontCollectorStatusCallback callback([this](wxString text, int colour) {
+			AppendText(text, colour);
+		});
 
 #ifdef WITH_FONTCONFIG
 		FontConfigFontFileLister lister(callback);
@@ -90,7 +90,7 @@ class FontsCollectorThread : public wxThread {
 #else
 		AppendText(_("Aegisub was built without any font file listers enabled"), 2);
 		struct DummyLister : public FontFileLister {
-			std::vector<wxString> GetFontPaths(wxString const&, int, bool, std::set<wxUniChar> const&) { return std::vector<wxString>(); }
+			CollectionResult GetFontPaths(wxString const&, int, bool, std::set<wxUniChar> const&) { return CollectionResult(); }
 		} lister;
 #endif
 		std::vector<wxString> paths = FontCollector(callback, lister).GetFontPaths(subs->Line);
@@ -277,7 +277,7 @@ DialogFontsCollector::DialogFontsCollector(agi::Context *c)
 	start_btn->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &DialogFontsCollector::OnStart, this);
 	dest_browse_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &DialogFontsCollector::OnBrowse, this);
 	collection_mode->Bind(wxEVT_COMMAND_RADIOBOX_SELECTED, &DialogFontsCollector::OnRadio, this);
-	button_sizer->GetHelpButton()->Bind(wxEVT_COMMAND_BUTTON_CLICKED, std::tr1::bind(&HelpButton::OpenPage, "Fonts Collector"));
+	button_sizer->GetHelpButton()->Bind(wxEVT_COMMAND_BUTTON_CLICKED, std::bind(&HelpButton::OpenPage, "Fonts Collector"));
 	Bind(EVT_ADD_TEXT, &DialogFontsCollector::OnAddText, this);
 	Bind(EVT_COLLECTION_DONE, &DialogFontsCollector::OnCollectionComplete, this);
 }

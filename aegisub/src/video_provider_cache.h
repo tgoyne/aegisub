@@ -57,7 +57,7 @@ class VideoProviderCache : public VideoProvider {
 	const size_t max_cache_size;
 
 	/// Cache of video frames with the most recently used ones at the front
-	std::list<CachedFrame> cache;
+	agi::scoped_ptr<std::list<CachedFrame>> cache;
 
 public:
 	VideoProviderCache(VideoProvider *master);

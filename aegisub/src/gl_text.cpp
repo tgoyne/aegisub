@@ -217,12 +217,12 @@ void OpenGLText::GetExtent(wxString const& text, int &w, int &h) {
 OpenGLTextGlyph const& OpenGLText::GetGlyph(int i) {
 	glyphMap::iterator res = glyphs.find(i);
 
-	if (res != glyphs.end()) return res->second;
+	if (res != glyphs.end()) return *res->second;
 	return CreateGlyph(i);
 }
 
 OpenGLTextGlyph const& OpenGLText::CreateGlyph(int n) {
-	OpenGLTextGlyph &glyph = glyphs.insert(std::make_pair(n, OpenGLTextGlyph(n, font))).first->second;
+	OpenGLTextGlyph &glyph = *glyphs.emplace(n, new OpenGLTextGlyph(n, font)).first->second;
 
 	// Insert into some texture
 	bool ok = false;
@@ -234,9 +234,8 @@ OpenGLTextGlyph const& OpenGLText::CreateGlyph(int n) {
 	}
 
 	// No texture could fit it, create a new one
-	if (!ok) {
-		textures.push_back(std::tr1::shared_ptr<OpenGLTextTexture>(new OpenGLTextTexture(glyph)));
-	}
+	if (!ok)
+		textures.emplace_back(new OpenGLTextTexture(glyph));
 
 	return glyph;
 }

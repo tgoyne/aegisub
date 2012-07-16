@@ -36,11 +36,9 @@
 
 #pragma once
 
+#ifndef LAGI_PRE
 #include <string>
-#ifdef _WIN32
 #include <memory>
-#else
-#include <tr1/memory>
 #endif
 
 /// @see aegisub.h
@@ -101,7 +99,7 @@ namespace agi {
 		std::string message;
 
 		/// An inner exception, the cause of this exception
-		std::tr1::shared_ptr<Exception> inner;
+		std::shared_ptr<Exception> inner;
 
 	protected:
 

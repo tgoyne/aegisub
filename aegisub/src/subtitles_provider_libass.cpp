@@ -37,6 +37,7 @@
 #include "config.h"
 
 #ifdef WITH_LIBASS
+#include "subtitles_provider_libass.h"
 
 #ifndef AGI_PRE
 #include <wx/filefn.h>
@@ -55,7 +56,6 @@
 #include "frame_main.h"
 #include "main.h"
 #include "standard_paths.h"
-#include "subtitles_provider_libass.h"
 #include "utils.h"
 #include "video_context.h"
 #include "video_frame.h"
@@ -116,17 +116,15 @@ public:
 	}
 };
 
-static void do_wait(agi::ProgressSink *ps, FontConfigCacheThread const * const * const cache_worker) {
-	ps->SetIndeterminate();
-	while (*cache_worker && !ps->IsCancelled())
-		wxMilliSleep(100);
-}
-
 static void wait_for_cache_thread(FontConfigCacheThread const * const * const cache_worker) {
 	if (!*cache_worker) return;
 
 	DialogProgress progress(wxGetApp().frame, "Updating font index", "This may take several minutes");
-	progress.Run(bind(do_wait, std::tr1::placeholders::_1, cache_worker));
+	progress.Run([=] (agi::ProgressSink *ps) {
+		ps->SetIndeterminate();
+		while (*cache_worker && !ps->IsCancelled())
+			wxMilliSleep(100);
+	});
 }
 
 /// @brief Constructor

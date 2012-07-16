@@ -55,12 +55,6 @@
 #include <wx/tokenzr.h>
 #endif
 
-#ifdef _WIN32
-#include <tuple>
-#else
-#include <tr1/tuple>
-#endif
-
 #ifndef __WINDOWS__
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -252,7 +246,7 @@ namespace Automation4 {
 		int ret = 0;
 		wxSemaphore sema(0, 1);
 		wxThreadEvent *evt = new wxThreadEvent(EVT_SHOW_DIALOG);
-		evt->SetPayload(std::tr1::make_tuple(dialog, &sema, &ret));
+		evt->SetPayload(std::make_tuple(dialog, &sema, &ret));
 		bsr->QueueEvent(evt);
 		sema.Wait();
 		return ret;
@@ -289,8 +283,8 @@ namespace Automation4 {
 
 	void BackgroundScriptRunner::OnDialog(wxThreadEvent &evt)
 	{
-		using namespace std::tr1;
-		tuple<wxDialog*, wxSemaphore*, int*> payload = evt.GetPayload<tuple<wxDialog*, wxSemaphore*, int*> >();
+		using namespace std;
+		tuple<wxDialog*, wxSemaphore*, int*> payload = evt.GetPayload<tuple<wxDialog*, wxSemaphore*, int*>>();
 		*get<2>(payload) = get<0>(payload)->ShowModal();
 		get<1>(payload)->Post();
 	}
@@ -302,13 +296,13 @@ namespace Automation4 {
 
 	// Convert a function taking an Automation4::ProgressSink to one taking an
 	// agi::ProgressSink so that we can pass it to an agi::BackgroundWorker
-	static void progress_sink_wrapper(std::tr1::function<void (ProgressSink*)> task, agi::ProgressSink *ps, BackgroundScriptRunner *bsr)
+	static void progress_sink_wrapper(std::function<void (ProgressSink*)> task, agi::ProgressSink *ps, BackgroundScriptRunner *bsr)
 	{
 		ProgressSink aps(ps, bsr);
 		task(&aps);
 	}
 
-	void BackgroundScriptRunner::Run(std::tr1::function<void (ProgressSink*)> task)
+	void BackgroundScriptRunner::Run(std::function<void (ProgressSink*)> task)
 	{
 		int prio = OPT_GET("Automation/Thread Priority")->GetInt();
 		if (prio == 0) prio = 50; // normal
@@ -316,7 +310,7 @@ namespace Automation4 {
 		else if (prio == 2) prio = 10; // lowest
 		else prio = 50; // fallback normal
 
-		impl->Run(bind(progress_sink_wrapper, task, std::tr1::placeholders::_1, this), prio);
+		impl->Run(bind(progress_sink_wrapper, task, std::placeholders::_1, this), prio);
 	}
 
 	wxWindow *BackgroundScriptRunner::GetParentWindow() const
@@ -575,10 +569,10 @@ namespace Automation4 {
 
 	bool ScriptFactory::CanHandleScriptFormat(wxString const& filename)
 	{
-		using std::tr1::placeholders::_1;
+		using std::placeholders::_1;
 		// Just make this always return true to bitch about unknown script formats in autoload
 		return find_if(Factories().begin(), Factories().end(),
-			bind(&wxString::Matches, filename, bind(&ScriptFactory::GetFilenamePattern, _1))) != Factories().end();
+			[&](ScriptFactory *f) { return filename.Matches(f->GetFilenamePattern()); }) != Factories().end();
 	}
 
 	std::vector<ScriptFactory*>& ScriptFactory::Factories()

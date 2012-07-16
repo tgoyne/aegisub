@@ -34,12 +34,6 @@
 /// @ingroup custom_control
 ///
 
-#ifndef AGI_PRE
-#include <list>
-#endif
-
-struct ToolTipBinding;
-
 class wxString;
 class wxWindow;
 
@@ -49,13 +43,6 @@ class wxWindow;
 ///
 /// DOCME
 class ToolTipManager {
-	ToolTipManager();
-	~ToolTipManager();
-	ToolTipManager(ToolTipManager const&);
-	ToolTipManager& operator=(ToolTipManager const&);
-
-	std::list<ToolTipBinding> tips;
-
 public:
 	static void Bind(wxWindow *window, wxString tooltip, const char *context, const char *command);
 };

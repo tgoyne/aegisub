@@ -37,8 +37,6 @@
 #include "config.h"
 
 #ifndef AGI_PRE
-#include <tr1/functional>
-
 #include <wx/button.h>
 #include <wx/checkbox.h>
 #include <wx/colordlg.h>
@@ -72,14 +70,6 @@
 #include "video_context.h"
 
 namespace {
-template<class T>
-struct field_setter : public std::binary_function<AssDialogue*, T, void> {
-	T AssDialogue::*field;
-	field_setter(T AssDialogue::*field) : field(field) { }
-	void operator()(AssDialogue* obj, T value) {
-		obj->*field = value;
-	}
-};
 
 /// @brief Get the selection from a text edit
 /// @return Pair of selection start and end positions
@@ -154,8 +144,6 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 , commitId(-1)
 , undoTimer(GetEventHandler())
 {
-	using std::tr1::bind;
-
 	// Top controls
 	TopSizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -199,18 +187,18 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 
 	// Middle-bottom controls
 	MiddleBotSizer = new wxBoxSizer(wxHORIZONTAL);
-	MakeButton(GETIMAGE(button_bold_16), _("Bold"), bind(&SubsEditBox::OnFlagButton, this, &AssStyle::bold, "\\b", _("toggle bold")));
-	MakeButton(GETIMAGE(button_italics_16), _("Italics"), bind(&SubsEditBox::OnFlagButton, this, &AssStyle::italic, "\\i", _("toggle italic")));
-	MakeButton(GETIMAGE(button_underline_16), _("Underline"), bind(&SubsEditBox::OnFlagButton, this, &AssStyle::underline, "\\u", _("toggle underline")));
-	MakeButton(GETIMAGE(button_strikeout_16), _("Strikeout"), bind(&SubsEditBox::OnFlagButton, this, &AssStyle::strikeout, "\\s", _("toggle strikeout")));
-	MakeButton(GETIMAGE(button_fontname_16), _("Font Face"), bind(&SubsEditBox::OnFontButton, this));
+	MakeButton(GETIMAGE(button_bold_16), _("Bold"), [this](wxCommandEvent&) { OnFlagButton(&AssStyle::bold, "\\b", _("toggle bold")); });
+	MakeButton(GETIMAGE(button_italics_16), _("Italics"), [this](wxCommandEvent&) { OnFlagButton(&AssStyle::italic, "\\i", _("toggle italic")); });
+	MakeButton(GETIMAGE(button_underline_16), _("Underline"), [this](wxCommandEvent&) { OnFlagButton(&AssStyle::underline, "\\u", _("toggle underline")); });
+	MakeButton(GETIMAGE(button_strikeout_16), _("Strikeout"), [this](wxCommandEvent&) { OnFlagButton(&AssStyle::strikeout, "\\s", _("toggle strikeout")); });
+	MakeButton(GETIMAGE(button_fontname_16), _("Font Face"), [this](wxCommandEvent&) { OnFontButton(); });
 	MiddleBotSizer->AddSpacer(5);
-	MakeButton(GETIMAGE(button_color_one_16), _("Primary color"), bind(&SubsEditBox::OnColorButton, this, &AssStyle::primary, "\\c", "\\1c"));
-	MakeButton(GETIMAGE(button_color_two_16), _("Secondary color"), bind(&SubsEditBox::OnColorButton, this, &AssStyle::secondary, "\\2c", ""));
-	MakeButton(GETIMAGE(button_color_three_16), _("Outline color"), bind(&SubsEditBox::OnColorButton, this, &AssStyle::outline, "\\3c", ""));
-	MakeButton(GETIMAGE(button_color_four_16), _("Shadow color"), bind(&SubsEditBox::OnColorButton, this, &AssStyle::shadow, "\\4c", ""));
+	MakeButton(GETIMAGE(button_color_one_16), _("Primary color"), [this](wxCommandEvent&) { OnColorButton(&AssStyle::primary, "\\c", "\\1c"); });
+	MakeButton(GETIMAGE(button_color_two_16), _("Secondary color"), [this](wxCommandEvent&) { OnColorButton(&AssStyle::secondary, "\\2c", ""); });
+	MakeButton(GETIMAGE(button_color_three_16), _("Outline color"), [this](wxCommandEvent&) { OnColorButton(&AssStyle::outline, "\\3c", ""); });
+	MakeButton(GETIMAGE(button_color_four_16), _("Shadow color"), [this](wxCommandEvent&) { OnColorButton(&AssStyle::shadow, "\\4c", ""); });
 	MiddleBotSizer->AddSpacer(5);
-	MakeButton(GETIMAGE(button_audio_commit_16), _("Commits the text (Enter)"), bind(&cmd::call, "grid/line/next/create", c));
+	MakeButton(GETIMAGE(button_audio_commit_16), _("Commits the text (Enter)"), [this](wxCommandEvent&) { cmd::call("grid/line/next/create", c); });
 	MiddleBotSizer->AddSpacer(10);
 
 	ByTime = MakeRadio(_("T&ime"), true, _("Time by h:mm:ss.cs"));
@@ -434,7 +422,8 @@ void SubsEditBox::OnUndoTimer(wxTimerEvent&) {
 
 template<class T, class setter>
 void SubsEditBox::SetSelectedRows(setter set, T value, wxString desc, int type, bool amend) {
-	for_each(sel.begin(), sel.end(), bind(set, std::tr1::placeholders::_1, value));
+	for (auto line : sel)
+		set(line, value);
 
 	file_changed_slot.Block();
 	commitId = c->ass->Commit(desc, type, (amend && desc == lastCommitType) ? commitId : -1, sel.size() == 1 ? *sel.begin() : 0);
@@ -447,7 +436,8 @@ void SubsEditBox::SetSelectedRows(setter set, T value, wxString desc, int type, 
 
 template<class T>
 void SubsEditBox::SetSelectedRows(T AssDialogue::*field, T value, wxString desc, int type, bool amend) {
-	SetSelectedRows(field_setter<T>(field), value, desc, type, amend);
+	SetSelectedRows([field, value](AssDialogue *d, T) { d->*field = value; },
+			value, desc, type, amend);
 }
 
 void SubsEditBox::CommitText(wxString desc) {
@@ -459,17 +449,17 @@ void SubsEditBox::CommitTimes(TimeField field) {
 		AssDialogue *d = *cur;
 
 		if (!initialTimes.count(d))
-			initialTimes[d] = std::make_pair(d->Start, d->End);
+			initialTimes[d] = std::pair<int, int>(d->Start, d->End);
 
 		switch (field) {
 			case TIME_START:
 				initialTimes[d].first = d->Start = StartTime->GetTime();
-				d->End = std::max(d->Start, initialTimes[d].second);
+				d->End = std::max<int>(d->Start, initialTimes[d].second);
 				break;
 
 			case TIME_END:
 				initialTimes[d].second = d->End = EndTime->GetTime();
-				d->Start = std::min(d->End, initialTimes[d].first);
+				d->Start = std::min<int>(d->End, initialTimes[d].first);
 				break;
 
 			case TIME_DURATION:

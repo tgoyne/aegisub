@@ -36,7 +36,7 @@
 class AssEntry;
 class AssDialogue;
 
-typedef std::tr1::function<void (wxString, int)> FontCollectorStatusCallback;
+typedef std::function<void (wxString, int)> FontCollectorStatusCallback;
 
 /// @class FontFileLister
 /// @brief Font lister interface

@@ -39,7 +39,6 @@
 
 #ifndef AGI_PRE
 #include <algorithm>
-#include <tr1/functional>
 
 #include <wx/bmpbuttn.h>
 #include <wx/clipbrd.h>
@@ -67,7 +66,7 @@
 #include "selection_controller.h"
 #include "standard_paths.h"
 
-using std::tr1::placeholders::_1;
+using std::placeholders::_1;
 
 namespace {
 
@@ -168,7 +167,7 @@ DialogStyleManager::DialogStyleManager(agi::Context *context)
 , c(context)
 , commit_connection(c->ass->AddCommitListener(&DialogStyleManager::LoadCurrentStyles, this))
 {
-	using std::tr1::bind;
+	using std::bind;
 	SetIcon(GETICON(style_toolbutton_16));
 
 	// Catalog
@@ -494,16 +493,16 @@ void DialogStyleManager::CopyToClipboard(wxListBox *list, T const& v) {
 
 void DialogStyleManager::PasteToCurrent() {
 	add_styles(
-		bind(&AssFile::GetStyle, c->ass, _1),
-		bind(&AssFile::InsertStyle, c->ass, _1));
+		[this](wxString name) { return c->ass->GetStyle(name); },
+		[this](AssStyle *style) { c->ass->InsertStyle(style); });
 
 	c->ass->Commit(_("style paste"), AssFile::COMMIT_STYLES);
 }
 
 void DialogStyleManager::PasteToStorage() {
 	add_styles(
-		bind(&AssStyleStorage::GetStyle, &Store, _1),
-		bind(&AssStyleStorage::push_back, &Store, _1));
+		[this](wxString name) { return Store.GetStyle(name); },
+		[this](AssStyle *style) { Store.push_back(style); });
 
 	UpdateStorage();
 	StorageList->SetStringSelection(Store.back()->name);
@@ -534,7 +533,7 @@ void DialogStyleManager::OnStorageCopy() {
 	if (sel == -1) return;
 
 	ShowStorageEditor(Store[sel],
-		unique_name(bind(&AssStyleStorage::GetStyle, &Store, _1), Store[sel]->name));
+		unique_name([=](wxString name) { return Store.GetStyle(name); }, Store[sel]->name));
 }
 
 void DialogStyleManager::OnStorageDelete() {
@@ -572,7 +571,7 @@ void DialogStyleManager::OnCurrentCopy() {
 	if (sel == -1) return;
 
 	ShowCurrentEditor(styleMap[sel],
-		unique_name(bind(&AssFile::GetStyle, c->ass, _1), styleMap[sel]->name));
+		unique_name([=](wxString name) { return c->ass->GetStyle(name); }, styleMap[sel]->name));
 }
 
 void DialogStyleManager::OnCurrentDelete() {

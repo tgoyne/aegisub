@@ -59,7 +59,7 @@
 #include "main.h"
 #include "subtitle_format.h"
 
-using std::tr1::placeholders::_1;
+using std::placeholders::_1;
 
 DialogAutomation::DialogAutomation(agi::Context *c)
 : wxDialog(c->parent, -1, _("Automation Manager"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
@@ -80,8 +80,8 @@ DialogAutomation::DialogAutomation(agi::Context *c)
 	wxButton *reload_autoload_button = new wxButton(this, -1, _("Re&scan Autoload Dir"));
 	wxButton *close_button = new wxButton(this, wxID_CANCEL, _("&Close"));
 
-	list->Bind(wxEVT_COMMAND_LIST_ITEM_SELECTED, std::tr1::bind(&DialogAutomation::UpdateDisplay, this));
-	list->Bind(wxEVT_COMMAND_LIST_ITEM_DESELECTED, std::tr1::bind(&DialogAutomation::UpdateDisplay, this));
+	list->Bind(wxEVT_COMMAND_LIST_ITEM_SELECTED, std::bind(&DialogAutomation::UpdateDisplay, this));
+	list->Bind(wxEVT_COMMAND_LIST_ITEM_DESELECTED, std::bind(&DialogAutomation::UpdateDisplay, this));
 	add_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &DialogAutomation::OnAdd, this);
 	remove_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &DialogAutomation::OnRemove, this);
 	reload_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &DialogAutomation::OnReload, this);
@@ -125,12 +125,6 @@ DialogAutomation::DialogAutomation(agi::Context *c)
 	RebuildList();
 }
 
-template<class Container, class Pred>
-static inline void for_each(Container const& c, Pred p)
-{
-	std::for_each(c.begin(), c.end(), p);
-}
-
 template<class Container, class Out, class Func>
 static inline void transform(Container const& c, Out o, Func f)
 {
@@ -142,8 +136,10 @@ void DialogAutomation::RebuildList()
 	script_info.clear();
 	list->DeleteAllItems();
 
-	for_each(local_manager->GetScripts(), bind(&DialogAutomation::AddScript, this, _1, false));
-	for_each(global_manager->GetScripts(), bind(&DialogAutomation::AddScript, this, _1, true));
+	for (auto script : local_manager->GetScripts())
+		AddScript(script, false);
+	for (auto script : global_manager->GetScripts())
+		AddScript(script, true);
 
 	UpdateDisplay();
 }
@@ -184,7 +180,7 @@ template<class Container>
 static bool has_file(Container const& c, wxFileName const& fn)
 {
 	return find_if(c.begin(), c.end(),
-		bind(&wxFileName::SameAs, fn, bind(&Automation4::Script::GetFilename, _1), wxPATH_NATIVE)) != c.end();
+		[&](Automation4::Script *s) { return fn.SameAs(s->GetFilename(), wxPATH_NATIVE); }) != c.end();
 }
 
 void DialogAutomation::OnAdd(wxCommandEvent &)
@@ -236,22 +232,6 @@ void DialogAutomation::OnReload(wxCommandEvent &)
 		local_manager->Reload(ei.script);
 }
 
-static wxString fac_to_str(const Automation4::ScriptFactory* f) {
-	return wxString::Format("- %s (%s)", f->GetEngineName(), f->GetFilenamePattern());
-}
-
-static wxString cmd_to_str(const cmd::Command *f, agi::Context *c) {
-	return wxString::Format(_("    Macro: %s (%s)"), f->StrDisplay(c), f->name());
-}
-
-static wxString filt_to_str(const Automation4::ExportFilter* f) {
-	return wxString::Format(_("    Export filter: %s"), f->GetName());
-}
-
-static wxString form_to_str(const SubtitleFormat* f) {
-	return wxString::Format(_("    Subtitle format handler: %s"), f->GetName());
-}
-
 void DialogAutomation::OnInfo(wxCommandEvent &)
 {
 	int i = list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
@@ -267,7 +247,10 @@ void DialogAutomation::OnInfo(wxCommandEvent &)
 		(int)local_manager->GetScripts().size()));
 
 	info.push_back(_("Scripting engines installed:"));
-	transform(Automation4::ScriptFactory::GetFactories(), append_info, fac_to_str);
+	transform(Automation4::ScriptFactory::GetFactories(), append_info, [](const Automation4::ScriptFactory* f) {
+		return wxString::Format("- %s (%s)", f->GetEngineName(), f->GetFilenamePattern());
+	});
+
 
 	if (ei) {
 		info.push_back(wxString::Format(_("\nScript info:\nName: %s\nDescription: %s\nAuthor: %s\nVersion: %s\nFull path: %s\nState: %s\n\nFeatures provided by script:"),
@@ -278,9 +261,16 @@ void DialogAutomation::OnInfo(wxCommandEvent &)
 			ei->script->GetFilename(),
 			ei->script->GetLoadedState() ? _("Correctly loaded") : _("Failed to load")));
 
-		transform(ei->script->GetMacros(), append_info, bind(cmd_to_str, _1, context));
-		transform(ei->script->GetFilters(), append_info, filt_to_str);
-		transform(ei->script->GetFormats(), append_info, form_to_str);
+		transform(ei->script->GetMacros(), append_info, [this](const cmd::Command *f) {
+			return wxString::Format(_("    Macro: %s (%s)"), f->StrDisplay(context), f->name());
+		});
+		transform(ei->script->GetFilters(), append_info, [](const Automation4::ExportFilter* f) {
+			return wxString::Format(_("    Export filter: %s"), f->GetName());
+		});
+		transform(ei->script->GetFormats(), append_info, [](const SubtitleFormat* f) {
+			return wxString::Format(_("    Subtitle format handler: %s"), f->GetName());
+		});
+
 	}
 
 	wxMessageBox(wxJoin(info, '\n', 0), _("Automation Script Info"));

@@ -35,7 +35,7 @@
 #include "libaegisub/scoped_ptr.h"
 
 namespace std {
-	template<> void swap(agi::vfr::Framerate &lft, agi::vfr::Framerate &rgt) {
+	template<> void swap(agi::vfr::Framerate &lft, agi::vfr::Framerate &rgt) noexcept {
 		lft.swap(rgt);
 	}
 }
@@ -73,7 +73,7 @@ struct TimecodeRange {
 	int start;
 	int end;
 	double fps;
-	bool operator<(TimecodeRange cmp) {
+	bool operator<(TimecodeRange cmp) const {
 		return start < cmp.start;
 	}
 	TimecodeRange() : fps(0.) { }
@@ -215,7 +215,7 @@ Framerate::Framerate(std::vector<int> const& timecodes)
 	SetFromTimecodes();
 }
 
-void Framerate::swap(Framerate &right) throw() {
+void Framerate::swap(Framerate &right) noexcept {
 	using std::swap;
 	swap(numerator, right.numerator);
 	swap(denominator, right.denominator);

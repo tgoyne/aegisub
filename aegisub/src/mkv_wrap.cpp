@@ -222,7 +222,7 @@ void MatroskaWrapper::GetSubtitles(wxString const& filename, AssFile *target) {
 		// Progress bar
 		double totalTime = double(segInfo->Duration) / timecodeScale;
 		DialogProgress progress(NULL, _("Parsing Matroska"), _("Reading subtitles from Matroska file."));
-		progress.Run(bind(read_subtitles, std::tr1::placeholders::_1, file, &input, srt, ssa, totalTime, target));
+		progress.Run([&] (agi::ProgressSink *ps) { read_subtitles(ps, file, &input, srt, ssa, totalTime, target); });
 	}
 	catch (...) {
 		mkv_Close(file);

@@ -785,7 +785,7 @@ DialogColorPicker::DialogColorPicker(wxWindow *parent, wxColour initial_color, C
 	SetColor(initial_color);
 	recent_box->LoadFromString(lagi_wxString(OPT_GET("Tool/Colour Picker/Recent")->GetString()));
 
-	using std::tr1::bind;
+	using std::bind;
 	for (int i = 0; i < 3; ++i) {
 		rgb_input[i]->Bind(wxEVT_COMMAND_SPINCTRL_UPDATED, bind(&DialogColorPicker::UpdateFromRGB, this, true));
 		rgb_input[i]->Bind(wxEVT_COMMAND_TEXT_UPDATED, bind(&DialogColorPicker::UpdateFromRGB, this, true));

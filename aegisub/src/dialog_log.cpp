@@ -60,8 +60,8 @@ public:
 	EmitLog(wxTextCtrl *t)
 	: text_ctrl(t)
 	{
-		const agi::log::Sink *sink = agi::log::log->GetSink();
-		for_each(sink->begin(), sink->end(), bind(&EmitLog::log, this, std::tr1::placeholders::_1));
+		for (auto message : *agi::log::log->GetSink())
+			log(message);
 	}
 
 	void log(agi::log::SinkMessage *sm) {

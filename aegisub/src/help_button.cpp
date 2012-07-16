@@ -85,7 +85,7 @@ static void init_static() {
 HelpButton::HelpButton(wxWindow *parent, wxString const& page, wxPoint position, wxSize size)
 : wxButton(parent, wxID_HELP, "", position, size)
 {
-	Bind(wxEVT_COMMAND_BUTTON_CLICKED, std::tr1::bind(&HelpButton::OpenPage, page));
+	Bind(wxEVT_COMMAND_BUTTON_CLICKED, std::bind(&HelpButton::OpenPage, page));
 	init_static();
 	if (pages->find(page) == pages->end())
 		throw agi::InternalError("Invalid help page", 0);

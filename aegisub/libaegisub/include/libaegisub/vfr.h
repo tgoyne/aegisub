@@ -115,7 +115,7 @@ public:
 	/// Atomic CFR assignment operator
 	Framerate &operator=(double);
 	/// Helper function for the std::swap specialization
-	void swap(Framerate &right) throw();
+	void swap(Framerate &right) noexcept;
 
 	/// @brief Get the frame visible at a given time
 	/// @param ms Time in milliseconds

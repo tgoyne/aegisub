@@ -49,8 +49,6 @@ static void for_each(C &range, F func) {
 	std::for_each(range.begin(), range.end(), func);
 }
 
-using std::tr1::placeholders::_1;
-
 const wxColour VisualToolBase::colour[4] = {wxColour(106,32,19), wxColour(255,169,40), wxColour(255,253,185), wxColour(187,0,0)};
 
 VisualToolBase::VisualToolBase(VideoDisplay *parent, agi::Context *context)
@@ -221,9 +219,10 @@ void VisualTool<FeatureType>::OnMouseEvent(wxMouseEvent &event) {
 	if (dragging) {
 		// continue drag
 		if (event.LeftIsDown()) {
-			for_each(sel_features, bind(&FeatureType::UpdateDrag, _1,
-				mouse_pos - drag_start, shift_down));
-			for_each(sel_features, bind(&VisualTool<FeatureType>::UpdateDrag, this, _1));
+			for (auto feature : sel_features)
+				feature->UpdateDrag(mouse_pos - drag_start, shift_down);
+			for (auto feature : sel_features)
+				UpdateDrag(feature);
 			Commit();
 			need_render = true;
 		}
@@ -276,7 +275,7 @@ void VisualTool<FeatureType>::OnMouseEvent(wxMouseEvent &event) {
 				c->selectionController->SetActiveLine(active_feature->line);
 
 			if (InitializeDrag(active_feature)) {
-				for_each(sel_features, bind(&VisualDraggableFeature::StartDrag, _1));
+				for_each(sel_features, std::mem_fn(&VisualDraggableFeature::StartDrag));
 				dragging = true;
 				parent->CaptureMouse();
 			}
@@ -340,8 +339,8 @@ template<class FeatureType>
 void VisualTool<FeatureType>::RemoveSelection(feature_iterator feat) {
 	if (!sel_features.erase(feat) || !feat->line) return;
 
-	for (selection_iterator it = sel_features.begin(); it != sel_features.end(); ++it) {
-		if ((*it)->line == feat->line) return;
+	for (auto feature : sel_features) {
+		if (feature->line == feat->line) return;
 	}
 
 	Selection sel = c->selectionController->GetSelectedSet();
@@ -555,8 +554,8 @@ wxString VisualToolBase::GetLineVectorClip(AssDialogue *diag, int &scale, bool &
 }
 
 void VisualToolBase::SetSelectedOverride(wxString const& tag, wxString const& value) {
-	for_each(c->selectionController->GetSelectedSet(),
-		bind(&VisualToolBase::SetOverride, this, _1, tag, value));
+	for (auto diag : c->selectionController->GetSelectedSet())
+		SetOverride(diag, tag, value);
 }
 
 void VisualToolBase::SetOverride(AssDialogue* line, wxString const& tag, wxString const& value) {

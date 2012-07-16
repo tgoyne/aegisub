@@ -107,7 +107,7 @@ namespace {
 		for (FontMap::iterator face_it = font_files.begin(); face_it != font_files.end(); ++face_it) {
 			file.WriteLineToFile(face_it->first);
 			for_each(face_it->second.begin(), face_it->second.end(),
-				bind(&TextFileWriter::WriteLineToFile, &file, std::tr1::placeholders::_1, true));
+				bind(&TextFileWriter::WriteLineToFile, &file, std::placeholders::_1, true));
 			file.WriteLineToFile("");
 		}
 	}

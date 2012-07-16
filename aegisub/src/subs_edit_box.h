@@ -135,7 +135,7 @@ class SubsEditBox : public wxPanel, protected SelectionListener<AssDialogue> {
 	/// The start and end times of the selected lines without changes made to
 	/// avoid negative durations, so that they can be restored if future changes
 	/// eliminate the negative durations
-	std::map<AssDialogue *, std::pair<AssTime, AssTime> > initialTimes;
+	std::map<AssDialogue *, std::pair<int, int> > initialTimes;
 
 	// Constructor helpers
 	wxTextCtrl *MakeMarginCtrl(wxString const& tooltip, void (SubsEditBox::*handler)(wxCommandEvent&));

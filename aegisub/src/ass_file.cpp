@@ -614,7 +614,7 @@ int AssFile::Commit(wxString desc, int type, int amendId, AssEntry *single_line)
 	if (commitId == amendId+1 && RedoStack.empty() && savedCommitId+1 != commitId && autosavedCommitId+1 != commitId) {
 		// If only one line changed just modify it instead of copying the file
 		if (single_line) {
-			entryIter this_it = Line.begin(), undo_it = UndoStack.back().Line.begin();
+			entryIter this_it = Line.begin(), undo_it = UndoStack.back()->Line.begin();
 			while (*this_it != single_line) {
 				++this_it;
 				++undo_it;
@@ -623,7 +623,7 @@ int AssFile::Commit(wxString desc, int type, int amendId, AssEntry *single_line)
 			*undo_it = single_line->Clone();
 		}
 		else {
-			UndoStack.back() = *this;
+			*UndoStack.back() = *this;
 		}
 		AnnounceCommit(type);
 		return commitId;
@@ -633,7 +633,7 @@ int AssFile::Commit(wxString desc, int type, int amendId, AssEntry *single_line)
 
 	// Place copy on stack
 	undoDescription = desc;
-	UndoStack.push_back(*this);
+	UndoStack.emplace_back(new AssFile(*this));
 
 	// Cap depth
 	int depth = std::max<int>(OPT_GET("Limits/Undo Levels")->GetInt(), 2);
@@ -651,10 +651,10 @@ int AssFile::Commit(wxString desc, int type, int amendId, AssEntry *single_line)
 void AssFile::Undo() {
 	if (UndoStack.size() <= 1) return;
 
-	RedoStack.push_back(AssFile());
-	std::swap(RedoStack.back(), *this);
+	RedoStack.emplace_back(new AssFile);
+	std::swap(*RedoStack.back(), *this);
 	UndoStack.pop_back();
-	*this = UndoStack.back();
+	*this = *UndoStack.back();
 
 	AnnounceCommit(COMMIT_NEW);
 }
@@ -662,19 +662,19 @@ void AssFile::Undo() {
 void AssFile::Redo() {
 	if (RedoStack.empty()) return;
 
-	std::swap(*this, RedoStack.back());
-	UndoStack.push_back(*this);
+	std::swap(*this, *RedoStack.back());
+	UndoStack.emplace_back(new AssFile(*this));
 	RedoStack.pop_back();
 
 	AnnounceCommit(COMMIT_NEW);
 }
 
 wxString AssFile::GetUndoDescription() const {
-	return IsUndoStackEmpty() ? "" : UndoStack.back().undoDescription;
+	return IsUndoStackEmpty() ? "" : UndoStack.back()->undoDescription;
 }
 
 wxString AssFile::GetRedoDescription() const {
-	return IsRedoStackEmpty() ? "" : RedoStack.back().undoDescription;
+	return IsRedoStackEmpty() ? "" : RedoStack.back()->undoDescription;
 }
 
 bool AssFile::CompStart(const AssDialogue* lft, const AssDialogue* rgt) {

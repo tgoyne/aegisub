@@ -65,8 +65,8 @@ typedef std::list<AssEntry*>::iterator entryIter;
 ///
 /// DOCME
 class AssFile {
-	std::list<AssFile> UndoStack;
-	std::list<AssFile> RedoStack;
+	std::list<std::unique_ptr<AssFile>> UndoStack;
+	std::list<std::unique_ptr<AssFile>> RedoStack;
 	wxString undoDescription;
 	/// Revision counter for undo coalescing and modified state tracking
 	int commitId;
@@ -121,7 +121,7 @@ public:
 	/// @return Pointer to style or NULL
 	AssStyle *GetStyle(wxString name);
 
-	void swap(AssFile &) throw();
+	void swap(AssFile &) noexcept;
 
 	/// @brief Load from a file
 	/// @param file File name

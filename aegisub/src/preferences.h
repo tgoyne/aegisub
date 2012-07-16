@@ -39,7 +39,7 @@ DEFINE_SIMPLE_EXCEPTION_NOINNER(PreferenceNotSupported, PreferencesError, "prefe
 
 class Preferences : public wxDialog {
 public:
-	typedef std::tr1::function<void ()> Thunk;
+	typedef std::function<void ()> Thunk;
 private:
 	wxTreebook *book;
 	wxButton *applyButton;

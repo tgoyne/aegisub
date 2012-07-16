@@ -59,8 +59,6 @@
 #include "utils.h"
 #include "video_context.h"
 
-using namespace std::tr1::placeholders;
-
 SubtitleFormat::SubtitleFormat(wxString const& name)
 : name(name)
 {
@@ -209,9 +207,12 @@ void SubtitleFormat::StripNonDialogue(LineList &lines) {
 	}
 }
 
-static bool dialog_start_lt(AssEntry *pos, AssDialogue *to_insert) {
-	AssDialogue *diag = dynamic_cast<AssDialogue*>(pos);
-	return diag && diag->Start > to_insert->Start;
+template<class T>
+static void insert(T &lines, typename T::iterator begin, AssDialogue *to_insert) {
+	lines.insert(find_if(begin, lines.end(), [=](AssEntry *e) {
+		AssDialogue *diag = dynamic_cast<AssDialogue*>(e);
+		return diag && diag->Start > to_insert->Start;
+	}), to_insert);
 }
 
 /// @brief Split and merge lines so there are no overlapping lines
@@ -247,8 +248,7 @@ void SubtitleFormat::RecombineOverlaps(LineList &lines) {
 			newdlg->Start = prevdlg->Start;
 			newdlg->End = curdlg->Start;
 			newdlg->Text = prevdlg->Text;
-
-			lines.insert(find_if(next, lines.end(), bind(dialog_start_lt, _1, newdlg)), newdlg);
+			insert(lines, next, newdlg);
 		}
 
 		// Overlapping A+B part
@@ -258,8 +258,7 @@ void SubtitleFormat::RecombineOverlaps(LineList &lines) {
 			newdlg->End = (prevdlg->End < curdlg->End) ? prevdlg->End : curdlg->End;
 			// Put an ASS format hard linewrap between lines
 			newdlg->Text = curdlg->Text + "\\N" + prevdlg->Text;
-
-			lines.insert(find_if(next, lines.end(), bind(dialog_start_lt, _1, newdlg)), newdlg);
+			insert(lines, next, newdlg);
 		}
 
 		// Is there an A part after the overlap?
@@ -269,8 +268,7 @@ void SubtitleFormat::RecombineOverlaps(LineList &lines) {
 			newdlg->Start = curdlg->End;
 			newdlg->End = prevdlg->End;
 			newdlg->Text = prevdlg->Text;
-
-			lines.insert(find_if(next, lines.end(), bind(dialog_start_lt, _1, newdlg)), newdlg);
+			insert(lines, next, newdlg);
 		}
 
 		// Is there a B part after the overlap?
@@ -280,8 +278,7 @@ void SubtitleFormat::RecombineOverlaps(LineList &lines) {
 			newdlg->Start = prevdlg->End;
 			newdlg->End = curdlg->End;
 			newdlg->Text = curdlg->Text;
-
-			lines.insert(find_if(next, lines.end(), bind(dialog_start_lt, _1, newdlg)), newdlg);
+			insert(lines, next, newdlg);
 		}
 
 		next--;
@@ -340,12 +337,12 @@ SubtitleFormat *find_or_null(Cont &container, Pred pred) {
 
 const SubtitleFormat *SubtitleFormat::GetReader(wxString const& filename) {
 	LoadFormats();
-	return find_or_null(formats, bind(&SubtitleFormat::CanReadFile, _1, filename));
+	return find_or_null(formats, [&](SubtitleFormat *s) { return s->CanReadFile(filename); });
 }
 
 const SubtitleFormat *SubtitleFormat::GetWriter(wxString const& filename) {
 	LoadFormats();
-	return find_or_null(formats, bind(&SubtitleFormat::CanWriteFile, _1, filename));
+	return find_or_null(formats, [&](SubtitleFormat *s) { return s->CanWriteFile(filename); });
 }
 
 wxString SubtitleFormat::GetWildcards(int mode) {
@@ -360,8 +357,10 @@ wxString SubtitleFormat::GetWildcards(int mode) {
 		wxArrayString cur = mode == 0 ? format->GetReadWildcards() : format->GetWriteWildcards();
 		if (cur.empty()) continue;
 
-		for_each(cur.begin(), cur.end(), bind(&wxString::Prepend, _1, "*."));
-		copy(cur.begin(), cur.end(), std::back_inserter(all));
+		for (auto &s : cur) {
+			s.Prepend("*.");
+			all.push_back(s);
+		}
 		final += "|" + format->GetName() + " (" + wxJoin(cur, ',') + ")|" + wxJoin(cur, ';');
 	}
 
