@@ -63,9 +63,9 @@ namespace {
 	template<class T>
 	void put_array(json::Object &obj, const std::string &path, const char *element_key, std::vector<T> const& value) {
 		json::Array array;
-		for (typename std::vector<T>::const_iterator it = value.begin(); it != value.end(); ++it) {
+		for (T const& elem : value) {
 			array.push_back(json::Object());
-			static_cast<json::Object&>(array.back())[element_key] = *it;
+			static_cast<json::Object&>(array.back())[element_key] = elem;
 		}
 
 		put_option(obj, path, array);
