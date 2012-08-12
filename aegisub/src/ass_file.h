@@ -85,6 +85,10 @@ class AssFile {
 	/// than waiting for a save, but that causes (more) issues with undo
 	agi::signal::Signal<> FileSave;
 
+	wxString sync_key;
+	wxString last_modified;
+	void PushSync();
+
 public:
 	/// The lines in the file
 	std::list<AssEntry*> Line;
@@ -168,6 +172,8 @@ public:
 	/// @param[in,out] version ASS version the line was parsed as
 	/// @param[in,out] attach Accumulator for attachment parsing
 	void AddLine(wxString data, int *version, AssAttachment **attach);
+
+	void SetSyncKey(wxString const& key);
 
 	/// Type of changes made in a commit
 	enum CommitType {

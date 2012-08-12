@@ -364,6 +364,7 @@ void AssFile::Clear() {
 }
 
 void AssFile::LoadDefault(bool defline) {
+	SetSyncKey("test");
 	Clear();
 
 	// Write headers
@@ -607,6 +608,10 @@ wxString AssFile::GetWildcardList(int mode) {
 	else return "";
 }
 
+void AssFile::SetSyncKey(wxString const& key) {
+	sync_key = key;
+}
+
 int AssFile::Commit(wxString desc, int type, int amendId, AssEntry *single_line) {
 	++commitId;
 	// Allow coalescing only if it's the last change and the file has not been
@@ -626,6 +631,7 @@ int AssFile::Commit(wxString desc, int type, int amendId, AssEntry *single_line)
 			UndoStack.back() = *this;
 		}
 		AnnounceCommit(type);
+		PushSync();
 		return commitId;
 	}
 
@@ -645,7 +651,37 @@ int AssFile::Commit(wxString desc, int type, int amendId, AssEntry *single_line)
 		Save(filename);
 
 	AnnounceCommit(type);
+	PushSync();
 	return commitId;
+}
+
+void AssFile::PushSync() {
+	if (!sync_key) return;
+
+	wxIPV4address addr;
+	addr.Hostname("localhost");
+	addr.Service(8080);
+
+	wxSocketClient socket;
+	socket.Connect(addr, false);
+
+	std::vector<char> buf;
+	SaveMemory(buf);
+
+	wxString headers = wxString::Format("\
+PUT /%s HTTP/1.1\n\
+User-Agent: Multiplayer Aegisub\n\
+Host: %s:%d\n\
+Content-Length: %u\n\
+Content-Type: application/x-www-form-urlencoded\n\
+\n\n", sync_key, "localhost", 8080, buf.size());
+
+	wxScopedCharBuffer header_buf = headers.utf8_str();
+
+	socket.WaitOnConnect();
+	socket.Write(header_buf.data(), header_buf.length());
+	socket.Write(&buf[0], buf.size());
+	socket.Close();
 }
 
 void AssFile::Undo() {
