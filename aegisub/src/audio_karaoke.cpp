@@ -237,6 +237,16 @@ void AudioKaraoke::RenderText() {
 	for (size_t i = 0; i < syl_lines.size(); ++i) {
 		dc.DrawLine(syl_lines[i], 0, syl_lines[i], bmp_size.GetHeight());
 	}
+
+	dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_SCROLLBAR), 1, wxPENSTYLE_DOT));
+	for (size_t i = 0; i < spaced_text.size(); ++i) {
+		dc.DrawLine(char_x[i] - char_width / 2, 0, char_x[i] - char_width / 2, bmp_size.GetHeight());
+	}
+
+	for (size_t i = 0; i < syl_lines.size(); ++i) {
+		dc.DrawLine(syl_lines[i] - char_width / 2, 0, syl_lines[i] - char_width / 2, bmp_size.GetHeight());
+		dc.DrawLine(syl_lines[i] + char_width / 2, 0, syl_lines[i] + char_width / 2, bmp_size.GetHeight());
+	}
 }
 
 void AudioKaraoke::AddMenuItem(wxMenu &menu, wxString const& tag, wxString const& help, wxString const& selected) {
