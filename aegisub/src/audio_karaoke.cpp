@@ -317,7 +317,9 @@ void AudioKaraoke::OnMouse(wxMouseEvent &event) {
 
 	// If the click is sufficiently close to a line of a syllable split,
 	// remove that split rather than adding a new one
-	if ((syl > 0 && shifted_pos <= syl_lines[syl - 1] + 2) || (syl < (int)syl_lines.size() && shifted_pos >= syl_lines[syl] - 2)) {
+	int split_min = shifted_pos - char_width / 2;
+	int split_max = shifted_pos + char_width / 2;
+	if ((syl > 0 && split_min < syl_lines[syl - 1]) || (syl < (int)syl_lines.size() && split_max > syl_lines[syl])) {
 		kara->RemoveSplit(syl);
 	}
 	else {
