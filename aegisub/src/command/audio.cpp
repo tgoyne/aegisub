@@ -58,7 +58,6 @@
 #include "../video_context.h"
 
 namespace {
-	typedef SelectionController<AssDialogue>::Selection Selection;
 	using cmd::Command;
 
 	struct validate_audio_open : public Command {
@@ -219,8 +218,8 @@ struct audio_save_clip : public Command {
 	}
 
 	void operator()(agi::Context *c) {
-		Selection sel = c->selectionController->GetSelectedSet();
-		for (Selection::iterator it = sel.begin(); it != sel.end(); ++it) {
+		SubtitleSelection sel = c->selectionController->GetSelectedSet();
+		for (SubtitleSelection::iterator it = sel.begin(); it != sel.end(); ++it) {
 			c->audioController->SaveClip(
 				wxFileSelector(_("Save audio clip"), "", "", "wav", "", wxFD_SAVE|wxFD_OVERWRITE_PROMPT, c->parent),
 				TimeRange((*it)->Start, (*it)->End));
