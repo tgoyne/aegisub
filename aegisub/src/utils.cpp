@@ -266,6 +266,7 @@ size_t MaxLineLength(std::string const& text) {
 #ifndef __WXOSX_COCOA__
 void AddFullScreenButton(wxWindow *) { }
 void SetFloatOnParent(wxWindow *) { }
+double GetScaleFactor(wxWindow *) { return 1; }
 #endif
 
 agi::fs::path FileSelector(wxString const& message, std::string const& option_name, std::string const& default_filename, std::string const& default_extension, wxString const& wildcard, int flags, wxWindow *parent) {

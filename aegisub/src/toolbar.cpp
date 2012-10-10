@@ -26,6 +26,7 @@
 #include "include/aegisub/hotkey.h"
 #include "libresrc/libresrc.h"
 #include "options.h"
+#include "utils.h"
 
 #include <libaegisub/hotkey.h>
 #include <libaegisub/json.h>
@@ -130,15 +131,16 @@ namespace {
 
 				last_was_sep = false;
 
-
-				int flags = command->Type();
-				wxItemKind kind =
+				const int flags = command->Type();
+				const wxItemKind kind =
 					flags & cmd::COMMAND_RADIO ? wxITEM_RADIO :
 					flags & cmd::COMMAND_TOGGLE ? wxITEM_CHECK :
 					wxITEM_NORMAL;
 
-				wxBitmap const& bitmap = command->Icon(icon_size);
-				AddTool(TOOL_ID_BASE + commands.size(), command->StrDisplay(context), bitmap, GetTooltip(command), kind);
+				AddTool(TOOL_ID_BASE + commands.size(),
+					command->StrDisplay(context),
+					command->Icon(icon_size * GetScaleFactor(this)),
+					GetTooltip(command), kind);
 
 				commands.push_back(command);
 				needs_onidle = needs_onidle || flags != cmd::COMMAND_NORMAL;
