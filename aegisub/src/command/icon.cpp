@@ -32,12 +32,22 @@ typedef std::map<std::string, wxBitmap> iconMap;
 iconMap icon16;
 iconMap icon24;
 iconMap icon32;
+iconMap icon48;
+iconMap icon64;
 
 wxBitmap const& get(std::string const& name, const int size) {
 	// XXX: This code will go away with dynamic icon generation so I'm not
 	//      concerned about it.
 	iconMap::iterator index;
-	if (size == 32) {
+	if (size == 64) {
+		if ((index = icon64.find(name)) != icon64.end())
+			return index->second;
+	}
+	else if (size == 48) {
+		if ((index = icon48.find(name)) != icon48.end())
+			return index->second;
+	}
+	else if (size == 32) {
 		if ((index = icon32.find(name)) != icon32.end())
 			return index->second;
 	}
@@ -59,14 +69,14 @@ wxBitmap const& get(std::string const& name, const int size) {
 #define INSERT_ICON(a, b) \
 	icon16.insert(std::make_pair(a, GETIMAGE(b##_16))); \
 	icon24.insert(std::make_pair(a, GETIMAGE(b##_24))); \
-	icon32.insert(std::make_pair(a, GETIMAGE(b##_32)));
+	icon32.insert(std::make_pair(a, GETIMAGE(b##_32))); \
+	icon48.insert(std::make_pair(a, GETIMAGE(b##_48))); \
+	icon64.insert(std::make_pair(a, GETIMAGE(b##_64))); \
 
 void icon_init() {
 	// Seems that WX doesn't install the handlers early enough for our use.
 	wxPNGHandler *handler = new wxPNGHandler();
 	wxImage::AddHandler(handler);
-
-	LOG_D("icon/init") << "Generating 24x24, 16x16 icons";
 
 INSERT_ICON("am/manager", automation_toolbutton)
 INSERT_ICON("am/meta", automation_toolbutton)
