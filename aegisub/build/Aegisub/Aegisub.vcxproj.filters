@@ -688,6 +688,9 @@
     <ClInclude Include="$(SrcDir)ass_info.h">
       <Filter>ASS</Filter>
     </ClInclude>
+    <ClInclude Include="$(SrcDir)initial_line_state.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)ass_dialogue.cpp">
@@ -1238,6 +1241,9 @@
     </ClCompile>
     <ClCompile Include="$(SrcDir)dialog_autosave.cpp">
       <Filter>Features\Autosave</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SrcDir)initial_line_state.cpp">
+      <Filter>Utilities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
