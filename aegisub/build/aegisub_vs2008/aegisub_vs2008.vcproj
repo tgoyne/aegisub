@@ -782,6 +782,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\initial_line_state.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\initial_line_state.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\kana_table.cpp"
 				>
 			</File>
