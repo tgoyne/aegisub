@@ -17,20 +17,7 @@ SRC = \
 		main.cpp \
 		util.cpp \
 		util_unix.cpp \
-		libaegisub_access.cpp \
-		libaegisub_cajun.cpp \
-		libaegisub_color.cpp \
-		libaegisub_hotkey.cpp \
-		libaegisub_iconv.cpp \
-		libaegisub_keyframe.cpp \
-		libaegisub_line_iterator.cpp \
-		libaegisub_option.cpp \
-		libaegisub_mru.cpp \
-		libaegisub_signals.cpp \
-		libaegisub_thesaurus.cpp \
-		libaegisub_util.cpp \
-		libaegisub_vfr.cpp \
-		libaegisub_line_wrap.cpp
+		libaegisub_color.cpp
 		
 HEADER = \
 	*.h
