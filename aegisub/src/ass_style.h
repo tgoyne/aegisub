@@ -46,8 +46,8 @@
 
 class AssStyle : public AssEntry {
 public:
-	wxString name;   ///< Name of the style; must be case-insensitively unique within a file despite being case-sensitive
-	wxString font;   ///< Font face name
+	std::string name;   ///< Name of the style; must be case-insensitively unique within a file despite being case-sensitive
+	std::string font;   ///< Font face name
 	double fontsize; ///< Font size
 
 	agi::Color primary;   ///< Default text color

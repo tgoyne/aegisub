@@ -542,6 +542,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="ASS"
+			>
+			<File
+				RelativePath="..\..\libaegisub\ass\style.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libaegisub\include\libaegisub\ass\style.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\..\libaegisub\lagi_pre.h"
 			>

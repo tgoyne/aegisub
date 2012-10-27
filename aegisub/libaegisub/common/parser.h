@@ -19,8 +19,13 @@
 namespace agi {
 	struct Color;
 
+	namespace ass {
+		class Style;
+	}
+
 	namespace parser {
 		void parse(Color &dst, const char *str, size_t len);
+		void parse(ass::Style &dst, const char *str, size_t len);
 
 		template<size_t N, class T>
 		void parse(T &dst, const char (&str)[N]) {

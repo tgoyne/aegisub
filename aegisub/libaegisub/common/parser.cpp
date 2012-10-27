@@ -17,6 +17,7 @@
 #include "parser.h"
 
 #include "libaegisub/color.h"
+#include "libaegisub/ass/style.h"
 
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
@@ -30,6 +31,32 @@ BOOST_FUSION_ADAPT_STRUCT(
 	(unsigned char, g)
 	(unsigned char, b)
 	(unsigned char, a)
+)
+
+typedef std::tr1::array<int, 3> MarginArray;
+BOOST_FUSION_ADAPT_STRUCT(
+	agi::ass::Style,
+	//(std::string, name)
+	//(std::string, font)
+	(double, fontsize)
+	//(agi::Color, primary)
+	//(agi::Color, secondary)
+	//(agi::Color, outline)
+	//(agi::Color, shadow)
+	(bool, bold)
+	(bool, italic)
+	(bool, underline)
+	(bool, strikeout)
+	(double, scalex)
+	(double, scaley)
+	(double, spacing)
+	(double, angle)
+	(int, borderstyle)
+	(double, outline_w)
+	(double, shadow_w)
+	(int, alignment)
+	//(MarginArray, Margin)
+	(int, encoding)
 )
 
 namespace {
@@ -65,7 +92,7 @@ struct color_grammar : qi::grammar<Iterator, agi::Color()> {
 
 #define HEX_PARSER(type, len) qi::uint_parser<unsigned type, 16, len, len>()
 
-	color_grammar() : color_grammar::base_type(color) {
+	color_grammar() : color_grammar::base_type(color, "color") {
 		color = css_color | ass_color;
 
 		boost::phoenix::function<unpack_colors> unpack;
@@ -91,9 +118,26 @@ struct color_grammar : qi::grammar<Iterator, agi::Color()> {
 
 }
 
+// Register color_grammar with the auto parser generation stuff
+namespace boost { namespace spirit { namespace traits {
+	template<> struct create_parser<agi::Color> {
+		typedef color_grammar<const char *>& type;
+		static color_grammar<const char *> grammar;
+		static type call() { return grammar; }
+	};
+
+	color_grammar<const char *> create_parser<agi::Color>::grammar;
+}}}
+
 namespace agi { namespace parser {
 	void parse(Color &dst, const char *str, size_t len) {
-		parse(str, str + len, color_grammar<const char *>(), dst);
+		qi::phrase_parse(str, str + len, auto_, '!', dst);
+	}
+
+	void parse(ass::Style &dst, const char *str, size_t len) {
+		boost::fusion::vector<int, double, int> foo;
+		qi::phrase_parse(str, str + len, auto_, lit(','), foo);
+		//qi::phrase_parse(str, str + len, auto_, lit(','), dst);
 	}
 }
 }

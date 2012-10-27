@@ -91,6 +91,31 @@ static double get_next_double(wxStringTokenizer &tok) {
 	return temp;
 }
 
+#if 0
+
+using namespace boost::spirit;
+
+template<typename Iterator>
+struct ass_style_grammar : qi::grammar<Iterator, AssStyle(), ascii::space_type> {
+	qi::rule<Iterator, AssStyle(), ascii::space_type> ass_style;
+
+	ass_style_grammar() : ass_style_grammar::base_type(ass_style) {
+		using qi::lit;
+		using qi::lexeme;
+		using ascii::char_;
+		using ascii::string;
+		using namespace qi::labels;
+
+		ass_style =
+			lexeme[+(char_ - ',')] > ',' > // name
+			lexeme[+(char_ - ',')] > ',' > // font
+			double_ > ',' // fontsize
+		;
+	}
+};
+
+#endif
+
 AssStyle::AssStyle(wxString rawData, int version)
 : AssEntry(wxString(), wxS("[V4+ Styles]"))
 {
