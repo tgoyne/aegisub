@@ -128,7 +128,7 @@ struct dialogue_tokens : lex::lexer<Lexer> {
 			= char_('{', ERROR)
 			| char_('}', OVR_END)[_state = "INITIAL"]
 			| string("\\(\\s*", OPEN_PAREN)[++ref(paren_depth)]
-			| string("\\s*\\)", CLOSE_PAREN)[--ref(paren_depth), if_(ref(paren_depth) == 0)[ _state = "OVR"]]
+			| string("\\s*\\)", CLOSE_PAREN)[--ref(paren_depth), if_(ref(paren_depth) == 0)[_state = "OVR"]]
 			| string("\\\\(r|fn)", TAG_NAME)[_state = "ARG"]
 			| char_('\\', TAG_NAME)[_state = "TAGNAME"]
 			| string("\\s*,\\s*", ARG_SEP)
@@ -137,6 +137,7 @@ struct dialogue_tokens : lex::lexer<Lexer> {
 
 		this->self("TAGNAME")
 			= string("[a-z0-9][a-z]*", TAG_NAME)[_state = "ARG"]
+			| char_('}', OVR_END)[_state = "INITIAL"]
 			| string(".", ERROR)[_state = "OVR"]
 			;
 	}

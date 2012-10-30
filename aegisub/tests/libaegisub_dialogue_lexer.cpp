@@ -137,6 +137,45 @@ TEST(lagi_dialogue_lexer, basic_override_tags) {
 	);
 }
 
+TEST(lagi_dialogue_lexer, merging) {
+	tok_str("{\\b\\b",
+		expect_tok(OVR_BEGIN, 1);
+		expect_tok(TAG_NAME, 2);
+		expect_tok(TAG_NAME, 2);
+	);
+}
+
+TEST(lagi_dialogue_lexer, whitespace) {
+	tok_str("{ \\ fn Comic Sans MS }asd",
+		expect_tok(OVR_BEGIN, 1);
+		expect_tok(WHITESPACE, 1);
+		expect_tok(TAG_START, 1);
+		expect_tok(WHITESPACE, 1);
+		expect_tok(TAG_NAME, 2);
+		expect_tok(WHITESPACE, 1);
+		expect_tok(ARG, 13);
+		expect_tok(OVR_END, 1);
+		expect_tok(TEXT, 3);
+	);
+}
+
+TEST(lagi_dialogue_lexer, comment) {
+	tok_str("{a}b",
+		expect_tok(OVR_BEGIN, 1);
+		expect_tok(COMMENT, 1);
+		expect_tok(OVR_END, 1);
+		expect_tok(TEXT, 1);
+	);
+
+	tok_str("{a\\b}c",
+		expect_tok(OVR_BEGIN, 1);
+		expect_tok(COMMENT, 1);
+		expect_tok(TAG_NAME, 2);
+		expect_tok(OVR_END, 1);
+		expect_tok(TEXT, 1);
+	);
+}
+
 TEST(lagi_dialogue_lexer, malformed) {
 	tok_str("}",
 		expect_tok(TEXT, 1);
@@ -156,5 +195,14 @@ TEST(lagi_dialogue_lexer, malformed) {
 		expect_tok(ARG, 1);
 		expect_tok(OVR_END, 1);
 		expect_tok(TEXT, 1);
+	);
+
+	tok_str("{\\b1\\}asdf",
+		expect_tok(OVR_BEGIN, 1);
+		expect_tok(TAG_NAME, 2);
+		expect_tok(ARG, 1);
+		expect_tok(TAG_NAME, 1);
+		expect_tok(OVR_END, 1);
+		expect_tok(TEXT, 4);
 	);
 }
