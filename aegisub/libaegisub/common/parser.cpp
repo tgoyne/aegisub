@@ -166,8 +166,12 @@ namespace ass {
 
 		for (; it != end && token_is_valid(*it); ++it) {
 			int id = it->id();
+			ptrdiff_t len = it->value().end() - it->value().begin();
+			assert(len > 0);
 			if (data.empty() || data.back().type != id)
-				data.push_back(DialogueToken(id, it->value().begin()));
+				data.push_back(DialogueToken(id, len));
+			else
+				data.back().length += len;
 		}
 
 		return data;

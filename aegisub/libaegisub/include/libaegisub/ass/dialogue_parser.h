@@ -36,8 +36,8 @@ namespace agi {
 
 		struct DialogueToken {
 			int type;
-			const char *start;
-			DialogueToken(int type, const char *start) : type(type), start(start) { }
+			size_t length;
+			DialogueToken(int type, size_t length) : type(type), length(length) { }
 		};
 
 		std::vector<DialogueToken> TokenizeDialogueBody(std::string const& str);
