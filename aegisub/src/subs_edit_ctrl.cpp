@@ -58,6 +58,8 @@
 #include "thesaurus.h"
 #include "utils.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
+
 /// Event ids
 enum {
 	EDIT_MENU_SPLIT_PRESERVE = 1400,
@@ -290,6 +292,82 @@ void SubsTextEditCtrl::UpdateStyle() {
 
 	if (text.empty()) return;
 
+#if 0
+	STYLE_NORMAL = agi::ass::DialogueTokenType::TEXT,
+		STYLE_COMMENT = agi::ass::DialogueTokenType::COMMENT,
+		STYLE_TAG = agi::ass::DialogueTokenType::TAG_NAME,
+		STYLE_ERROR = agi::ass::DialogueTokenType::ERROR,
+		STYLE_PARAMETER = agi::ass::DialogueTokenType::ARG,
+		STYLE_LINE_BREAK = agi::ass::DialogueTokenType::LINE_BREAK,
+		STYLE_OVERRIDE = 2000,
+		STYLE_PUNCTUATION,
+		STYLE_DRAWING,
+		STYLE_KARAOKE_TEMPLATE,
+		STYLE_KARAOKE_VARIABLE
+
+				TEXT = 1000,
+				LINE_BREAK,
+				OVR_BEGIN,
+				OVR_END,
+				TAG_NAME,
+				OPEN_PAREN,
+				CLOSE_PAREN,
+				ARG_SEP,
+				ARG,
+				ERROR,
+				COMMENT
+#endif
+
+	bool in_drawing = false;
+	size_t pos = 0;
+
+	using namespace agi::ass::DialogueTokenType;
+	std::vector<agi::ass::DialogueToken> tokens = agi::ass::TokenizeDialogueBody(text);
+	for (size_t i = 0; i < tokens.size(); ++i) {
+		size_t len = tokens[i].length;
+		switch (tokens[i].type) {
+			case LINE_BREAK: SetStyling(len, STYLE_LINE_BREAK); break;
+			case ERROR: SetStyling(len, STYLE_ERROR); break;
+			case ARG: SetStyling(len, STYLE_PARAMETER); break;
+			case COMMENT: SetStyling(len, STYLE_COMMENT); break;
+			case TEXT: SetStyling(len, in_drawing ? STYLE_DRAWING : STYLE_NORMAL); break;
+			case OPEN_PAREN: case CLOSE_PAREN: case ARG_SEP:
+				SetStyling(len, STYLE_PUNCTUATION);
+				break;
+			case OVR_BEGIN: case OVR_END:
+				SetStyling(len, STYLE_OVERRIDE);
+				break;
+
+			case TAG_NAME:
+				SetStyling(1, STYLE_PUNCTUATION);
+				SetStyling(len - 1, STYLE_TAG);
+
+				if (len != 2 || i + 1 >= tokens.size() || text[pos + 1] != 'p')
+					break;
+
+				in_drawing = false;
+
+				if (tokens[i + 1].type != ARG)
+					break;
+
+				for (size_t j = pos + len; j < pos + len + tokens[i + 1].length; ++j) {
+					char c = text[j];
+					// I have no idea why one would use leading zeros for
+					// the scale, but vsfilter allows it
+					if (c >= '1' && c <= '9')
+						in_drawing = true;
+					else if (c != '0')
+						break;
+				}
+				break;
+		}
+
+		pos += len;
+		// karaoke templater
+		// unclosed overrides
+	}
+
+#if 0
 	// Check if it's a template line
 	AssDialogue *diag = context ? context->selectionController->GetActiveLine() : 0;
 	bool templateLine = diag && diag->Comment && diag->Effect.Lower().StartsWith("template");
@@ -437,6 +515,7 @@ void SubsTextEditCtrl::UpdateStyle() {
 		++range_len;
 	}
 	SetStyling(range_len, style);
+#endif
 	StyleSpellCheck();
 }
 

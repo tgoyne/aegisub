@@ -16,6 +16,8 @@
 #include <vector>
 #endif
 
+#undef ERROR
+
 namespace agi {
 	namespace ass {
 		namespace DialogueTokenType {
