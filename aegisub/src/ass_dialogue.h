@@ -85,6 +85,7 @@ public:
 
 class AssDialogueBlockPlain : public AssDialogueBlock {
 public:
+	using AssDialogueBlock::text;
 	AssBlockType GetType() const override { return BLOCK_PLAIN; }
 	AssDialogueBlockPlain(wxString const& text = wxString()) : AssDialogueBlock(text) { }
 };
