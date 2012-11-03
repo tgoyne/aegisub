@@ -941,6 +941,25 @@ struct edit_clear : public Command {
 	}
 };
 
+struct edit_clear_text : public Command {
+	CMD_NAME("edit/clear/text")
+	STR_DISP("Clear Text")
+	STR_MENU("Clear Text")
+	STR_HELP("Clear the current line's text, leaving override tags")
+
+	void operator()(agi::Context *c) {
+		AssDialogue *line = c->selectionController->GetActiveLine();
+		line->ParseAssTags();
+		for (size_t i = 0; i < line->Blocks.size(); ++i) {
+			if (AssDialogueBlockPlain *block = dynamic_cast<AssDialogueBlockPlain *>(line->Blocks[i]))
+				block->text.clear();
+		}
+		line->UpdateText();
+		line->ClearBlocks();
+		c->ass->Commit(_("clear line"), AssFile::COMMIT_DIAG_TEXT, -1, line);
+	}
+};
+
 struct edit_insert_original : public Command {
 	CMD_NAME("edit/insert_original")
 	STR_DISP("Insert Original")
@@ -991,5 +1010,6 @@ namespace cmd {
 		reg(new edit_revert);
 		reg(new edit_insert_original);
 		reg(new edit_clear);
+		reg(new edit_clear_text);
 	}
 }
