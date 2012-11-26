@@ -904,47 +904,56 @@ namespace Automation4 {
 			int active_idx = 0;
 
 			// Check for a new active row
-			if (lua_isnumber(L, -1)) {
+			if (lua_isnumber(L, -1))
 				active_idx = lua_tointeger(L, -1);
-				if (active_idx < 1 || active_idx > (int)c->ass->Line.size()) {
-					wxLogError("Active row %d is out of bounds (must be 1-%u)", active_idx, c->ass->Line.size());
-					active_idx = 0;
-				}
-			}
 
 			stackcheck.check_stack(2);
 			lua_pop(L, 1);
 
 			// top of stack will be selected lines array, if any was returned
 			if (lua_istable(L, -1)) {
-				std::set<AssDialogue*> sel;
-				entryIter it = c->ass->Line.begin();
-				int last_idx = 1;
+				std::vector<int> new_selected_rows;
 				lua_pushnil(L);
 				while (lua_next(L, -2)) {
-					if (lua_isnumber(L, -1)) {
-						int cur = lua_tointeger(L, -1);
-						if (cur < 1 || cur > (int)c->ass->Line.size()) {
-							wxLogError("Selected row %d is out of bounds (must be 1-%u)", cur, c->ass->Line.size());
-							break;
-						}
-
-						advance(it, cur - last_idx);
-
-						AssDialogue *diag = dynamic_cast<AssDialogue*>(&*it);
-						if (!diag) {
-							wxLogError("Selected row %d is not a dialogue line", cur);
-							break;
-						}
-
-						sel.insert(diag);
-						last_idx = cur;
-						if (!active_line || active_idx == cur)
-							active_line = diag;
-					}
+					if (lua_isnumber(L, -1))
+						new_selected_rows.push_back(lua_tointeger(L, -1));
 					lua_pop(L, 1);
 				}
 
+				sort(begin(new_selected_rows), end(new_selected_rows));
+
+				std::set<AssDialogue*> sel;
+				entryIter it = c->ass->Line.begin();
+				int last_idx = 1;
+				for (int idx : new_selected_rows) {
+					if (idx < 1) {
+						wxLogError("Selected row %d is out of bounds (must be greater than 0)", idx);
+						break;
+					}
+
+					while (last_idx < idx) {
+						++last_idx;
+						++it;
+						if (it == c->ass->Line.end()) {
+							wxLogError("Selected row %d is out of bounds (must be 1-%d)", last_idx - 1);
+							break;
+						}
+					}
+
+					AssDialogue *diag = dynamic_cast<AssDialogue*>(&*it);
+					if (!diag) {
+						wxLogError("Selected row %d is not a dialogue line", idx);
+						break;
+					}
+
+					sel.insert(diag);
+					if (!active_line || active_idx == idx)
+						active_line = diag;
+				}
+
+				// Update the active line if the script specified a new active
+				// line which is within the selection or if the previous active
+				// line is no longer part of the selection
 				AssDialogue *new_active = c->selectionController->GetActiveLine();
 				if (active_line && (active_idx > 0 || !sel.count(new_active)))
 					new_active = active_line;
