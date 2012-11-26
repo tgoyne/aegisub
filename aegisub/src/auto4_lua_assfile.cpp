@@ -56,6 +56,8 @@
 #include "auto4_lua.h"
 #include "utils.h"
 
+#include <boost/range/adaptor/reversed.hpp>
+
 // This must be below the headers above.
 #ifdef __WINDOWS__
 #include "../../contrib/lua51/src/lualib.h"
@@ -179,6 +181,16 @@ namespace {
 			default:             return AssFile::COMMIT_SCRIPTINFO;
 		}
 	}
+
+	auto ref(EntryList& list, AssEntry *entry) -> decltype(EntryList::s_iterator_to(*entry))
+	{
+		return entry ? list.iterator_to(*entry) : list.end();
+	}
+
+	AssEntry *deref(EntryList const& list, entryIter it)
+	{
+		return it == list.end() ? nullptr : &*it;
+	}
 }
 
 namespace Automation4 {
@@ -186,12 +198,6 @@ namespace Automation4 {
 	{
 		if (!can_modify)
 			luaL_error(L, "Attempt to modify subtitles in read-only feature context.");
-	}
-
-	void LuaAssFile::CheckBounds(int idx)
-	{
-		if (idx <= 0 || idx > (int)lines.size())
-			luaL_error(L, "Requested out-of-range line from subtitle file: %d", idx);
 	}
 
 	void LuaAssFile::AssEntryToLua(lua_State *L, AssEntry *e)
@@ -357,17 +363,48 @@ namespace Automation4 {
 		}
 	}
 
+	void LuaAssFile::SeekCursorTo(int n, bool allow_at_end)
+	{
+		if (n <= 0)
+			luaL_error(L, "Requested out-of-range line from subtitle file: %d", n);
+
+		entryIter it;
+		if (n < last_entry_id - n) {
+			// fastest to search from start
+			it = ass->Line.begin();
+			last_entry_id = 1;
+		}
+		else {
+			// otherwise fastest to search from cursor
+			it = ref(ass->Line, last_entry_ptr);
+		}
+
+		while (n < last_entry_id) {
+			--last_entry_id;
+			--it;
+		}
+
+		while (n > last_entry_id) {
+			if (it == ass->Line.end())
+				luaL_error(L, "Requested out-of-range line from subtitle file: %d", n);
+			++last_entry_id;
+			++it;
+		}
+
+		if (!allow_at_end && it == ass->Line.end())
+			luaL_error(L, "Requested out-of-range line from subtitle file: %d", n);
+
+		last_entry_ptr = deref(ass->Line, it);
+	}
+
 	int LuaAssFile::ObjectIndexRead(lua_State *L)
 	{
 		switch (lua_type(L, 2)) {
 			case LUA_TNUMBER:
-			{
 				// read an indexed AssEntry
-				int idx = lua_tointeger(L, 2);
-				CheckBounds(idx);
-				AssEntryToLua(L, lines[idx - 1]);
+				SeekCursorTo(lua_tointeger(L, 2));
+				AssEntryToLua(L, &*last_entry_ptr);
 				return 1;
-			}
 
 			case LUA_TSTRING:
 			{
@@ -376,7 +413,7 @@ namespace Automation4 {
 
 				if (strcmp(idx, "n") == 0) {
 					// get number of items
-					lua_pushnumber(L, lines.size());
+					lua_pushnumber(L, ass->Line.size());
 					return 1;
 				}
 
@@ -434,8 +471,10 @@ namespace Automation4 {
 				// insert
 				AssEntry *e = LuaToAssEntry(L);
 				modification_type |= modification_mask(e);
-				CheckBounds(n);
-				lines[n - 1] = e;
+				SeekCursorTo(n, true);
+				ass->Line.insert(ref(ass->Line, last_entry_ptr), *e);
+				delete last_entry_ptr;
+				last_entry_ptr = e;
 			}
 			else {
 				// delete
@@ -448,7 +487,7 @@ namespace Automation4 {
 
 	int LuaAssFile::ObjectGetLen(lua_State *L)
 	{
-		lua_pushnumber(L, lines.size());
+		lua_pushnumber(L, ass->Line.size());
 		return 1;
 	}
 
@@ -461,44 +500,37 @@ namespace Automation4 {
 		std::vector<int> ids;
 		ids.reserve(itemcount);
 
-		while (itemcount > 0) {
-			int n = luaL_checkint(L, itemcount);
-			luaL_argcheck(L, n > 0 && n <= (int)lines.size(), itemcount, "Out of range line index");
-			ids.push_back(n - 1);
-			--itemcount;
-		}
+		for (; itemcount > 0; --itemcount)
+			ids.push_back(luaL_checkint(L, itemcount));
 
+		// sort the item id's so we can delete from last to first to preserve original numbering
 		sort(ids.begin(), ids.end());
 
-		size_t id_idx = 0, out = 0;
-		for (size_t i = 0; i < lines.size(); ++i) {
-			if (id_idx < ids.size() && ids[id_idx] == i) {
-				modification_type |= modification_mask(lines[i]);
-				++id_idx;
-			}
-			else {
-				lines[out++] = lines[i];
-			}
+		// now delete the id's backwards
+		for (int id : ids | boost::adaptors::reversed) {
+			SeekCursorTo(id);
+			modification_type |= modification_mask(last_entry_ptr);
+			AssEntry *next = deref(ass->Line, ++ref(ass->Line, last_entry_ptr));
+			delete last_entry_ptr;
+			last_entry_ptr = next;
 		}
-
-		lines.erase(lines.begin() + out, lines.end());
 	}
 
 	void LuaAssFile::ObjectDeleteRange(lua_State *L)
 	{
 		CheckAllowModify();
 
-		size_t a = std::max<size_t>(luaL_checkinteger(L, 1), 1) - 1;
-		size_t b = std::min<size_t>(luaL_checkinteger(L, 2), lines.size());
+		int a = std::max<int>(luaL_checkinteger(L, 1), 1);
+		int b = luaL_checkinteger(L, 2);
 
-		if (a >= b) return;
+		SeekCursorTo(a);
 
-		for (; b < lines.size(); ++a, ++b) {
-			modification_type |= modification_mask(lines[a]);
-			lines[a] = lines[b];
+		auto it = ref(ass->Line, last_entry_ptr);
+		while (a++ <= b && it != ass->Line.end()) {
+			modification_type |= modification_mask(&*it);
+			delete &*it++;
 		}
-
-		lines.erase(lines.begin() + a, lines.end());
+		last_entry_ptr = deref(ass->Line, it);
 	}
 
 	void LuaAssFile::ObjectAppend(lua_State *L)
@@ -511,26 +543,12 @@ namespace Automation4 {
 			lua_pushvalue(L, i);
 			AssEntry *e = LuaToAssEntry(L);
 			modification_type |= modification_mask(e);
-
-			// Find the appropriate place to put it
-			auto it = lines.end();
-			if (!lines.empty()) {
-				do {
-					--it;
-				}
-				while (it != lines.begin() && (*it)->Group() != e->Group());
-			}
-
-			if (it == lines.end() || (*it)->Group() != e->Group()) {
-				// The new entry belongs to a group that doesn't exist yet, so
-				// create it at the end of the file
-				lines.push_back(e);
-			}
-			else {
-				// Append the entry to the end of the existing group
-				lines.insert(++it, e);
-			}
+			ass->InsertLine(e);
 		}
+
+		// If last_entry_ptr is pointing at the end of the file then last_entry_id is wrong
+		if (!last_entry_ptr)
+			last_entry_id += n;
 	}
 
 	void LuaAssFile::ObjectInsert(lua_State *L)
@@ -538,27 +556,18 @@ namespace Automation4 {
 		CheckAllowModify();
 
 		int before = luaL_checkinteger(L, 1);
-
-		// + 1 to allow appending at the end of the file
-		luaL_argcheck(L, before > 0 && before <= (int)lines.size() + 1, 1,
-			"Out of range line index");
-
-		if (before == (int)lines.size() + 1) {
-			lua_remove(L, 1);
-			ObjectAppend(L);
-			return;
-		}
+		SeekCursorTo(before, true);
 
 		int n = lua_gettop(L);
-		std::vector<AssEntry *> new_entries(n - 1, nullptr);
 		for (int i = 2; i <= n; i++) {
 			lua_pushvalue(L, i);
 			AssEntry *e = LuaToAssEntry(L);
 			modification_type |= modification_mask(e);
-			new_entries[i - 2] = e;
+			ass->Line.insert(ref(ass->Line, last_entry_ptr), *e);
 			lua_pop(L, 1);
 		}
-		lines.insert(lines.begin() + before - 1, new_entries.begin(), new_entries.end());
+
+		last_entry_id += n - 1;
 	}
 
 	void LuaAssFile::ObjectGarbageCollect(lua_State *L)
@@ -610,8 +619,6 @@ namespace Automation4 {
 
 		if (modification_type) {
 			InvokeOnMainThread([=] {
-				ass->Line.clear();
-				boost::push_back(ass->Line, lines | boost::adaptors::indirected);
 				ass->Commit(wxString(luaL_checkstring(L, 1), wxConvUTF8), modification_type);
 			});
 
@@ -629,10 +636,6 @@ namespace Automation4 {
 	void LuaAssFile::ProcessingComplete(wxString const& undo_description)
 	{
 		// Commit any changes after the last undo point was set
-		if (modification_type) {
-			ass->Line.clear();
-			boost::push_back(ass->Line, lines | boost::adaptors::indirected);
-		}
 		if (modification_type && can_set_undo && !undo_description.empty())
 			ass->Commit(undo_description, modification_type);
 
@@ -642,9 +645,8 @@ namespace Automation4 {
 
 	void LuaAssFile::Cancel(wxString const& undo_description)
 	{
+		// Revert any changes after the last undo point was set
 		if (modification_type && can_set_undo && !undo_description.empty()) {
-			ass->Line.clear();
-			boost::push_back(ass->Line, lines | boost::adaptors::indirected);
 			ass->Commit(undo_description, modification_type);
 			ass->Undo();
 		}
@@ -660,10 +662,9 @@ namespace Automation4 {
 	, can_set_undo(can_set_undo)
 	, modification_type(0)
 	, references(2)
+	, last_entry_ptr(deref(ass->Line, ass->Line.begin()))
+	, last_entry_id(1)
 	{
-		for (auto& line : ass->Line)
-			lines.push_back(&line);
-
 		// prepare userdata object
 		*static_cast<LuaAssFile**>(lua_newuserdata(L, sizeof(LuaAssFile*))) = this;
 

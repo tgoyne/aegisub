@@ -50,12 +50,6 @@ namespace Automation4 {
 	/// @class LuaAssFile
 	/// @brief Object wrapping an AssFile object for modification through Lua
 	class LuaAssFile {
-		struct PendingCommit {
-			wxString mesage;
-			int modification_type;
-			std::vector<AssEntry*> lines;
-		};
-
 		/// Pointer to file being modified
 		AssFile *ass;
 
@@ -68,8 +62,6 @@ namespace Automation4 {
 		bool can_set_undo;
 		/// throws an error if modification is disallowed
 		void CheckAllowModify();
-		/// throws an error if the line index is out of bounds
-		void CheckBounds(int idx);
 
 		/// How ass file been modified by the script since the last commit
 		int modification_type;
@@ -78,8 +70,13 @@ namespace Automation4 {
 		/// calling C++ code are done with it
 		int references;
 
-		/// Set of subtitle lines being modified; initially a shallow copy of ass->Line
-		std::vector<AssEntry*> lines;
+		/// Cursor for last access into file
+		AssEntry *last_entry_ptr;
+		/// Index for last access into file
+		int last_entry_id;
+		/// Move last_entry_ptr to 1-based index n
+		/// @param allow_at_end Let last_entry_ptr point at end()
+		void SeekCursorTo(int n, bool allow_at_end=false);
 
 		int ObjectIndexRead(lua_State *L);
 		void ObjectIndexWrite(lua_State *L);
