@@ -955,7 +955,7 @@ namespace Automation4 {
 			lua_pop(L, 1);
 		}
 		catch (agi::UserCancelException const&) {
-			subsobj->Cancel();
+			subsobj->Cancel(StrDisplay(c));
 		}
 		stackcheck.check_stack(0);
 	}

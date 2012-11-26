@@ -80,10 +80,6 @@ namespace Automation4 {
 
 		/// Set of subtitle lines being modified; initially a shallow copy of ass->Line
 		std::vector<AssEntry*> lines;
-		/// Commits to apply once processing completes successfully
-		std::deque<PendingCommit> pending_commits;
-		/// Lines to delete once processing complete successfully
-		std::deque<AssEntry*> lines_to_delete;
 
 		int ObjectIndexRead(lua_State *L);
 		void ObjectIndexWrite(lua_State *L);
@@ -115,7 +111,7 @@ namespace Automation4 {
 		void ProcessingComplete(wxString const& undo_description = wxString());
 
 		/// End processing without applying any changes made
-		void Cancel();
+		void Cancel(wxString const& undo_description = wxString());
 
 		/// Constructor
 		/// @param L lua state

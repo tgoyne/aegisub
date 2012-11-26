@@ -435,7 +435,6 @@ namespace Automation4 {
 				AssEntry *e = LuaToAssEntry(L);
 				modification_type |= modification_mask(e);
 				CheckBounds(n);
-				lines_to_delete.push_back(lines[n - 1]);
 				lines[n - 1] = e;
 			}
 			else {
@@ -475,7 +474,6 @@ namespace Automation4 {
 		for (size_t i = 0; i < lines.size(); ++i) {
 			if (id_idx < ids.size() && ids[id_idx] == i) {
 				modification_type |= modification_mask(lines[i]);
-				lines_to_delete.push_back(lines[i]);
 				++id_idx;
 			}
 			else {
@@ -497,7 +495,6 @@ namespace Automation4 {
 
 		for (; b < lines.size(); ++a, ++b) {
 			modification_type |= modification_mask(lines[a]);
-			lines_to_delete.push_back(lines[a]);
 			lines[a] = lines[b];
 		}
 
@@ -612,12 +609,12 @@ namespace Automation4 {
 			luaL_error(L, "Attempt to set an undo point in a context where it makes no sense to do so.");
 
 		if (modification_type) {
-			pending_commits.emplace_back();
-			PendingCommit& back = pending_commits.back();
+			InvokeOnMainThread([=] {
+				ass->Line.clear();
+				boost::push_back(ass->Line, lines | boost::adaptors::indirected);
+				ass->Commit(wxString(luaL_checkstring(L, 1), wxConvUTF8), modification_type);
+			});
 
-			back.modification_type = modification_type;
-			back.mesage = wxString(luaL_checkstring(L, 1), wxConvUTF8);
-			back.lines = lines;
 			modification_type = 0;
 		}
 	}
@@ -631,13 +628,6 @@ namespace Automation4 {
 
 	void LuaAssFile::ProcessingComplete(wxString const& undo_description)
 	{
-		// Apply any pending commits
-		for (auto const& pc : pending_commits) {
-			ass->Line.clear();
-			boost::push_back(ass->Line, pc.lines | boost::adaptors::indirected);
-			ass->Commit(pc.mesage, pc.modification_type);
-		}
-
 		// Commit any changes after the last undo point was set
 		if (modification_type) {
 			ass->Line.clear();
@@ -646,14 +636,19 @@ namespace Automation4 {
 		if (modification_type && can_set_undo && !undo_description.empty())
 			ass->Commit(undo_description, modification_type);
 
-		delete_clear(lines_to_delete);
-
 		references--;
 		if (!references) delete this;
 	}
 
-	void LuaAssFile::Cancel()
+	void LuaAssFile::Cancel(wxString const& undo_description)
 	{
+		if (modification_type && can_set_undo && !undo_description.empty()) {
+			ass->Line.clear();
+			boost::push_back(ass->Line, lines | boost::adaptors::indirected);
+			ass->Commit(undo_description, modification_type);
+			ass->Undo();
+		}
+
 		references--;
 		if (!references) delete this;
 	}
