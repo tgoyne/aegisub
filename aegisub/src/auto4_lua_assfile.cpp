@@ -45,7 +45,6 @@
 #include <wx/log.h>
 
 #include <libaegisub/exception.h>
-#include <libaegisub/log.h>
 #include <libaegisub/scoped_ptr.h>
 
 #include "ass_dialogue.h"
@@ -58,48 +57,9 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 
-// This must be below the headers above.
-#ifdef __WINDOWS__
-#include "../../contrib/lua51/src/lualib.h"
-#include "../../contrib/lua51/src/lauxlib.h"
-#else
-#include <lua.hpp>
-#endif
+#include "auto4_lua_utils.h"
 
 namespace {
-	void push_value(lua_State *L, wxString const& value) {
-		lua_pushstring(L, value.utf8_str());
-	}
-
-	void push_value(lua_State *L, const char *value) {
-		lua_pushstring(L, value);
-	}
-
-	// Userdata object must be just above the target table
-	void push_value(lua_State *L, lua_CFunction value) {
-		assert(lua_type(L, -2) == LUA_TUSERDATA);
-		lua_pushvalue(L, -2);
-		lua_pushcclosure(L, value, 1);
-	}
-
-	void push_value(lua_State *L, bool value) {
-		lua_pushboolean(L, value);
-	}
-
-	void push_value(lua_State *L, double value) {
-		lua_pushnumber(L, value);
-	}
-
-	void push_value(lua_State *L, int value) {
-		lua_pushinteger(L, value);
-	}
-
-	template<typename T>
-	void set_field(lua_State *L, const char *name, T value) {
-		push_value(L, value);
-		lua_setfield(L, -2, name);
-	}
-
 	DEFINE_SIMPLE_EXCEPTION_NOINNER(BadField, Automation4::MacroRunError, "automation/macro/bad_field")
 	BadField bad_field(const char *expected_type, const char *name, const char *line_clasee)
 	{

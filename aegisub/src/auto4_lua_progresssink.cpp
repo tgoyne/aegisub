@@ -40,6 +40,8 @@
 
 #include <wx/filedlg.h>
 
+#include "auto4_lua_utils.h"
+
 #ifdef __WINDOWS__
 #include "../../contrib/lua51/src/lua.h"
 #include "../../contrib/lua51/src/lauxlib.h"
@@ -59,11 +61,6 @@ namespace {
 	{
 		lua_pushnil(L);
 		lua_setfield(L, idx, name);
-	}
-
-	inline wxString check_wxstring(lua_State *L, int idx)
-	{
-		return wxString(luaL_checkstring(L, idx), wxConvUTF8);
 	}
 }
 

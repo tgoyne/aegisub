@@ -87,6 +87,7 @@
     <ClInclude Include="$(SrcDir)ass_export_filter.h" />
     <ClInclude Include="$(SrcDir)ass_exporter.h" />
     <ClInclude Include="$(SrcDir)ass_file.h" />
+    <ClInclude Include="$(SrcDir)ass_info.h" />
     <ClInclude Include="$(SrcDir)ass_karaoke.h" />
     <ClInclude Include="$(SrcDir)ass_override.h" />
     <ClInclude Include="$(SrcDir)ass_parser.h" />
@@ -122,6 +123,7 @@
     <ClInclude Include="$(SrcDir)auto4_lua.h" />
     <ClInclude Include="$(SrcDir)auto4_lua_factory.h" />
     <ClInclude Include="$(SrcDir)auto4_lua_scriptreader.h" />
+    <ClInclude Include="$(SrcDir)auto4_lua_utils.h" />
     <ClInclude Include="$(SrcDir)avisynth.h" />
     <ClInclude Include="$(SrcDir)avisynth_wrap.h" />
     <ClInclude Include="$(SrcDir)base_grid.h" />
@@ -255,7 +257,6 @@
     <ClInclude Include="$(SrcDir)visual_tool_rotatez.h" />
     <ClInclude Include="$(SrcDir)visual_tool_scale.h" />
     <ClInclude Include="$(SrcDir)visual_tool_vector_clip.h" />
-    <ClInclude Include="$(SrcDir)ass_info.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)aegisublocale.cpp" />
