@@ -267,6 +267,14 @@ namespace {
 		set_field(L, "set", clipboard_set);
 		return 1;
 	}
+
+	int call_command(lua_State *L)
+	{
+		std::string cmd_name(luaL_checkstring(L, 1));
+		agi::Context *c = const_cast<agi::Context *>(get_context(L));
+		InvokeOnMainThread([&]() { cmd::call(cmd_name, c); });
+		return 0;
+	}
 }
 
 namespace Automation4 {
@@ -801,6 +809,11 @@ namespace Automation4 {
 		set_context(L, c);
 		stackcheck.check_stack(0);
 
+		lua_getglobal(L, "aegisub");
+		set_field(L, "call", call_command);
+		lua_pop(L, 1);
+		stackcheck.check_stack(0);
+
 		GetFeatureFunction("run");
 		LuaAssFile *subsobj = new LuaAssFile(L, c->ass, true, true);
 		lua_pushinteger(L, transform_selection(L, c));
@@ -876,6 +889,12 @@ namespace Automation4 {
 		catch (agi::UserCancelException const&) {
 			subsobj->Cancel(StrDisplay(c));
 		}
+		stackcheck.check_stack(0);
+
+		lua_getglobal(L, "aegisub");
+		lua_pushnil(L);
+		lua_setfield(L, -2, "call");
+		lua_pop(L, 1);
 		stackcheck.check_stack(0);
 	}
 
