@@ -231,6 +231,11 @@ void AssFile::LoadDefault(bool defline) {
 
 	Line.push_back(*new AssStyle);
 
+	wxStopWatch sw;
+	for (size_t i = 0; i < 100000; ++i)
+		delete new AssStyle(wxS("Style: Default,Arial,20,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,2,9999,0,0,1"));
+	wxMessageBox(wxString::Format("%d ms", sw.Time()));
+
 	if (defline)
 		Line.push_back(*new AssDialogue);
 
