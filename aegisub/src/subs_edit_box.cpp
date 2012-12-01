@@ -49,6 +49,7 @@
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "command/command.h"
+#include "compat.h"
 #include "dialog_search_replace.h"
 #include "include/aegisub/context.h"
 #include "include/aegisub/hotkey.h"
@@ -259,7 +260,7 @@ void SubsEditBox::OnCommit(int type) {
 	if (type == AssFile::COMMIT_NEW || type & AssFile::COMMIT_STYLES) {
 		wxString style = StyleBox->GetValue();
 		StyleBox->Clear();
-		StyleBox->Append(c->ass->GetStyles());
+		StyleBox->Append(to_wx(c->ass->GetStyles()));
 		StyleBox->Select(StyleBox->FindString(style));
 	}
 

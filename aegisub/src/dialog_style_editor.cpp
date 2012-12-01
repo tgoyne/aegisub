@@ -64,6 +64,8 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 /// Style rename helper that walks a file searching for a style and optionally
 /// updating references to it
 class StyleRenamer {
@@ -417,16 +419,16 @@ wxString DialogStyleEditor::GetStyleName() const {
 
 void DialogStyleEditor::Apply(bool apply, bool close) {
 	if (apply) {
-		wxString newStyleName = StyleName->GetValue();
+		std::string newStyleName(from_wx(StyleName->GetValue()));
 
 		// Get list of existing styles
-		wxArrayString styles = store ? store->GetNames() : c->ass->GetStyles();
+		std::vector<std::string> styles = store ? store->GetNames() : c->ass->GetStyles();
 
 		// Check if style name is unique
 		for (auto const& style_name : styles) {
-			if (newStyleName.CmpNoCase(style_name) == 0) {
+			if (boost::iequals(newStyleName, style_name)) {
 				if ((store && store->GetStyle(style_name) != style) || (!store && c->ass->GetStyle(style_name) != style)) {
-					wxMessageBox("There is already a style with this name. Please choose another name.", "Style name conflict.", wxOK | wxICON_ERROR | wxCENTER);
+					wxMessageBox(_("There is already a style with this name. Please choose another name."), _("Style name conflict."), wxOK | wxICON_ERROR | wxCENTER);
 					return;
 				}
 			}

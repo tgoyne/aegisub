@@ -47,7 +47,6 @@
 #include <tuple>
 #include <vector>
 
-
 // Boost
 #include <boost/container/list.hpp>
 #include <boost/container/map.hpp>

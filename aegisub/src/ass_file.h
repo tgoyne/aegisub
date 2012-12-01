@@ -35,11 +35,8 @@
 #include <boost/container/list.hpp>
 
 #include <set>
+#include <string>
 #include <vector>
-
-#include <wx/arrstr.h>
-
-#include <boost/intrusive/list.hpp>
 
 #include <libaegisub/signal.h>
 
@@ -100,11 +97,11 @@ public:
 	/// Attach a file to the ass file
 	void InsertAttachment(wxString filename);
 	/// Get the names of all of the styles available
-	wxArrayString GetStyles() const;
+	std::vector<std::string> GetStyles() const;
 	/// @brief Get a style by name
 	/// @param name Style name
 	/// @return Pointer to style or nullptr
-	AssStyle *GetStyle(wxString const& name);
+	AssStyle *GetStyle(std::string const& name);
 
 	void swap(AssFile &) throw();
 

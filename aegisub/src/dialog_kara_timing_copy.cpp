@@ -53,6 +53,7 @@
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_karaoke.h"
+#include "compat.h"
 #include "help_button.h"
 #include "include/aegisub/context.h"
 #include "kana_table.h"
@@ -638,7 +639,7 @@ DialogKanjiTimer::DialogKanjiTimer(agi::Context *c)
 	Interpolate = new wxCheckBox(this,-1,_("Attempt to &interpolate kanji."),wxDefaultPosition,wxDefaultSize,wxALIGN_LEFT);
 	Interpolate->SetValue(OPT_GET("Tool/Kanji Timer/Interpolation")->GetBool());
 
-	wxArrayString styles = subs->GetStyles();
+	wxArrayString styles = to_wx(subs->GetStyles());
 	SourceStyle = new wxComboBox(this, -1, "", wxDefaultPosition, wxSize(160, -1), styles, wxCB_READONLY);
 	DestStyle = new wxComboBox(this, -1, "", wxDefaultPosition, wxSize(160, -1), styles, wxCB_READONLY);
 

@@ -67,6 +67,8 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 using std::placeholders::_1;
 
 namespace {
@@ -110,11 +112,11 @@ wxSizer *make_edit_buttons(wxWindow *parent, wxString move_label, wxButton **mov
 }
 
 template<class Func>
-wxString unique_name(Func name_checker, wxString const& source_name) {
+wxString unique_name(Func name_checker, std::string const& source_name) {
 	if (name_checker(source_name)) {
-		wxString name = wxString::Format(_("%s - Copy"), source_name);
+		std::string name = from_wx(wxString::Format(_("%s - Copy"), to_wx(source_name)));
 		for (int i = 2; name_checker(name); ++i)
-			name = wxString::Format(_("%s - Copy (%d)"), source_name, i);
+			name = from_wx(wxString::Format(_("%s - Copy (%d)"), to_wx(source_name), i));
 		return name;
 	}
 	return source_name;
@@ -406,8 +408,8 @@ void DialogStyleManager::OnCopyToStorage() {
 	for (int i = 0; i < n; i++) {
 		wxString styleName = CurrentList->GetString(selections[i]);
 
-		if (AssStyle *style = Store.GetStyle(styleName)) {
-			if (wxYES == wxMessageBox(wxString::Format(_("There is already a style with the name \"%s\" in the current storage. Overwrite?"),styleName), _("Style name collision."), wxYES_NO)) {
+		if (AssStyle *style = Store.GetStyle(from_wx(styleName))) {
+			if (wxYES == wxMessageBox(wxString::Format(_("There is already a style with the name \"%s\" in the current storage. Overwrite?"), styleName), _("Style name collision."), wxYES_NO)) {
 				*style = *styleMap.at(selections[i]);
 				copied.push_back(styleName);
 			}
@@ -435,7 +437,7 @@ void DialogStyleManager::OnCopyToCurrent() {
 		bool addStyle = true;
 
 		for (auto style = styleMap.begin(); style != styleMap.end(); ++style) {
-			if ((*style)->name.CmpNoCase(styleName) == 0) {
+			if (boost::iequals((*style)->name, from_wx(styleName))) {
 				addStyle = false;
 				if (wxYES == wxMessageBox(wxString::Format(_("There is already a style with the name \"%s\" in the current script. Overwrite?"), styleName), _("Style name collision"), wxYES_NO)) {
 					**style = *Store[selections[i]];
@@ -590,7 +592,8 @@ void DialogStyleManager::OnCurrentImport() {
 	}
 
 	// Get styles
-	wxArrayString styles = temp.GetStyles();
+	std::vector<std::string> styles = temp.GetStyles();
+	wxArrayString wxStyles(to_wx(styles));
 	if (styles.empty()) {
 		wxMessageBox(_("The selected file has no available styles."), _("Error Importing Styles"));
 		return;
@@ -598,26 +601,22 @@ void DialogStyleManager::OnCurrentImport() {
 
 	// Get selection
 	wxArrayInt selections;
-	int res = GetSelectedChoices(this, selections, _("Choose styles to import:"), _("Import Styles"), styles);
+	int res = GetSelectedChoices(this, selections, _("Choose styles to import:"), _("Import Styles"), wxStyles);
 	if (res == -1 || selections.empty()) return;
 	bool modified = false;
 
 	// Loop through selection
 	for (auto const& sel : selections) {
 		// Check if there is already a style with that name
-		int test = CurrentList->FindString(styles[sel], false);
+		int test = CurrentList->FindString(wxStyles[sel], false);
 		if (test != wxNOT_FOUND) {
 			int answer = wxMessageBox(
 				wxString::Format(_("There is already a style with the name \"%s\" in the current script. Overwrite?"), styles[sel]),
 				_("Style name collision"),
 				wxYES_NO);
 			if (answer == wxYES) {
-				// Overwrite
 				modified = true;
-				// The result of GetString is used rather than the name
-				// itself to deal with that AssFile::GetStyle is
-				// case-sensitive, but style names are case insensitive
-				*c->ass->GetStyle(CurrentList->GetString(test)) = *temp.GetStyle(styles[sel]);
+				*c->ass->GetStyle(styles[sel]) = *temp.GetStyle(styles[sel]);
 			}
 			continue;
 		}

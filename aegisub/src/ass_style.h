@@ -33,8 +33,7 @@
 ///
 
 #include <array>
-
-#include <wx/colour.h>
+#include <string>
 
 #include "ass_entry.h"
 
@@ -42,8 +41,8 @@
 
 class AssStyle : public AssEntry {
 public:
-	wxString name;   ///< Name of the style; must be case-insensitively unique within a file despite being case-sensitive
-	wxString font;   ///< Font face name
+	std::string name;   ///< Name of the style; must be case-insensitively unique within a file despite being case-sensitive
+	std::string font;   ///< Font face name
 	double fontsize; ///< Font size
 
 	agi::Color primary;   ///< Default text color
@@ -74,7 +73,7 @@ public:
 	static void GetEncodings(wxArrayString &encodingStrings);
 
 	AssStyle();
-	AssStyle(wxString data, int version=1);
+	AssStyle(wxString const& data, int version=1);
 
 	wxString GetSSAText() const override;
 	AssEntryGroup Group() const override { return ENTRY_STYLE; }

@@ -44,6 +44,8 @@
 #include "text_file_writer.h"
 #include "utils.h"
 
+#include <boost/algorithm/string/predicate.hpp>
+
 AssStyleStorage::~AssStyleStorage() {
 	delete_clear(style);
 }
@@ -92,16 +94,16 @@ void AssStyleStorage::Delete(int idx) {
 	style.erase(style.begin() + idx);
 }
 
-wxArrayString AssStyleStorage::GetNames() {
-	wxArrayString names;
+std::vector<std::string> AssStyleStorage::GetNames() {
+	std::vector<std::string> names;
 	for (const AssStyle *cur : style)
-		names.Add(cur->name);
+		names.push_back(cur->name);
 	return names;
 }
 
-AssStyle *AssStyleStorage::GetStyle(wxString const& name) {
+AssStyle *AssStyleStorage::GetStyle(std::string const& name) {
 	for (AssStyle *cur : style) {
-		if (cur->name.CmpNoCase(name) == 0)
+		if (boost::iequals(name, cur->name))
 			return cur;
 	}
 	return 0;

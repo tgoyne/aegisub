@@ -71,6 +71,10 @@
 #include "subtitle_format.h"
 #include "utils.h"
 
+#ifdef _WIN32
+#include <libaegisub/charset_conv_win.h>
+#endif
+
 namespace Automation4 {
 	bool CalculateTextExtents(AssStyle *style, wxString const& text, double &width, double &height, double &descent, double &extlead)
 	{
@@ -97,7 +101,7 @@ namespace Automation4 {
 		lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
 		lf.lfQuality = ANTIALIASED_QUALITY;
 		lf.lfPitchAndFamily = DEFAULT_PITCH|FF_DONTCARE;
-		wcsncpy(lf.lfFaceName, style->font.wc_str(), 32);
+		wcsncpy(lf.lfFaceName, agi::charset::ConvertW(style->font).c_str(), 32);
 
 		HFONT thefont = CreateFontIndirect(&lf);
 		if (!thefont) return false;

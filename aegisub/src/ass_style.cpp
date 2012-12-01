@@ -34,15 +34,18 @@
 
 #include "config.h"
 
-#include <cctype>
-
-#include <wx/intl.h>
-#include <wx/tokenzr.h>
-
 #include "ass_style.h"
 #include "compat.h"
 #include "subtitle_format.h"
 #include "utils.h"
+
+#include <algorithm>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/lexical_cast.hpp>
+#include <cctype>
+
+#include <wx/intl.h>
 
 AssStyle::AssStyle()
 : AssEntry(wxString())
@@ -70,63 +73,101 @@ AssStyle::AssStyle()
 	UpdateData();
 }
 
-static wxString get_next_string(wxStringTokenizer &tok) {
-	if (!tok.HasMoreTokens()) throw SubtitleFormatParseError("Malformed style: not enough fields", 0);
-	return tok.GetNextToken();
-}
+class parser {
+	std::string str;
+	std::vector<boost::iterator_range<std::string::iterator>> tkns;
+	size_t tkn_idx;
 
-static int get_next_int(wxStringTokenizer &tok) {
-	long temp;
-	if (!get_next_string(tok).ToLong(&temp))
-		throw SubtitleFormatParseError("Malformed style: could not parse int field", 0);
-	return temp;
-}
+	boost::iterator_range<std::string::iterator>& next_tok() {
+		if (tkn_idx >= tkns.size())
+			throw SubtitleFormatParseError("Malformed style: not enough fields", 0);
+		return tkns[tkn_idx++];
+	}
 
-static double get_next_double(wxStringTokenizer &tok) {
-	double temp;
-	if (!get_next_string(tok).ToDouble(&temp))
-		throw SubtitleFormatParseError("Malformed style: could not parse double field", 0);
-	return temp;
-}
+public:
+	parser(wxString const& str)
+	: str(from_wx(str.AfterFirst(':')))
+	, tkn_idx(0)
+	{
+		split(tkns, this->str, [](char c) { return c == ','; });
+	}
 
-AssStyle::AssStyle(wxString rawData, int version)
+	~parser() {
+		if (tkn_idx != tkns.size())
+			throw SubtitleFormatParseError("Malformed style: too many fields", 0);
+	}
+
+	std::string next_str() {
+		auto tkn = trim_copy(next_tok());
+		return std::string(begin(tkn), end(tkn));
+	}
+
+	agi::Color next_color() {
+		auto &tkn = next_tok();
+		return std::string(begin(tkn), end(tkn));
+	}
+
+	int next_int() {
+		try {
+			return boost::lexical_cast<int>(next_tok());
+		}
+		catch (boost::bad_lexical_cast const&) {
+			throw SubtitleFormatParseError("Malformed style: bad int field", 0);
+		}
+	}
+
+	double next_double() {
+		try {
+			return boost::lexical_cast<double>(next_tok());
+		}
+		catch (boost::bad_lexical_cast const&) {
+			throw SubtitleFormatParseError("Malformed style: bad double field", 0);
+		}
+	}
+
+	void skip_token() {
+		++tkn_idx;
+	}
+};
+
+AssStyle::AssStyle(wxString const& rawData, int version)
 : AssEntry(wxString())
 {
-	wxStringTokenizer tkn(rawData.Trim(false).Mid(6), ",", wxTOKEN_RET_EMPTY_ALL);
+	parser p(rawData);
 
-	name = get_next_string(tkn).Trim(true).Trim(false);
-	font = get_next_string(tkn).Trim(true).Trim(false);
-	fontsize = get_next_double(tkn);
+	name = p.next_str();
+	font = p.next_str();
+	fontsize = p.next_double();
 
 	if (version != 0) {
-		primary = from_wx(get_next_string(tkn));
-		secondary = from_wx(get_next_string(tkn));
-		outline = from_wx(get_next_string(tkn));
-		shadow = from_wx(get_next_string(tkn));
+		primary = p.next_color();
+		secondary = p.next_color();
+		outline = p.next_color();
+		shadow = p.next_color();
 	}
 	else {
-		primary = from_wx(get_next_string(tkn));
-		secondary = from_wx(get_next_string(tkn));
+		primary = p.next_color();
+		secondary = p.next_color();
 
-		// Read and discard tertiary color
-		get_next_string(tkn);
+		// Skip tertiary color
+		p.skip_token();
 
 		// Read shadow/outline color
-		outline = from_wx(get_next_string(tkn));
+		outline = p.next_color();
 		shadow = outline;
 	}
 
-	bold = !!get_next_int(tkn);
-	italic = !!get_next_int(tkn);
+	bold = !!p.next_int();
+	italic = !!p.next_int();
 
 	if (version != 0) {
-		underline = !!get_next_int(tkn);
-		strikeout = !!get_next_int(tkn);
+		underline = !!p.next_int();
+		strikeout = !!p.next_int();
 
-		scalex = get_next_double(tkn);
-		scaley = get_next_double(tkn);
-		spacing = get_next_double(tkn);
-		angle = get_next_double(tkn);
+		scalex = p.next_double();
+		scaley = p.next_double();
+		spacing = p.next_double();
+		angle = p.next_double();
 	}
 	else {
 		// SSA defaults
@@ -139,51 +180,46 @@ AssStyle::AssStyle(wxString rawData, int version)
 		angle = 0.0;
 	}
 
-	borderstyle = get_next_int(tkn);
-	outline_w = get_next_double(tkn);
-	shadow_w = get_next_double(tkn);
-	alignment = get_next_int(tkn);
+	borderstyle = p.next_int();
+	outline_w = p.next_double();
+	shadow_w = p.next_double();
+	alignment = p.next_int();
 
 	if (version == 0)
 		alignment = SsaToAss(alignment);
 
-	// Read left margin
-	Margin[0] = mid(0, get_next_int(tkn), 9999);
-
-	// Read right margin
-	Margin[1] = mid(0, get_next_int(tkn), 9999);
-
-	// Read vertical margin
-	Margin[2] = mid(0, get_next_int(tkn), 9999);
+	Margin[0] = mid(0, p.next_int(), 9999);
+	Margin[1] = mid(0, p.next_int(), 9999);
+	Margin[2] = mid(0, p.next_int(), 9999);
 
 	// Skip alpha level
 	if (version == 0)
-		get_next_string(tkn);
+		p.skip_token();
 
-	// Read encoding
-	encoding = get_next_int(tkn);
-
-	if (tkn.HasMoreTokens())
-		throw SubtitleFormatParseError("Malformed style: too many fields", 0);
+	encoding = p.next_int();
 
 	UpdateData();
 }
 
 void AssStyle::UpdateData() {
-	name.Replace(",", ";");
-	font.Replace(",", ";");
+	replace(begin(name), end(name), ',', ';');
+	replace(begin(font), end(font), ',', ';');
 
-	SetEntryData(wxString::Format("Style: %s,%s,%g,%s,%s,%s,%s,%d,%d,%d,%d,%g,%g,%g,%g,%d,%g,%g,%i,%i,%i,%i,%i",
-		name, font, fontsize,
-		primary.GetAssStyleFormatted(),
-		secondary.GetAssStyleFormatted(),
-		outline.GetAssStyleFormatted(),
-		shadow.GetAssStyleFormatted(),
-		(bold? -1 : 0), (italic ? -1 : 0),
-		(underline?-1:0),(strikeout?-1:0),
-		scalex,scaley,spacing,angle,
-		borderstyle,outline_w,shadow_w,alignment,
-		Margin[0],Margin[1],Margin[2],encoding));
+	char buff[8192];
+
+	sprintf(buff, "Style: %s,%s,%g,%s,%s,%s,%s,%d,%d,%d,%d,%g,%g,%g,%g,%d,%g,%g,%i,%i,%i,%i,%i",
+		name.c_str(), font.c_str(), fontsize,
+		primary.GetAssStyleFormatted().c_str(),
+		secondary.GetAssStyleFormatted().c_str(),
+		outline.GetAssStyleFormatted().c_str(),
+		shadow.GetAssStyleFormatted().c_str(),
+		(bold? -1 : 0),  (italic ? -1 : 0),
+		(underline ? -1 : 0), (strikeout ? -1 : 0),
+		scalex, scaley, spacing, angle,
+		borderstyle, outline_w, shadow_w, alignment,
+		Margin[0], Margin[1], Margin[2], encoding);
+
+	SetEntryData(wxString::FromUTF8(buff));
 }
 
 wxString AssStyle::GetSSAText() const {

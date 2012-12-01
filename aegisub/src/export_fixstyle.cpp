@@ -41,6 +41,7 @@
 
 #include "ass_file.h"
 #include "ass_dialogue.h"
+#include "compat.h""
 
 #include <libaegisub/of_type_adaptor.h>
 
@@ -50,7 +51,7 @@ AssFixStylesFilter::AssFixStylesFilter()
 }
 
 void AssFixStylesFilter::ProcessSubs(AssFile *subs, wxWindow *) {
-	wxArrayString styles = subs->GetStyles();
+	wxArrayString styles = to_wx(subs->GetStyles());
 	for_each(styles.begin(), styles.end(), std::mem_fun_ref(&wxString::MakeLower));
 	styles.Sort();
 
