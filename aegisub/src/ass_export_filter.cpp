@@ -34,12 +34,16 @@
 
 #include "config.h"
 
-#include <algorithm>
-
 #include "ass_export_filter.h"
+
+#include <algorithm>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/format.hpp>
+
+#include "compat.h"
 #include "utils.h"
 
-AssExportFilter::AssExportFilter(wxString const& name, wxString const& description, int priority, bool auto_apply)
+AssExportFilter::AssExportFilter(std::string const& name, std::string const& description, int priority, bool auto_apply)
 : name(name)
 , priority(priority)
 , description(description)
@@ -49,13 +53,13 @@ AssExportFilter::AssExportFilter(wxString const& name, wxString const& descripti
 
 void AssExportFilterChain::Register(AssExportFilter *filter) {
 	// Remove pipes from name
-	filter->name.Replace("|", "");
+	boost::replace_all(filter->name, "|", "");
 
 	int filter_copy = 1;
-	wxString name = filter->name;
+	std::string name = filter->name;
 	// Find a unique name
 	while (GetFilter(name))
-		name = wxString::Format("%s (%d)", filter->name, filter_copy++);
+		name = str(boost::format("%s (%d)") % filter->name % filter_copy++);
 
 	filter->name = name;
 
@@ -69,7 +73,7 @@ void AssExportFilterChain::Register(AssExportFilter *filter) {
 void AssExportFilterChain::Unregister(AssExportFilter *filter) {
 	auto it = remove(begin(*filters()), end(*filters()), filter);
 	if (it == end(*filters()))
-		throw wxString::Format("Unregister export filter: name \"%s\" is not registered.", filter->name);
+		throw wxString::Format("Unregister export filter: name \"%s\" is not registered.", to_wx(filter->name));
 
 	filters()->pop_back();
 }
@@ -87,7 +91,7 @@ void AssExportFilterChain::Clear() {
 	delete_clear(*filters());
 }
 
-AssExportFilter *AssExportFilterChain::GetFilter(wxString const& name) {
+AssExportFilter *AssExportFilterChain::GetFilter(std::string const& name) {
 	for (auto filter : *filters()) {
 		if (filter->name == name)
 			return filter;

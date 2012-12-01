@@ -38,12 +38,6 @@
 
 #include "command.h"
 
-#include <wx/clipbrd.h>
-#include <wx/filedlg.h>
-#include <wx/filename.h>
-#include <wx/msgdlg.h>
-#include <wx/textdlg.h>
-
 #include "../ass_dialogue.h"
 #include "../ass_time.h"
 #include "../compat.h"
@@ -64,6 +58,14 @@
 #include "../video_display.h"
 #include "../video_frame.h"
 #include "../video_slider.h"
+
+#include <boost/algorimth/string/predicate.hpp>
+
+#include <wx/clipbrd.h>
+#include <wx/filedlg.h>
+#include <wx/filename.h>
+#include <wx/msgdlg.h>
+#include <wx/textdlg.h>
 
 namespace {
 	using cmd::Command;
@@ -472,38 +474,35 @@ struct video_frame_prev_large : public validator_video_loaded {
 };
 
 static void save_snapshot(agi::Context *c, bool raw) {
-	static const agi::OptionValue* ssPath = OPT_GET("Path/Screenshot");
-	wxString option = lagi_wxString(ssPath->GetString());
-	wxFileName videoFile(c->videoController->GetVideoName());
-	wxString basepath;
+	std::string path = OPT_GET("Path/Screenshot")->GetString();
 
 	// Is it a path specifier and not an actual fixed path?
-	if (option[0] == '?') {
-		// If dummy video is loaded, we can't save to the video location
-		if (option.StartsWith("?video") && (c->videoController->GetVideoName().Find("?dummy") != wxNOT_FOUND)) {
-			// So try the script location instead
-			option = "?script";
-		}
+	if (boost::starts_with(path, "?") {
+		// If dummy video is loaded, we can't save to the video location so use the script location instead
+		if (boost::starts_with(path, "?video") && boost::starts_with(path, "?dummy"))
+			path = "?script";
+
 		// Find out where the ?specifier points to
-		basepath = StandardPaths::DecodePath(option);
+		path = StandardPaths::DecodePath(path);
 		// If where ever that is isn't defined, we can't save there
-		if ((basepath == "\\") || (basepath == "/")) {
+		if ((path == "\\") || (path == "/")) {
 			// So save to the current user's home dir instead
-			basepath = wxGetHomeDir();
+			path = from_wx(wxGetHomeDir());
 		}
 	}
 	// Actual fixed (possibly relative) path, decode it
-	else basepath = DecodeRelativePath(option,StandardPaths::DecodePath("?user/"));
-	basepath += "/" + videoFile.GetName();
+	else
+		path = DecodeRelativePath(path, StandardPaths::DecodePath("?user/"));
+	path += "/" + wxFileName(c->videoController->GetVideoName()).GetName();
 
 	// Get full path
 	int session_shot_count = 1;
-	wxString path;
+	wxString final_path;
 	do {
-		path = wxString::Format("%s_%03d_%d.png", basepath, session_shot_count++, c->videoController->GetFrameN());
-	} while (wxFileName::FileExists(path));
+		final_path = wxString::Format("%s_%03d_%d.png", path, session_shot_count++, c->videoController->GetFrameN());
+	} while (wxFileName::FileExists(final_path));
 
-	c->videoController->GetFrame(c->videoController->GetFrameN(), raw)->GetImage().SaveFile(path,wxBITMAP_TYPE_PNG);
+	c->videoController->GetFrame(c->videoController->GetFrameN(), raw)->GetImage().SaveFile(final_path, wxBITMAP_TYPE_PNG);
 }
 
 /// Save the current video frame, with subtitles (if any)

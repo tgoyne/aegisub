@@ -153,7 +153,7 @@ std::vector<std::string> HunspellSpellChecker::GetLanguageList() {
 		wxDir::GetAllFiles(path, &dic, "*.dic", wxDIR_FILES);
 		wxDir::GetAllFiles(path, &aff, "*.aff", wxDIR_FILES);
 	}
-	path = StandardPaths::DecodePath(to_wx(OPT_GET("Path/Dictionary")->GetString()) + "/");
+	path = StandardPaths::DecodePath(OPT_GET("Path/Dictionary")->GetString()) + "/";
 	if (wxFileName::DirExists(path)) {
 		wxDir::GetAllFiles(path, &dic, "*.dic", wxDIR_FILES);
 		wxDir::GetAllFiles(path, &aff, "*.aff", wxDIR_FILES);
@@ -191,7 +191,7 @@ void HunspellSpellChecker::OnLanguageChanged() {
 	std::string language = OPT_GET("Tool/Spell Checker/Language")->GetString();
 	if (language.empty()) return;
 
-	wxString custDicRoot = StandardPaths::DecodePath(to_wx(OPT_GET("Path/Dictionary")->GetString()));
+	wxString custDicRoot = StandardPaths::DecodePath(OPT_GET("Path/Dictionary")->GetString());
 	wxString dataDicRoot = StandardPaths::DecodePath("?data/dictionaries");
 
 	// If the user has a dic/aff pair in their dictionary path for this language

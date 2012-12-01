@@ -37,19 +37,12 @@
 #include "ass_export_filter.h"
 #include "ass_exporter.h"
 #include "ass_file.h"
+#include "compat.h"
 #include "include/aegisub/context.h"
 
 #include <libaegisub/scoped_ptr.h>
 
 #include <algorithm>
-
-static inline FilterList::const_iterator filter_list_begin() {
-	return AssExportFilterChain::GetFilterList()->begin();
-}
-
-static inline FilterList::const_iterator filter_list_end() {
-	return AssExportFilterChain::GetFilterList()->end();
-}
 
 AssExporter::AssExporter(agi::Context *c)
 : c(c)
@@ -79,10 +72,10 @@ void AssExporter::DrawSettings(wxWindow *parent, wxSizer *target_sizer) {
 	}
 }
 
-void AssExporter::AddFilter(wxString const& name) {
+void AssExporter::AddFilter(std::string const& name) {
 	AssExportFilter *filter = AssExportFilterChain::GetFilter(name);
 
-	if (!filter) throw wxString::Format("Filter not found: %s", name);
+	if (!filter) throw wxString::Format("Filter not found: %s", to_wx(name));
 
 	filters.push_back(filter);
 }
@@ -96,8 +89,8 @@ void AssExporter::AddAutoFilters() {
 
 wxArrayString AssExporter::GetAllFilterNames() const {
 	wxArrayString names;
-	transform(filter_list_begin(), filter_list_end(),
-		std::back_inserter(names), std::mem_fun(&AssExportFilter::GetName));
+	for (auto filter : *AssExportFilterChain::GetFilterList())
+		names.push_back(to_wx(filter->GetName()));
 	return names;
 }
 
@@ -112,20 +105,20 @@ AssFile *AssExporter::ExportTransform(wxWindow *export_dialog, bool copy) {
 	return subs;
 }
 
-void AssExporter::Export(wxString const& filename, wxString const& charset, wxWindow *export_dialog) {
+void AssExporter::Export(std::string const& filename, std::string const& charset, wxWindow *export_dialog) {
 	agi::scoped_ptr<AssFile> subs(ExportTransform(export_dialog, true));
 	subs->Save(filename, false, false, charset);
 }
 
-wxSizer *AssExporter::GetSettingsSizer(wxString const& name) {
-	std::map<wxString, wxSizer*>::iterator pos = Sizers.find(name);
+wxSizer *AssExporter::GetSettingsSizer(std::string const& name) {
+	auto pos = Sizers.find(name);
 	if (pos == Sizers.end()) return 0;
 	return pos->second;
 }
 
-wxString const& AssExporter::GetDescription(wxString const& name) const {
+std::string const& AssExporter::GetDescription(std::string const& name) const {
 	AssExportFilter *filter = AssExportFilterChain::GetFilter(name);
 	if (filter)
 		return filter->GetDescription();
-	throw wxString::Format("Filter not found: %s", name);
+	throw wxString::Format("Filter not found: %s", to_wx(name));
 }

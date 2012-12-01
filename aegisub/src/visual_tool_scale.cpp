@@ -20,11 +20,11 @@
 
 #include "config.h"
 
-#include <cmath>
-
 #include "visual_tool_scale.h"
 
 #include "utils.h"
+
+#include <cmath>
 
 VisualToolScale::VisualToolScale(VideoDisplay *parent, agi::Context *context)
 : VisualTool<VisualDraggableFeature>(parent, context)
@@ -103,8 +103,8 @@ void VisualToolScale::UpdateHold() {
 	if (ctrl_down)
 		scale = scale.Round(25.f);
 
-	SetSelectedOverride("\\fscx", wxString::Format("%d", (int)scale.X()));
-	SetSelectedOverride("\\fscy", wxString::Format("%d", (int)scale.Y()));
+	SetSelectedOverride("\\fscx", std::to_string((int)scale.X()));
+	SetSelectedOverride("\\fscy", std::to_string((int)scale.Y()));
 }
 
 void VisualToolScale::DoRefresh() {

@@ -45,7 +45,7 @@ class AvisynthVideoProvider: public VideoProvider {
 	agi::vfr::Framerate fps;
 	std::vector<int> KeyFrames;
 	wxString warning;
-	wxString colorspace;
+	std::string colorspace;
 
 	PClip RGB32Video;
 	VideoInfo vi;
@@ -68,6 +68,6 @@ public:
 	std::vector<int> GetKeyFrames() const { return KeyFrames; };
 	wxString GetWarning() const { return warning; }
 	wxString GetDecoderName() const { return decoderName; }
-	wxString GetColorSpace() const { return colorspace; }
+	std::string GetColorSpace() const { return colorspace; }
 };
 #endif

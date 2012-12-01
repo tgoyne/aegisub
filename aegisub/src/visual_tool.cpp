@@ -21,6 +21,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <boost/format.hpp>
 
 #include "visual_tool.h"
 
@@ -359,7 +360,7 @@ void VisualTool<FeatureType>::RemoveSelection(feature_iterator feat) {
 typedef const std::vector<AssOverrideParameter*> * param_vec;
 
 // Find a tag's parameters in a line or return nullptr if it's not found
-static param_vec find_tag(boost::ptr_vector<AssDialogueBlock>& blocks, wxString tag_name) {
+static param_vec find_tag(boost::ptr_vector<AssDialogueBlock>& blocks, std::string tag_name) {
 	for (auto ovr : blocks | agi::of_type<AssDialogueBlockOverride>()) {
 		for (auto tag : ovr->Tags) {
 			if (tag->Name == tag_name)
@@ -511,7 +512,7 @@ void VisualToolBase::GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, 
 	}
 }
 
-wxString VisualToolBase::GetLineVectorClip(AssDialogue *diag, int &scale, bool &inverse) {
+std::string VisualToolBase::GetLineVectorClip(AssDialogue *diag, int &scale, bool &inverse) {
 	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
 
 	scale = 1;
@@ -524,37 +525,38 @@ wxString VisualToolBase::GetLineVectorClip(AssDialogue *diag, int &scale, bool &
 		tag = find_tag(blocks, "\\clip");
 
 	if (tag && tag->size() == 4) {
-		return wxString::Format("m %d %d l %d %d %d %d %d %d",
-			(*tag)[0]->Get<int>(), (*tag)[1]->Get<int>(),
-			(*tag)[2]->Get<int>(), (*tag)[1]->Get<int>(),
-			(*tag)[2]->Get<int>(), (*tag)[3]->Get<int>(),
-			(*tag)[0]->Get<int>(), (*tag)[3]->Get<int>());
+		return str(boost::format("m %d %d l %d %d %d %d %d %d")
+			% (*tag)[0]->Get<int>() % (*tag)[1]->Get<int>()
+			% (*tag)[2]->Get<int>() % (*tag)[1]->Get<int>()
+			% (*tag)[2]->Get<int>() % (*tag)[3]->Get<int>()
+			% (*tag)[0]->Get<int>() % (*tag)[3]->Get<int>());
 	}
 	if (tag) {
 		scale = std::max((*tag)[0]->Get(scale), 1);
-		return (*tag)[1]->Get<wxString>("");
+		return (*tag)[1]->Get<std::string>("");
 	}
 
 	return "";
 }
 
-void VisualToolBase::SetSelectedOverride(wxString const& tag, wxString const& value) {
+void VisualToolBase::SetSelectedOverride(std::string const& tag, std::string const& value) {
 	for (auto line : c->selectionController->GetSelectedSet())
 		SetOverride(line, tag, value);
 }
 
-void VisualToolBase::SetOverride(AssDialogue* line, wxString const& tag, wxString const& value) {
+void VisualToolBase::SetOverride(AssDialogue* line, std::string const& tag, std::string const& value) {
 	if (!line) return;
 
-	wxString removeTag;
-	if (tag == "\\1c") removeTag = "\\c";
-	else if (tag == "\\frz") removeTag = "\\fr";
-	else if (tag == "\\pos") removeTag = "\\move";
-	else if (tag == "\\move") removeTag = "\\pos";
-	else if (tag == "\\clip") removeTag = "\\iclip";
-	else if (tag == "\\iclip") removeTag = "\\clip";
+	const std::string remove_tag =
+		tag == "\\1c"    ? "\\c"     :
+		tag == "\\frz"   ? "\\fr"    :
+		tag == "\\pos"   ? "\\move"  :
+		tag == "\\move"  ? "\\pos"   :
+		tag == "\\clip"  ? "\\iclip" :
+		tag == "\\iclip" ? "\\clip"  :
+		                   "";
 
-	wxString insert = tag + value;
+	const std::string insert = tag + value;
 
 	// Get block at start
 	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
@@ -568,8 +570,8 @@ void VisualToolBase::SetOverride(AssDialogue* line, wxString const& tag, wxStrin
 	else if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride*>(block)) {
 		// Remove old of same
 		for (size_t i = 0; i < ovr->Tags.size(); i++) {
-			wxString const& name = ovr->Tags[i]->Name;
-			if (tag == name || removeTag == name) {
+			std::string const& name = ovr->Tags[i]->Name;
+			if (tag == name || remove_tag == name) {
 				delete ovr->Tags[i];
 				ovr->Tags.erase(ovr->Tags.begin() + i);
 				i--;

@@ -36,6 +36,10 @@
 
 #include "standard_paths.h"
 
+#include "compat.h"
+
+#include <boost/algorithm/string/replace.hpp>
+
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
 
@@ -53,10 +57,10 @@ StandardPaths::StandardPaths() {
    static_cast<wxStandardPaths&>(paths).SetInstallPrefix(wxT(INSTALL_PREFIX));
 #endif
 
-	DoSetPathValue("?data", paths.GetDataDir());
-	DoSetPathValue("?user", paths.GetUserDataDir());
-	DoSetPathValue("?local", paths.GetUserLocalDataDir());
-	DoSetPathValue("?temp", paths.GetTempDir());
+	DoSetPathValue("?data", from_wx(paths.GetDataDir()));
+	DoSetPathValue("?user", from_wx(paths.GetUserDataDir()));
+	DoSetPathValue("?local", from_wx(paths.GetUserLocalDataDir()));
+	DoSetPathValue("?temp", from_wx(paths.GetTempDir()));
 
 	// Create paths if they don't exist
 	if (!wxDirExists(paths.GetUserDataDir()))
@@ -65,31 +69,25 @@ StandardPaths::StandardPaths() {
 		wxMkDir(paths.GetUserLocalDataDir(), 0777);
 }
 
-wxString StandardPaths::DoDecodePath(wxString path) {
-	if (!path || path[0] != '?')
+std::string StandardPaths::DoDecodePath(std::string path) {
+	if (path.empty() || path[0] != '?')
 		return path;
 
 	// Split ?part from rest
-	path.Replace("\\","/");
-	int pos = path.Find("/");
-	wxString path1,path2;
-	if (pos == wxNOT_FOUND) path1 = path;
-	else {
-		path1 = path.Left(pos);
-		path2 = path.Mid(pos+1);
-	}
+	replace(begin(path), end(path), '\\', '/');
+	auto pos = find(begin(path), end(path), '/');
 
 	// Replace ?part if valid
-	std::map<wxString,wxString>::iterator iter = paths.find(path1);
+	auto iter = paths.find(std::string(begin(path), pos));
 	if (iter == paths.end()) return path;
-	wxString final = iter->second + "/" + path2;
-	final.Replace("//","/");
+	std::string final = iter->second + "/" + std::string(pos + 1, end(path));
+	boost::replace_all(final, "//", "/");
 #ifdef WIN32
-	final.Replace("/","\\");
+	replace(begin(final), end(final), '/', '\\');
 #endif
 	return final;
 }
 
-void StandardPaths::DoSetPathValue(const wxString &path, const wxString &value) {
+void StandardPaths::DoSetPathValue(const std::string &path, const std::string &value) {
 	paths[path] = value;
 }

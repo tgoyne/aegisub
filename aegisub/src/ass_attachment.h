@@ -43,10 +43,10 @@ class AssAttachment : public AssEntry {
 	std::shared_ptr<std::vector<char> > data;
 
 	/// Encoded data which has been read from the script but not yet decoded
-	wxString buffer;
+	std::string buffer;
 
 	/// Name of the attached file, with SSA font mangling if it is a ttf
-	wxString filename;
+	std::string filename;
 
 	AssEntryGroup group;
 
@@ -56,25 +56,25 @@ public:
 
 	/// Add a line of data (without newline) read from a subtitle file to the
 	/// buffer waiting to be decoded
-	void AddData(wxString const& data) { buffer += data; }
+	void AddData(std::string const& data) { buffer += data; }
 	/// Decode all data passed with AddData
 	void Finish();
 
 	/// Extract the contents of this attachment to a file
 	/// @param filename Path to save the attachment to
-	void Extract(wxString const& filename) const;
+	void Extract(std::string const& filename) const;
 
 	/// Import the contents of a file as an attachment
 	/// @param filename Path to import
-	void Import(wxString const& filename);
+	void Import(std::string const& filename);
 
 	/// Get the name of the attached file
 	/// @param raw If false, remove the SSA filename mangling
-	wxString GetFileName(bool raw=false) const;
+	std::string GetFileName(bool raw=false) const;
 
-	const wxString GetEntryData() const override;
+	const std::string GetEntryData() const override;
 	AssEntryGroup Group() const override { return group; }
 	AssEntry *Clone() const override;
 
-	AssAttachment(wxString const& name, AssEntryGroup group);
+	AssAttachment(std::string const& name, AssEntryGroup group);
 };

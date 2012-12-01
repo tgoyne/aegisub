@@ -34,14 +34,6 @@
 
 #include "config.h"
 
-#include <algorithm>
-
-#include <wx/bmpbuttn.h>
-#include <wx/fontenum.h>
-#include <wx/msgdlg.h>
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_override.h"
@@ -64,7 +56,19 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <algorithm>
 #include <boost/algorithm/string/predicate.hpp>
+
+#include <wx/bmpbuttn.h>
+#include <wx/checkbox.h>
+#include <wx/combobox.h>
+#include <wx/fontenum.h>
+#include <wx/msgdlg.h>
+#include <wx/radiobox.h>
+#include <wx/sizer.h>
+#include <wx/spinctrl.h>
+#include <wx/stattext.h>
+#include <wx/textctrl.h>
 
 /// Style rename helper that walks a file searching for a style and optionally
 /// updating references to it
@@ -72,13 +76,13 @@ class StyleRenamer {
 	agi::Context *c;
 	bool found_any;
 	bool do_replace;
-	wxString source_name;
-	wxString new_name;
+	std::string source_name;
+	std::string new_name;
 
 	/// Process a single override parameter to check if it's \r with this style name
-	static void ProcessTag(wxString const& tag, AssOverrideParameter* param, void *userData) {
+	static void ProcessTag(std::string const& tag, AssOverrideParameter* param, void *userData) {
 		StyleRenamer *self = static_cast<StyleRenamer*>(userData);
-		if (tag == "\\r" && param->GetType() == VARDATA_TEXT && param->Get<wxString>() == self->source_name) {
+		if (tag == "\\r" && param->GetType() == VARDATA_TEXT && param->Get<std::string>() == self->source_name) {
 			if (self->do_replace)
 				param->Set(self->new_name);
 			else
@@ -109,7 +113,7 @@ class StyleRenamer {
 	}
 
 public:
-	StyleRenamer(agi::Context *c, wxString const& source_name, wxString const& new_name)
+	StyleRenamer(agi::Context *c, std::string const& source_name, std::string const& new_name)
 	: c(c)
 	, found_any(false)
 	, do_replace(false)
@@ -143,7 +147,7 @@ static wxTextCtrl *num_text_ctrl(wxWindow *parent, double value, wxSize size = w
 	return new wxTextCtrl(parent, -1, "", wxDefaultPosition, size, 0, NumValidator(value));
 }
 
-DialogStyleEditor::DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Context *c, AssStyleStorage *store, wxString const& new_name)
+DialogStyleEditor::DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Context *c, AssStyleStorage *store, std::string const& new_name)
 : wxDialog (parent, -1, _("Style Editor"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 , c(c)
 , is_new(false)
@@ -329,7 +333,7 @@ DialogStyleEditor::DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Con
 	PreviewText = nullptr;
 	ColourButton *previewButton = 0;
 	if (!SubtitlesProviderFactory::GetClasses().empty()) {
-		PreviewText = new wxTextCtrl(this, -1, lagi_wxString(OPT_GET("Tool/Style Editor/Preview Text")->GetString()));
+		PreviewText = new wxTextCtrl(this, -1, to_wx(OPT_GET("Tool/Style Editor/Preview Text")->GetString()));
 		previewButton = new ColourButton(this, -1, wxSize(45, 16), OPT_GET("Colour/Style Editor/Background/Preview")->GetColor());
 		SubsPreview = new SubtitlesPreview(this, wxSize(100, 60), wxSUNKEN_BORDER, OPT_GET("Colour/Style Editor/Background/Preview")->GetColor());
 
@@ -413,7 +417,7 @@ DialogStyleEditor::~DialogStyleEditor() {
 		delete style;
 }
 
-wxString DialogStyleEditor::GetStyleName() const {
+std::string DialogStyleEditor::GetStyleName() const {
 	return style->name;
 }
 
@@ -546,13 +550,12 @@ void DialogStyleEditor::OnChildFocus(wxChildFocusEvent &event) {
 	event.Skip();
 }
 
-void DialogStyleEditor::OnPreviewTextChange (wxCommandEvent &event) {
-	SubsPreview->SetText(PreviewText->GetValue());
+void DialogStyleEditor::OnPreviewTextChange(wxCommandEvent &event) {
+	SubsPreview->SetText(from_wx(PreviewText->GetValue()));
 	event.Skip();
 }
 
-/// @brief Change colour of preview's background
-void DialogStyleEditor::OnPreviewColourChange (wxCommandEvent &evt) {
+void DialogStyleEditor::OnPreviewColourChange(wxCommandEvent &evt) {
 	ColourButton *btn = static_cast<ColourButton*>(evt.GetClientData());
 	if (!btn)
 		evt.Skip();
@@ -562,16 +565,14 @@ void DialogStyleEditor::OnPreviewColourChange (wxCommandEvent &evt) {
 	}
 }
 
-/// @brief Command event to update preview
-void DialogStyleEditor::OnCommandPreviewUpdate (wxCommandEvent &event) {
+void DialogStyleEditor::OnCommandPreviewUpdate(wxCommandEvent &event) {
 	if (!IsShownOnScreen()) return;
 	UpdateWorkStyle();
 	SubsPreview->SetStyle(*work);
 	event.Skip();
 }
 
-/// @brief Converts control value to alignment
-int DialogStyleEditor::ControlToAlign (int n) {
+int DialogStyleEditor::ControlToAlign(int n) {
 	switch (n) {
 		case 0: return 7;
 		case 1: return 8;
@@ -586,8 +587,7 @@ int DialogStyleEditor::ControlToAlign (int n) {
 	}
 }
 
-/// @brief Converts alignment value to control
-int DialogStyleEditor::AlignToControl (int n) {
+int DialogStyleEditor::AlignToControl(int n) {
 	switch (n) {
 		case 7: return 0;
 		case 8: return 1;

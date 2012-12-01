@@ -100,7 +100,7 @@ void Thesaurus::OnLanguageChanged() {
 	std::string language = OPT_GET("Tool/Thesaurus/Language")->GetString();
 	if (language.empty()) return;
 
-	wxString path = StandardPaths::DecodePath(lagi_wxString(OPT_GET("Path/Dictionary")->GetString()) + "/");
+	wxString path = StandardPaths::DecodePath(to_wx(OPT_GET("Path/Dictionary")->GetString()) + "/");
 
 	// Get index and data paths
 	wxString idxpath = wxString::Format("%s/th_%s.idx", path, language);

@@ -36,14 +36,17 @@
 #include "dialog_style_manager.h"
 
 #include <algorithm>
+#include <boost/format.hpp>
 #include <functional>
 
 #include <wx/bmpbuttn.h>
-#include <wx/clipbrd.h>
+#include <wx/button.h>
+#include <wx/combobox.h>
 #include <wx/dir.h>
 #include <wx/filedlg.h>
 #include <wx/filename.h>
 #include <wx/intl.h>
+#include <wx/listbox.h>
 #include <wx/msgdlg.h>
 #include <wx/textdlg.h>
 #include <wx/tokenzr.h>
@@ -112,11 +115,11 @@ wxSizer *make_edit_buttons(wxWindow *parent, wxString move_label, wxButton **mov
 }
 
 template<class Func>
-wxString unique_name(Func name_checker, std::string const& source_name) {
+std::string unique_name(Func name_checker, std::string const& source_name) {
 	if (name_checker(source_name)) {
-		std::string name = from_wx(wxString::Format(_("%s - Copy"), to_wx(source_name)));
+		std::string name = str(boost::format(from_wx(_("%s - Copy"))) % source_name);
 		for (int i = 2; name_checker(name); ++i)
-			name = from_wx(wxString::Format(_("%s - Copy (%d)"), to_wx(source_name), i));
+			name = str(boost::format(from_wx(_("%s - Copy (%d)"))) % source_name % i);
 		return name;
 	}
 	return source_name;
@@ -127,7 +130,7 @@ void add_styles(Func1 name_checker, Func2 style_adder) {
 	wxStringTokenizer st(GetClipboard(), '\n');
 	while (st.HasMoreTokens()) {
 		try {
-			AssStyle *s = new AssStyle(st.GetNextToken().Trim(true));
+			AssStyle *s = new AssStyle(from_wx(st.GetNextToken().Trim(true)));
 			s->name = unique_name(name_checker, s->name);
 			style_adder(s);
 		}
@@ -313,7 +316,7 @@ void DialogStyleManager::UpdateStorage() {
 }
 
 void DialogStyleManager::OnChangeCatalog() {
-	c->ass->SetScriptInfo("Last Style Storage", CatalogList->GetStringSelection());
+	c->ass->SetScriptInfo("Last Style Storage", from_wx(CatalogList->GetStringSelection()));
 	Store.Load(CatalogList->GetStringSelection());
 	UpdateStorage();
 }
@@ -340,11 +343,11 @@ void DialogStyleManager::LoadCatalog() {
 	}
 
 	// Set to default if available
-	wxString pickStyle = c->ass->GetScriptInfo("Last Style Storage");
+	std::string pickStyle = c->ass->GetScriptInfo("Last Style Storage");
 	if (pickStyle.empty())
 		pickStyle = "Default";
 
-	int opt = CatalogList->FindString(pickStyle, false);
+	int opt = CatalogList->FindString(from_wx(pickStyle), false);
 	if (opt != wxNOT_FOUND)
 		CatalogList->SetSelection(opt);
 	else
@@ -470,7 +473,7 @@ void DialogStyleManager::CopyToClipboard(wxListBox *list, T const& v) {
 		if (i) data += "\r\n";
 		AssStyle *s = v[selections[i]];
 		s->UpdateData();
-		data += s->GetEntryData();
+		data += to_wx(s->GetEntryData());
 	}
 
 	SetClipboard(data);
@@ -494,7 +497,7 @@ void DialogStyleManager::PasteToStorage() {
 	UpdateButtons();
 }
 
-void DialogStyleManager::ShowStorageEditor(AssStyle *style, wxString const& new_name) {
+void DialogStyleManager::ShowStorageEditor(AssStyle *style, std::string const& new_name) {
 	DialogStyleEditor editor(this, style, c, &Store, new_name);
 	if (editor.ShowModal()) {
 		UpdateStorage();
@@ -532,7 +535,7 @@ void DialogStyleManager::OnStorageDelete() {
 	}
 }
 
-void DialogStyleManager::ShowCurrentEditor(AssStyle *style, wxString const& new_name) {
+void DialogStyleManager::ShowCurrentEditor(AssStyle *style, std::string const& new_name) {
 	DialogStyleEditor editor(this, style, c, 0, new_name);
 	if (editor.ShowModal()) {
 		CurrentList->DeselectAll();
@@ -573,18 +576,18 @@ void DialogStyleManager::OnCurrentDelete() {
 
 void DialogStyleManager::OnCurrentImport() {
 	// Get file name
-	wxString path = lagi_wxString(OPT_GET("Path/Last/Subtitles")->GetString());
+	wxString path = to_wx(OPT_GET("Path/Last/Subtitles")->GetString());
 	wxString filename = wxFileSelector(_("Open subtitles file"),path,"","",SubtitleFormat::GetWildcards(0),wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 	if (!filename) return;
 
-	OPT_SET("Path/Last/Subtitles")->SetString(STD_STR(wxFileName(filename).GetPath()));
+	OPT_SET("Path/Last/Subtitles")->SetString(from_wx(wxFileName(filename).GetPath()));
 
 	AssFile temp;
 	try {
-		temp.Load(filename);
+		temp.Load(from_wx(filename));
 	}
 	catch (agi::Exception const& err) {
-		wxMessageBox(lagi_wxString(err.GetChainedMessage()), "Error", wxOK | wxICON_ERROR | wxCENTER, this);
+		wxMessageBox(to_wx(err.GetChainedMessage()), "Error", wxOK | wxICON_ERROR | wxCENTER, this);
 	}
 	catch (...) {
 		wxMessageBox("Unknown error", "Error", wxOK | wxICON_ERROR | wxCENTER, this);

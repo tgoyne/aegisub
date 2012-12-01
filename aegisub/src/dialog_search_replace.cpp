@@ -243,7 +243,6 @@ void SearchReplaceEngine::FindNext() {
 	ReplaceNext(false);
 }
 
-
 void SearchReplaceEngine::ReplaceNext(bool DoReplace) {
 	if (!CanContinue) {
 		OpenDialog(DoReplace);
@@ -475,7 +474,7 @@ void SearchReplaceEngine::OpenDialog (bool replace) {
 	hasReplace = replace;
 }
 
-wxString *SearchReplaceEngine::GetText(AssDialogue *cur, int field) {
+std::string *SearchReplaceEngine::GetText(AssDialogue *cur, int field) {
 	if (field == 0) return &cur->Text;
 	else if (field == 1) return &cur->Style;
 	else if (field == 2) return &cur->Actor;

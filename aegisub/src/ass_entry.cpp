@@ -36,8 +36,10 @@
 
 #include "ass_entry.h"
 
-wxString AssEntry::GetSSAText() const {
-	if (data.Lower() == "scripttype: v4.00+") return "ScriptType: v4.00";
+#include <boost/algorithm/string/case_conv.hpp>
+
+std::string AssEntry::GetSSAText() const {
+	if (boost::to_lower_copy(data) == "scripttype: v4.00+") return "ScriptType: v4.00";
 	return GetEntryData();
 }
 
@@ -45,8 +47,8 @@ AssEntry *AssEntry::Clone() const {
 	return new AssEntry(data);
 }
 
-wxString const& AssEntry::GroupHeader(bool ssa) const {
-	static wxString ass_headers[] = {
+std::string const& AssEntry::GroupHeader(bool ssa) const {
+	static std::string ass_headers[] = {
 		"[Script Info]",
 		"[Events]",
 		"[V4+ Styles]",
@@ -55,7 +57,7 @@ wxString const& AssEntry::GroupHeader(bool ssa) const {
 		""
 	};
 
-	static wxString ssa_headers[] = {
+	static std::string ssa_headers[] = {
 		"[Script Info]",
 		"[Events]",
 		"[V4 Styles]",

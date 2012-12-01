@@ -69,5 +69,5 @@ public:
 	std::vector<int> GetKeyFrames() const { return master->GetKeyFrames(); }
 	wxString GetWarning() const           { return master->GetWarning(); }
 	wxString GetDecoderName() const       { return master->GetDecoderName(); }
-	wxString GetColorSpace() const        { return master->GetColorSpace(); }
+	std::string GetColorSpace() const     { return master->GetColorSpace(); }
 };

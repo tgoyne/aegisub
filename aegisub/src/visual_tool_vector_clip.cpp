@@ -190,15 +190,15 @@ void VisualToolVectorClip::MakeFeatures() {
 }
 
 void VisualToolVectorClip::Save() {
-	wxString value = "(";
+	std::string value = "(";
 	if (spline.GetScale() != 1)
-		value += wxString::Format("%d,", spline.GetScale());
+		value += std::to_string(spline.GetScale()) + ",";
 	value += spline.EncodeToAss() + ")";
 
 	for (auto line : c->selectionController->GetSelectedSet()) {
 		// This check is technically not correct as it could be outside of an
 		// override block... but that's rather unlikely
-		bool has_iclip = line->Text.find("\\iclip") != wxString::npos;
+		bool has_iclip = line->Text.find("\\iclip") != std::string::npos;
 		SetOverride(line, has_iclip ? "\\iclip" : "\\clip", value);
 	}
 }
@@ -388,7 +388,7 @@ void VisualToolVectorClip::UpdateHold() {
 void VisualToolVectorClip::DoRefresh() {
 	if (!active_line) return;
 
-	wxString vect;
+	std::string vect;
 	int scale;
 	vect = GetLineVectorClip(active_line, scale, inverse);
 	spline.SetScale(scale);

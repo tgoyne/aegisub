@@ -34,6 +34,16 @@
 
 #include "config.h"
 
+#include "export_framerate.h"
+
+#include "ass_dialogue.h"
+#include "ass_file.h"
+#include "ass_override.h"
+#include "compat.h"
+#include "include/aegisub/context.h"
+#include "utils.h"
+#include "video_context.h"
+
 #include <utility>
 
 #include <wx/button.h>
@@ -44,18 +54,10 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 
-#include "ass_dialogue.h"
-#include "ass_file.h"
-#include "ass_override.h"
-#include "export_framerate.h"
-#include "include/aegisub/context.h"
-#include "utils.h"
-#include "video_context.h"
-
 #include <libaegisub/of_type_adaptor.h>
 
 AssTransformFramerateFilter::AssTransformFramerateFilter()
-: AssExportFilter(_("Transform Framerate"), _("Transform subtitle times, including those in override tags, from an input framerate to an output framerate.\n\nThis is useful for converting regular time subtitles to VFRaC time subtitles for hardsubbing.\nIt can also be used to convert subtitles to a different speed video, such as NTSC to PAL speedup."), 1000)
+: AssExportFilter(from_wx(_("Transform Framerate")), from_wx(_("Transform subtitle times, including those in override tags, from an input framerate to an output framerate.\n\nThis is useful for converting regular time subtitles to VFRaC time subtitles for hardsubbing.\nIt can also be used to convert subtitles to a different speed video, such as NTSC to PAL speedup.")), 1000)
 , c(0)
 , line(0)
 , newStart(0)
@@ -168,7 +170,7 @@ int FORCEINLINE trunc_cs(int time) {
 	return (time / 10) * 10;
 }
 
-void AssTransformFramerateFilter::TransformTimeTags(wxString const& name, AssOverrideParameter *curParam, void *curData) {
+void AssTransformFramerateFilter::TransformTimeTags(std::string const&, AssOverrideParameter *curParam, void *curData) {
 	VariableDataType type = curParam->GetType();
 	if (type != VARDATA_INT && type != VARDATA_FLOAT) return;
 

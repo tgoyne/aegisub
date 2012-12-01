@@ -148,8 +148,8 @@ void VideoContext::SetVideo(const wxString &filename) {
 		// If the script resolution hasn't been set at all just force it to the
 		// video resolution
 		if (sx == 0 && sy == 0) {
-			context->ass->SetScriptInfo("PlayResX", wxString::Format("%d", vx));
-			context->ass->SetScriptInfo("PlayResY", wxString::Format("%d", vy));
+			context->ass->SetScriptInfo("PlayResX", vx);
+			context->ass->SetScriptInfo("PlayResY", vy);
 			commit_subs = true;
 		}
 		// If it has been set to something other than a multiple of the video
@@ -166,8 +166,8 @@ void VideoContext::SetVideo(const wxString &filename) {
 					break;
 				// Fallthrough to case 2
 			case 2: // Always change script res
-				context->ass->SetScriptInfo("PlayResX", wxString::Format("%d", vx));
-				context->ass->SetScriptInfo("PlayResY", wxString::Format("%d", vy));
+				context->ass->SetScriptInfo("PlayResX", vx);
+				context->ass->SetScriptInfo("PlayResY", vy);
 				commit_subs = true;
 				break;
 			default: // Never change
@@ -252,16 +252,16 @@ void VideoContext::OnSubtitlesSave() {
 		return;
 	}
 
-	wxString ar;
+	std::string ar;
 	if (arType == 4)
-		ar = wxString::Format("c%g", arValue);
+		ar = "c" + std::to_string(arValue);
 	else
-		ar = wxString::Format("%d", arType);
+		ar = std::to_string(arType);
 
-	context->ass->SetScriptInfo("Video File", MakeRelativePath(videoFile, context->ass->filename));
+	context->ass->SetScriptInfo("Video File", from_wx(MakeRelativePath(videoFile, to_wx(context->ass->filename))));
 	context->ass->SetScriptInfo("YCbCr Matrix", videoProvider->GetColorSpace());
 	context->ass->SetScriptInfo("Video Aspect Ratio", ar);
-	context->ass->SetScriptInfo("Video Position", wxString::Format("%d", frame_n));
+	context->ass->SetScriptInfo("Video Position", frame_n);
 }
 
 void VideoContext::JumpToFrame(int n) {

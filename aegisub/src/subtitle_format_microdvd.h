@@ -42,7 +42,7 @@ public:
 	wxArrayString GetWriteWildcards() const;
 
 	bool CanReadFile(wxString const& filename) const;
-	void ReadFile(AssFile *target, wxString const& filename, wxString const& forceEncoding) const;
+	void ReadFile(AssFile *target, std::string const& filename, std::string const& forceEncoding) const override;
 
-	void WriteFile(const AssFile *src, wxString const& filename, wxString const& encoding) const;
+	void WriteFile(const AssFile *src, std::string const& filename, std::string const& encoding) const override;
 };

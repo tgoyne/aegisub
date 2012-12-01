@@ -123,7 +123,7 @@ public:
 	/// Set the status bar text
 	/// @param text New status bar text
 	/// @param ms Time in milliseconds that the message should be visible
-	void StatusTimeout(wxString text,int ms=10000);
+	void StatusTimeout(wxString const& text, int ms=10000);
 
 	/// @brief Set the video and audio display visibility
 	/// @param video -1: leave unchanged; 0: hide; 1: show
@@ -137,7 +137,7 @@ public:
 	/// @param enableCancel Should the user be able to cancel the close?
 	int TryToCloseSubs(bool enableCancel=true);
 
-	void LoadSubtitles(wxString const& filename, wxString const& charset="");
+	void LoadSubtitles(std::string const& filename, std::string const& charset="");
 
 	DECLARE_EVENT_TABLE()
 };

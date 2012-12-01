@@ -29,21 +29,23 @@
 #include "include/aegisub/context.h"
 #include "selection_controller.h"
 
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/format.hpp>
 #include <wx/intl.h>
 
-wxString AssKaraoke::Syllable::GetText(bool k_tag) const {
-	wxString ret;
+std::string AssKaraoke::Syllable::GetText(bool k_tag) const {
+	std::string ret;
 
 	if (k_tag)
-		ret = wxString::Format("{%s%d}", tag_type, (duration + 5) / 10);
+		ret = str(boost::format("{%s%d}") % tag_type % ((duration + 5) / 10));
 
 	size_t idx = 0;
 	for (auto const& ovr : ovr_tags) {
-		ret += text.Mid(idx, ovr.first - idx);
+		ret.append(&text[idx], &text[ovr.first]);
 		ret += ovr.second;
 		idx = ovr.first;
 	}
-	ret += text.Mid(idx);
+	ret.append(&text[idx], &text[text.size()]);
 	return ret;
 }
 
@@ -92,7 +94,7 @@ void AssKaraoke::SetLine(AssDialogue *line, bool auto_split, bool normalize) {
 	if (auto_split && syls.size() == 1) {
 		size_t pos;
 		no_announce = true;
-		while ((pos = syls.back().text.find(' ')) != wxString::npos)
+		while ((pos = syls.back().text.find(' ')) != std::string::npos)
 			AddSplit(syls.size() - 1, pos + 1);
 		no_announce = false;
 	}
@@ -104,7 +106,7 @@ void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
 	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
 
 	for (auto& block : blocks) {
-		wxString text = block.GetText();
+		std::string text = block.GetText();
 
 		if (dynamic_cast<AssDialogueBlockPlain*>(&block)) {
 			// treat comments as overrides rather than dialogue
@@ -121,7 +123,7 @@ void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
 		else if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride*>(&block)) {
 			bool in_tag = false;
 			for (auto tag : ovr->Tags) {
-				if (tag->IsValid() && tag->Name.Left(2).Lower() == "\\k") {
+				if (tag->IsValid() && boost::istarts_with(tag->Name, "\\k")) {
 					if (in_tag) {
 						syl.ovr_tags[syl.text.size()] += "}";
 						in_tag = false;
@@ -143,10 +145,10 @@ void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
 					syl.duration = tag->Params[0]->Get(0) * 10;
 				}
 				else {
-					wxString& otext = syl.ovr_tags[syl.text.size()];
+					std::string& otext = syl.ovr_tags[syl.text.size()];
 					// Merge adjacent override tags
-					if (otext.size() && otext.Last() == '}')
-						otext.RemoveLast();
+					if (otext.size() && boost::ends_with(otext, "}"))
+						otext.resize(otext.size() - 1);
 					else if (!in_tag)
 						otext += "{";
 
@@ -156,15 +158,15 @@ void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
 			}
 
 			if (in_tag)
-				syl.ovr_tags[syl.text.size()] += "}";
+				syl.ovr_tags[syl.text.size()] += '}';
 		}
 	}
 
 	syls.push_back(syl);
 }
 
-wxString AssKaraoke::GetText() const {
-	wxString text;
+std::string AssKaraoke::GetText() const {
+	std::string text;
 	text.reserve(size() * 10);
 
 	for (auto const& syl : syls)
@@ -173,11 +175,11 @@ wxString AssKaraoke::GetText() const {
 	return text;
 }
 
-wxString AssKaraoke::GetTagType() const {
+std::string AssKaraoke::GetTagType() const {
 	return begin()->tag_type;
 }
 
-void AssKaraoke::SetTagType(wxString const& new_type) {
+void AssKaraoke::SetTagType(std::string const& new_type) {
 	for (auto& syl : syls)
 		syl.tag_type = new_type;
 }
@@ -191,8 +193,8 @@ void AssKaraoke::AddSplit(size_t syl_idx, size_t pos) {
 	// character then pos will be out of bounds. Doing this is a bit goofy,
 	// but it's sometimes required for complex karaoke scripts
 	if (pos < syl.text.size()) {
-		new_syl.text = syl.text.Mid(pos);
-		syl.text = syl.text.Left(pos);
+		new_syl.text = syl.text.substr(pos);
+		syl.text = syl.text.substr(0, pos);
 	}
 
 	if (new_syl.text.empty())
@@ -269,7 +271,7 @@ void AssKaraoke::SetLineTimes(int start_time, int end_time) {
 		syls[idx].duration = std::max(0, syls[idx].duration - delta);
 	} while (++idx < syls.size() && syls[idx].start_time < start_time);
 
-	// And truncate any syllabls ending after the new end_time
+	// And truncate any syllables ending after the new end_time
 	idx = syls.size() - 1;
 	while (syls[idx].start_time > end_time) {
 		syls[idx].start_time = end_time;

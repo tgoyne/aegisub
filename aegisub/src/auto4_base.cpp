@@ -186,7 +186,7 @@ namespace Automation4 {
 		return true;
 	}
 
-	ExportFilter::ExportFilter(wxString const& name, wxString const& description, int priority)
+	ExportFilter::ExportFilter(std::string const& name, std::string const& description, int priority)
 	: AssExportFilter(name, description, priority)
 	{
 		AssExportFilterChain::Register(this);
@@ -197,16 +197,16 @@ namespace Automation4 {
 		AssExportFilterChain::Unregister(this);
 	}
 
-	wxString ExportFilter::GetScriptSettingsIdentifier()
+	std::string ExportFilter::GetScriptSettingsIdentifier()
 	{
-		return inline_string_encode(wxString::Format("Automation Settings %s", GetName()));
+		return inline_string_encode("Automation Settings " + GetName());
 	}
 
 	wxWindow* ExportFilter::GetConfigDialogWindow(wxWindow *parent, agi::Context *c) {
 		config_dialog.reset(GenerateConfigDialog(parent, c));
 
 		if (config_dialog) {
-			wxString val = c->ass->GetScriptInfo(GetScriptSettingsIdentifier());
+			std::string val = c->ass->GetScriptInfo(GetScriptSettingsIdentifier());
 			if (!val.empty())
 				config_dialog->Unserialise(val);
 			return config_dialog->CreateWindow(parent);
@@ -217,7 +217,7 @@ namespace Automation4 {
 
 	void ExportFilter::LoadSettings(bool is_default, agi::Context *c) {
 		if (config_dialog) {
-			wxString val = config_dialog->Serialise();
+			std::string val = config_dialog->Serialise();
 			if (!val.empty())
 				c->ass->SetScriptInfo(GetScriptSettingsIdentifier(), val);
 		}
@@ -293,7 +293,7 @@ namespace Automation4 {
 		// copied from auto3
 		include_path.clear();
 		include_path.EnsureFileAccessible(filename);
-		wxStringTokenizer toker(lagi_wxString(OPT_GET("Path/Automation/Include")->GetString()), "|", wxTOKEN_STRTOK);
+		wxStringTokenizer toker(to_wx(OPT_GET("Path/Automation/Include")->GetString()), "|", wxTOKEN_STRTOK);
 		while (toker.HasMoreTokens()) {
 			// todo? make some error reporting here
 			wxFileName path(StandardPaths::DecodePath(toker.GetNextToken()));
@@ -417,7 +417,7 @@ namespace Automation4 {
 	{
 		delete_clear(scripts);
 
-		wxString local_scripts = context->ass->GetScriptInfo("Automation Scripts");
+		wxString local_scripts(to_wx(context->ass->GetScriptInfo("Automation Scripts")));
 		if (local_scripts.empty()) {
 			ScriptsChanged();
 			return;
@@ -464,17 +464,16 @@ namespace Automation4 {
 		// 2. Otherwise try making it relative to the ass filename
 		// 3. If step 2 failed, or absolute path is shorter than path relative to ass, use absolute path ("/")
 		// 4. Otherwise, use path relative to ass ("~")
-		wxString scripts_string;
-		wxString autobasefn(lagi_wxString(OPT_GET("Path/Automation/Base")->GetString()));
+		std::string scripts_string;
+		wxString autobasefn(to_wx(OPT_GET("Path/Automation/Base")->GetString()));
 
 		for (auto script : GetScripts()) {
 			if (!scripts_string.empty())
 				scripts_string += "|";
 
-			wxString autobase_rel, assfile_rel;
 			wxString scriptfn(script->GetFilename());
-			autobase_rel = MakeRelativePath(scriptfn, autobasefn);
-			assfile_rel = MakeRelativePath(scriptfn, context->ass->filename);
+			wxString autobase_rel = MakeRelativePath(scriptfn, autobasefn);
+			wxString assfile_rel = MakeRelativePath(scriptfn, to_wx(context->ass->filename));
 
 			if (autobase_rel.size() <= scriptfn.size() && autobase_rel.size() <= assfile_rel.size()) {
 				scriptfn = "$" + autobase_rel;
@@ -484,13 +483,13 @@ namespace Automation4 {
 				scriptfn = "/" + wxFileName(scriptfn).GetFullPath(wxPATH_UNIX);
 			}
 
-			scripts_string += scriptfn;
+			scripts_string += from_wx(scriptfn);
 		}
 		context->ass->SetScriptInfo("Automation Scripts", scripts_string);
 	}
 
 	// ScriptFactory
-	ScriptFactory::ScriptFactory(wxString engine_name, wxString filename_pattern)
+	ScriptFactory::ScriptFactory(wxString const& engine_name, wxString const& filename_pattern)
 	: engine_name(engine_name)
 	, filename_pattern(filename_pattern)
 	{

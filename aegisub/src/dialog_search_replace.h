@@ -59,7 +59,7 @@ class SearchReplaceEngine {
 	wxString LookFor;
 	wxString ReplaceWith;
 
-	wxString *GetText(AssDialogue *cur, int field);
+	std::string *GetText(AssDialogue *cur, int field);
 
 public:
 	agi::Context *context;

@@ -34,13 +34,6 @@
 
 #include "config.h"
 
-#include <functional>
-
-#include <wx/clipbrd.h>
-#include <wx/intl.h>
-#include <wx/menu.h>
-#include <wx/settings.h>
-
 #include "subs_edit_ctrl.h"
 
 #include "ass_dialogue.h"
@@ -57,6 +50,14 @@
 #include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/calltip_provider.h>
 #include <libaegisub/spellchecker.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <functional>
+
+#include <wx/clipbrd.h>
+#include <wx/intl.h>
+#include <wx/menu.h>
+#include <wx/settings.h>
 
 /// Event ids
 enum {
@@ -212,7 +213,7 @@ void SubsTextEditCtrl::UpdateStyle() {
 	}
 
 	AssDialogue *diag = context ? context->selectionController->GetActiveLine() : 0;
-	bool template_line = diag && diag->Comment && diag->Effect.Lower().StartsWith("template");
+	bool template_line = diag && diag->Comment && boost::istarts_with(diag->Effect, "template");
 
 	tokenized_line = agi::ass::TokenizeDialogueBody(line_text, template_line);
 	agi::ass::SplitWords(line_text, tokenized_line);

@@ -90,12 +90,12 @@ struct AssOverrideParamProto {
 	/// Semantic type of this parameter
 	AssParameterClass classification;
 
-	AssOverrideParamProto (VariableDataType type, int opt=NOT_OPTIONAL, AssParameterClass classi=PARCLASS_NORMAL);
+	AssOverrideParamProto(VariableDataType type, int opt=NOT_OPTIONAL, AssParameterClass classi=PARCLASS_NORMAL);
 };
 
 struct AssOverrideTagProto {
 	/// Name of the tag, with slash
-	wxString name;
+	std::string name;
 	/// Parameters to this tag
 	std::vector<AssOverrideParamProto> params;
 	typedef std::vector<AssOverrideTagProto>::iterator iterator;
@@ -110,25 +110,25 @@ struct AssOverrideTagProto {
 	/// @param type Data type of the parameter
 	/// @param classi Semantic type of the parameter
 	/// @param opt Situations in which this parameter is present
-	void Set(wxString name, VariableDataType type, AssParameterClass classi = PARCLASS_NORMAL, int opt = NOT_OPTIONAL);
+	void Set(std::string const& name, VariableDataType type, AssParameterClass classi = PARCLASS_NORMAL, int opt = NOT_OPTIONAL);
 };
 
 class AssOverrideTag {
 	bool valid;
 
 public:
-	wxString Name;
-	std::vector<AssOverrideParameter*> Params;
+	std::string Name;
+	std::vector <AssOverrideParameter*> Params;
 
 	AssOverrideTag();
-	AssOverrideTag(wxString text);
+	AssOverrideTag(std::string const& text);
 	~AssOverrideTag();
 
 	bool IsValid() const { return valid; }
 	/// @brief Parses the parameters for the ass override tag
 	/// @param text All text between the name and the next \ or the end of the override block
-	void ParseParameters(const wxString &text, AssOverrideTagProto::iterator proto);
+	void ParseParameters(std::string const& text, AssOverrideTagProto::iterator proto);
 	void Clear();
-	void SetText(const wxString &text);
-	operator wxString() const;
+	void SetText(std::string const& text);
+	operator std::string() const;
 };

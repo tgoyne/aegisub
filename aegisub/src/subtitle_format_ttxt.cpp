@@ -64,12 +64,12 @@ wxArrayString TTXTSubtitleFormat::GetWriteWildcards() const {
 	return GetReadWildcards();
 }
 
-void TTXTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxString const& encoding) const {
+void TTXTSubtitleFormat::ReadFile(AssFile *target, std::string const& filename, std::string const&) const {
 	target->LoadDefault(false);
 
 	// Load XML document
 	wxXmlDocument doc;
-	if (!doc.Load(filename)) throw TTXTParseError("Failed loading TTXT XML file.", 0);
+	if (!doc.Load(to_wx(filename))) throw TTXTParseError("Failed loading TTXT XML file.", 0);
 
 	// Check root node name
 	if (doc.GetRoot()->GetName() != "TextStream") throw TTXTParseError("Invalid TTXT file.", 0);
@@ -96,9 +96,8 @@ void TTXTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxS
 			}
 		}
 		// Header
-		else if (child->GetName() == "TextStreamHeader") {
+		else if (child->GetName() == "TextStreamHeader")
 			ProcessHeader(child);
-		}
 	}
 
 	// No lines?

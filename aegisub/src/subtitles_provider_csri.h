@@ -36,6 +36,7 @@
 
 #include "include/aegisub/subtitles_provider.h"
 
+#include <string>
 #include <vector>
 
 #include <libaegisub/scoped_ptr.h>
@@ -53,7 +54,7 @@ class CSRISubtitlesProvider : public SubtitlesProvider {
 	bool can_open_mem;
 
 	/// Name of the file passed to renderers with can_open_mem false
-	wxString tempfile;
+	std::string tempfile;
 public:
 	CSRISubtitlesProvider(std::string subType);
 	~CSRISubtitlesProvider();

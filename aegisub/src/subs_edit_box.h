@@ -178,7 +178,7 @@ class SubsEditBox : public wxPanel {
 	void OnCommit(int type);
 
 	/// Regenerate a dropdown list with the unique values of a dialogue field
-	void PopulateList(wxComboBox *combo, wxString AssDialogue::*field);
+	void PopulateList(wxComboBox *combo, std::string AssDialogue::*field);
 
 	/// @brief Enable or disable frame timing mode
 	void UpdateFrameTiming(agi::vfr::Framerate const& fps);

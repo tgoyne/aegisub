@@ -89,6 +89,6 @@ public:
 	double GetDAR()                 const { return 0; }
 	agi::vfr::Framerate GetFPS()    const { return fps; }
 	std::vector<int> GetKeyFrames() const { return std::vector<int>(); }
-	wxString GetColorSpace()        const { return "None"; }
+	std::string GetColorSpace()     const { return "None"; }
 	wxString GetDecoderName()       const { return "Dummy Video Provider"; }
 };

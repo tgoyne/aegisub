@@ -34,8 +34,7 @@
 
 #include "config.h"
 
-#include <fstream>
-#include <list>
+#include "charset_detect.h"
 
 #include <wx/arrstr.h>
 #include <wx/choicdlg.h>
@@ -44,16 +43,15 @@
 #include <libaegisub/charset.h>
 #include <libaegisub/log.h>
 
-#include "charset_detect.h"
 #include "compat.h"
 
 namespace CharSetDetect {
 
-wxString GetEncoding(wxString const& filename) {
+std::string GetEncoding(std::string const& filename) {
 	agi::charset::CharsetListDetected list;
 
 	try {
-		list = agi::charset::DetectAll(from_wx(filename));
+		list = agi::charset::DetectAll(filename);
 	} catch (const agi::charset::UnknownCharset&) {
 		/// @todo If the charset is unknown we need to display a complete list of character sets.
 	}
@@ -76,7 +74,7 @@ wxString GetEncoding(wxString const& filename) {
 
 	int choice = wxGetSingleChoiceIndex(_("Aegisub could not narrow down the character set to a single one.\nPlease pick one below:"),_("Choose character set"),choices);
 	if (choice == -1) throw "Canceled";
-	return choices[choice];
+	return from_wx(choices[choice]);
 }
 
 }

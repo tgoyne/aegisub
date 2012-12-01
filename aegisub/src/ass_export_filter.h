@@ -35,13 +35,12 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
-
-#include <wx/string.h>
-#include <wx/window.h>
 
 class AssFile;
 class AssExportFilter;
+class wxWindow;
 
 namespace agi { struct Context; }
 
@@ -57,7 +56,7 @@ public:
 	/// Unregister and delete all export filters
 	static void Clear();
 	/// Get a filter by name or nullptr if it doesn't exist
-	static AssExportFilter *GetFilter(wxString const& name);
+	static AssExportFilter *GetFilter(std::string const& name);
 
 	/// Get the list of registered filters
 	static const FilterList *GetFilterList();
@@ -69,24 +68,24 @@ class AssExportFilter {
 	friend class AssExportFilterChain;
 
 	/// This filter's name
-	wxString name;
+	std::string name;
 
 	/// Higher priority = run earlier
 	int priority;
 
 	/// User-visible description of this filter
-	wxString description;
+	std::string description;
 
 	/// Should this filter be automatically applied when sending subtitles to
 	/// the renderer and exporting to non-ASS formats
 	bool auto_apply;
 
 public:
-	AssExportFilter(wxString const& name, wxString const& description, int priority = 0, bool auto_apply = false);
+	AssExportFilter(std::string const& name, std::string const& description, int priority = 0, bool auto_apply = false);
 	virtual ~AssExportFilter() { };
 
-	wxString const& GetName() const { return name; }
-	wxString const& GetDescription() const { return description; }
+	std::string const& GetName() const { return name; }
+	std::string const& GetDescription() const { return description; }
 	bool GetAutoApply() const { return auto_apply; }
 
 	/// Process subtitles

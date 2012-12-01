@@ -37,10 +37,10 @@
 #ifdef WITH_AUTO4_LUA
 
 #include <algorithm>
-#include <cassert>
-
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/range/adaptor/indirected.hpp>
 #include <boost/range/algorithm_ext.hpp>
+#include <cassert>
 
 #include <wx/log.h>
 
@@ -65,12 +65,12 @@
 #endif
 
 namespace {
-	void push_value(lua_State *L, wxString const& value) {
-		lua_pushstring(L, value.utf8_str());
-	}
-
 	void push_value(lua_State *L, const char *value) {
 		lua_pushstring(L, value);
+	}
+
+	void push_value(lua_State *L, std::string const& value) {
+		lua_pushlstring(L, value.c_str(), value.size());
 	}
 
 	// Userdata object must be just above the target table
@@ -102,16 +102,6 @@ namespace {
 	BadField bad_field(const char *expected_type, const char *name, const char *line_clasee)
 	{
 		return BadField(std::string("Invalid or missing field '") + name + "' in '" + line_clasee + "' class subtitle line (expected " + expected_type + ")");
-	}
-
-	wxString get_wxstring_field(lua_State *L, const char *name, const char *line_class)
-	{
-		lua_getfield(L, -1, name);
-		if (!lua_isstring(L, -1))
-			throw bad_field("string", name, line_class);
-		wxString ret(lua_tostring(L, -1), wxConvUTF8);
-		lua_pop(L, 1);
-		return ret;
 	}
 
 	std::string get_string_field(lua_State *L, const char *name, const char *line_class)
@@ -198,14 +188,15 @@ namespace Automation4 {
 	{
 		lua_newtable(L);
 
-		wxString raw(e->GetEntryData());
+		std::string raw(e->GetEntryData());
 
 		set_field(L, "section", e->GroupHeader());
 		set_field(L, "raw", raw);
 
 		if (e->Group() == ENTRY_INFO) {
-			set_field(L, "key", raw.BeforeFirst(':'));
-			set_field(L, "value", raw.AfterFirst(':'));
+			size_t pos = raw.find(':');
+			set_field(L, "key", raw.substr(0, pos));
+			set_field(L, "value", raw.substr(pos + 1));
 			set_field(L, "class", "info");
 		}
 		else if (AssDialogue *dia = dynamic_cast<AssDialogue*>(e)) {
@@ -287,23 +278,22 @@ namespace Automation4 {
 		if (!lua_isstring(L, -1))
 			luaL_error(L, "Table lacks 'class' field, can't convert to AssEntry");
 
-		wxString lclass(lua_tostring(L, -1), wxConvUTF8);
-		lclass.MakeLower();
+		std::string lclass(lua_tostring(L, -1));
+		boost::to_lower(lclass);
 		lua_pop(L, 1);
 
 		AssEntry *result = 0;
 
 		try {
-			wxString section = get_wxstring_field(L, "section", "common");
+			std::string section = get_string_field(L, "section", "common");
 
-			if (lclass == "info") {
-				result = new AssEntry(wxString::Format("%s: %s", get_wxstring_field(L, "key", "info"), get_wxstring_field(L, "value", "info")));
-			}
+			if (lclass == "info")
+				result = new AssEntry(get_string_field(L, "key", "info") + ": " + get_string_field(L, "value", "info"));
 			else if (lclass == "style") {
 				AssStyle *sty = new AssStyle;
 				result = sty;
-				sty->name = get_wxstring_field(L, "name", "style");
-				sty->font = get_wxstring_field(L, "fontname", "style");
+				sty->name = get_string_field(L, "name", "style");
+				sty->font = get_string_field(L, "fontname", "style");
 				sty->fontsize = get_double_field(L, "fontsize", "style");
 				sty->primary = get_string_field(L, "color1", "style");
 				sty->secondary = get_string_field(L, "color2", "style");
@@ -335,16 +325,16 @@ namespace Automation4 {
 				dia->Layer = get_int_field(L, "layer", "dialogue");
 				dia->Start = get_int_field(L, "start_time", "dialogue");
 				dia->End = get_int_field(L, "end_time", "dialogue");
-				dia->Style = get_wxstring_field(L, "style", "dialogue");
-				dia->Actor = get_wxstring_field(L, "actor", "dialogue");
+				dia->Style = get_string_field(L, "style", "dialogue");
+				dia->Actor = get_string_field(L, "actor", "dialogue");
 				dia->Margin[0] = get_int_field(L, "margin_l", "dialogue");
 				dia->Margin[1] = get_int_field(L, "margin_r", "dialogue");
 				dia->Margin[2] = get_int_field(L, "margin_t", "dialogue");
-				dia->Effect = get_wxstring_field(L, "effect", "dialogue");
-				dia->Text = get_wxstring_field(L, "text", "dialogue");
+				dia->Effect = get_string_field(L, "effect", "dialogue");
+				dia->Text = get_string_field(L, "text", "dialogue");
 			}
 			else {
-				luaL_error(L, "Found line with unknown class: %s", lclass.utf8_str().data());
+				luaL_error(L, "Found line with unknown class: %s", lclass.c_str());
 				return 0;
 			}
 

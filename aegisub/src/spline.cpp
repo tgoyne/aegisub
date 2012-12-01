@@ -34,9 +34,8 @@
 
 #include "config.h"
 
+#include <boost/tokenizer.hpp>
 #include <limits>
-
-#include <wx/tokenzr.h>
 
 #include "spline.h"
 
@@ -63,8 +62,8 @@ void Spline::SetScale(int new_scale) {
 	scale = 1 << (raw_scale - 1);
 }
 
-wxString Spline::EncodeToAss() const {
-	wxString result;
+std::string Spline::EncodeToAss() const {
+	std::string result;
 	result.reserve(size() * 10);
 	char last = 0;
 
@@ -103,7 +102,7 @@ wxString Spline::EncodeToAss() const {
 	return result;
 }
 
-void Spline::DecodeFromAss(wxString str) {
+void Spline::DecodeFromAss(std::string const& str) {
 	// Clear current
 	clear();
 	std::vector<float> stack;
@@ -113,11 +112,11 @@ void Spline::DecodeFromAss(wxString str) {
 	Vector2D pt(0, 0);
 
 	// Tokenize the string
-	wxStringTokenizer tkn(str, " ");
-	while (tkn.HasMoreTokens()) {
-		wxString token = tkn.GetNextToken();
-		double n;
-		if (token.ToCDouble(&n)) {
+	boost::char_separator<char> sep(" ");
+	for (auto const& token : boost::tokenizer<boost::char_separator<char>>(str, sep)) {
+		char *end;
+		double n = strtod(token.c_str(), &end);
+		if (token.size() && token.c_str() != end) {
 			stack.push_back(n);
 
 			// Move

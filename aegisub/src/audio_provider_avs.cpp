@@ -84,13 +84,11 @@ AvisynthAudioProvider::AvisynthAudioProvider(wxString filename)
 			}
 
 			// Load audio with DSS if it exists
-			if (env->FunctionExists("DirectShowSource")) {
+			if (env->FunctionExists("DirectShowSource"))
 				script = env->Invoke("DirectShowSource", AVSValue(args,3),argnames);
-			}
 			// Otherwise fail
-			else {
+			else
 				throw agi::AudioProviderOpenError("No suitable audio source filter found. Try placing DirectShowSource.dll in the Aegisub application directory.", 0);
-			}
 		}
 
 		LoadFromClip(script);

@@ -35,15 +35,6 @@
 
 #include "ass_file.h"
 
-#include <algorithm>
-#include <fstream>
-#include <inttypes.h>
-#include <list>
-
-#include <wx/filename.h>
-#include <wx/log.h>
-#include <wx/msgdlg.h>
-
 #include "ass_attachment.h"
 #include "ass_dialogue.h"
 #include "ass_override.h"
@@ -58,7 +49,16 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <algorithm>
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <fstream>
+#include <inttypes.h>
+#include <list>
+
+#include <wx/filename.h>
+#include <wx/log.h>
+#include <wx/msgdlg.h>
 
 namespace std {
 	template<>
@@ -78,7 +78,7 @@ AssFile::~AssFile() {
 }
 
 /// @brief Load generic subs
-void AssFile::Load(const wxString &_filename, wxString const& charset) {
+void AssFile::Load(const std::string &_filename, std::string const& charset) {
 	const SubtitleFormat *reader = SubtitleFormat::GetReader(_filename);
 
 	try {
@@ -125,7 +125,7 @@ void AssFile::Load(const wxString &_filename, wxString const& charset) {
 	FileOpen(filename);
 }
 
-void AssFile::Save(wxString filename, bool setfilename, bool addToRecent, wxString encoding) {
+void AssFile::Save(std::string const& filename, bool setfilename, bool addToRecent, std::string const& encoding) {
 	const SubtitleFormat *writer = SubtitleFormat::GetWriter(filename);
 	if (!writer)
 		throw "Unknown file type.";
@@ -133,24 +133,23 @@ void AssFile::Save(wxString filename, bool setfilename, bool addToRecent, wxStri
 	if (setfilename) {
 		autosavedCommitId = savedCommitId = commitId;
 		this->filename = filename;
-		StandardPaths::SetPathValue("?script", wxFileName(filename).GetPath());
+		StandardPaths::SetPathValue("?script", wxFileName(to_wx(filename)).GetPath());
 	}
 
 	FileSave();
 
 	writer->WriteFile(this, filename, encoding);
 
-	if (addToRecent) {
+	if (addToRecent)
 		AddToRecent(filename);
-	}
 }
 
-wxString AssFile::AutoSave() {
+std::string AssFile::AutoSave() {
 	if (!loaded || commitId == autosavedCommitId)
 		return "";
 
 	wxFileName origfile(filename);
-	wxString path = lagi_wxString(OPT_GET("Path/Auto/Save")->GetString());
+	wxString path = to_wx(OPT_GET("Path/Auto/Save")->GetString());
 	if (!path)
 		path = origfile.GetPath();
 	path = StandardPaths::DecodePath(path + "/");
@@ -164,16 +163,16 @@ wxString AssFile::AutoSave() {
 		name = "Untitled";
 	dstpath.SetFullName(wxString::Format("%s.%s.AUTOSAVE.ass", name, wxDateTime::Now().Format("%Y-%m-%d-%H-%M-%S")));
 
-	Save(dstpath.GetFullPath(), false, false);
+	Save(from_wx(dstpath.GetFullPath()), false, false);
 
 	autosavedCommitId = commitId;
 
 	return dstpath.GetFullPath();
 }
 
-static void write_line(wxString const& line, std::vector<char>& dst) {
-	wxCharBuffer buffer = (line + "\r\n").utf8_str();
-	copy(buffer.data(), buffer.data() + buffer.length(), back_inserter(dst));
+static void write_line(std::string const& line, std::vector<char>& dst) {
+	boost::push_back(dst, line);
+	boost::push_back(dst, "\r\n");
 }
 
 void AssFile::SaveMemory(std::vector<char> &dst) {
@@ -226,8 +225,8 @@ void AssFile::LoadDefault(bool defline) {
 	Line.push_back(*new AssEntry("ScaledBorderAndShadow: yes"));
 	Line.push_back(*new AssEntry("Collisions: Normal"));
 	if (!OPT_GET("Subtitle/Default Resolution/Auto")->GetBool()) {
-		Line.push_back(*new AssEntry(wxString::Format("PlayResX: %" PRId64, OPT_GET("Subtitle/Default Resolution/Width")->GetInt())));
-		Line.push_back(*new AssEntry(wxString::Format("PlayResY: %" PRId64, OPT_GET("Subtitle/Default Resolution/Height")->GetInt())));
+		Line.push_back(*new AssEntry("PlayResX: " + std::to_string(OPT_GET("Subtitle/Default Resolution/Width")->GetInt())));
+		Line.push_back(*new AssEntry("PlayResY: " + std::to_string(OPT_GET("Subtitle/Default Resolution/Height")->GetInt())));
 	}
 	Line.push_back(*new AssEntry("YCbCr Matrix: None"));
 
@@ -289,11 +288,10 @@ void AssFile::InsertLine( AssEntry *entry) {
 	Line.push_back(*entry);
 }
 
-void AssFile::InsertAttachment(wxString filename) {
+void AssFile::InsertAttachment(std::string const& filename) {
 	AssEntryGroup group = ENTRY_GRAPHIC;
 
-	wxString ext = filename.Right(4).Lower();
-	if (ext == ".ttf" || ext == ".ttc" || ext == ".pfb")
+	if (boost::iends_with(filename, ".ttf") || boost::iends_with(filename, ".ttc") || boost::iends_with(filename, ".pfb"))
 		group = ENTRY_FONT;
 
 	std::unique_ptr<AssAttachment> newAttach(new AssAttachment(wxFileName(filename).GetFullName(), group));
@@ -302,17 +300,15 @@ void AssFile::InsertAttachment(wxString filename) {
 	InsertLine(newAttach.release());
 }
 
-wxString AssFile::GetScriptInfo(wxString key) const {
-	key.MakeLower();
-	key += ":";
+std::string AssFile::GetScriptInfo(std::string const& key) const {
+	std::string search_key(boost::to_lower_copy(key) + ":");
 	bool GotIn = false;
 
 	for (auto const& line : Line) {
 		if (line.Group() == ENTRY_INFO) {
 			GotIn = true;
-			wxString curText = line.GetEntryData();
-			if (curText.Lower().StartsWith(key))
-				return curText.Mid(key.size()).Trim(true).Trim(false);
+			if (boost::starts_with(line.GetEntryData(), search_key))
+				return boost::trim_copy(key.substr(search_key.size()));
 		}
 		else if (GotIn) return "";
 	}
@@ -320,24 +316,20 @@ wxString AssFile::GetScriptInfo(wxString key) const {
 	return "";
 }
 
-int AssFile::GetScriptInfoAsInt(wxString const& key) const {
-	long temp = 0;
-	GetScriptInfo(key).ToLong(&temp);
-	return temp;
+int AssFile::GetScriptInfoAsInt(std::string const& key) const {
+	return atoi(GetScriptInfo(key).c_str());
 }
 
-void AssFile::SetScriptInfo(wxString const& key, wxString const& value) {
-	wxString search_key = key.Lower() + ":";
-	size_t key_size = search_key.size();
+void AssFile::SetScriptInfo(std::string const& key, std::string const& value) {
+	std::string search_key(boost::to_lower_copy(key) + ":");
 	entryIter script_info_end;
 	bool found_script_info = false;
 
 	for (auto& line : Line) {
 		if (line.Group() == ENTRY_INFO) {
 			found_script_info = true;
-			wxString cur_text = line.GetEntryData().Left(key_size).Lower();
 
-			if (cur_text == search_key) {
+			if (boost::starts_with(line.GetEntryData(), search_key)) {
 				if (value.empty())
 					delete &line;
 				else
@@ -363,7 +355,11 @@ void AssFile::SetScriptInfo(wxString const& key, wxString const& value) {
 	}
 }
 
-void AssFile::GetResolution(int &sw,int &sh) const {
+void AssFile::SetScriptInfo(std::string const& key, int value) {
+	SetScriptInfo(key, std::to_string(value));
+}
+
+void AssFile::GetResolution(int &sw, int &sh) const {
 	sw = GetScriptInfoAsInt("PlayResX");
 	sh = GetScriptInfoAsInt("PlayResY");
 
@@ -400,10 +396,10 @@ AssStyle *AssFile::GetStyle(std::string const& name) {
 	return nullptr;
 }
 
-void AssFile::AddToRecent(wxString const& file) const {
-	config::mru->Add("Subtitle", STD_STR(file));
-	wxFileName filepath(file);
-	OPT_SET("Path/Last/Subtitles")->SetString(STD_STR(filepath.GetPath()));
+void AssFile::AddToRecent(std::string const& file) const {
+	config::mru->Add("Subtitle", file);
+	wxFileName filepath(to_wx(file));
+	OPT_SET("Path/Last/Subtitles")->SetString(from_wx(filepath.GetPath()));
 }
 
 int AssFile::Commit(wxString const& desc, int type, int amendId, AssEntry *single_line) {

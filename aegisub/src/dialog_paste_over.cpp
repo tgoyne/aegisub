@@ -36,15 +36,15 @@
 
 #include "dialog_paste_over.h"
 
+#include "help_button.h"
+#include "main.h"
+
 #include <functional>
 
 #include <wx/button.h>
 #include <wx/checklst.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
-
-#include "help_button.h"
-#include "main.h"
 
 DialogPasteOver::DialogPasteOver(wxWindow *parent)
 : wxDialog (parent, -1, _("Select Fields to Paste Over"))

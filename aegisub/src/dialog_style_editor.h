@@ -32,13 +32,9 @@
 /// @ingroup style_editor
 ///
 
-#include <wx/checkbox.h>
-#include <wx/combobox.h>
-#include <wx/radiobox.h>
-#include <wx/spinctrl.h>
-#include <wx/textctrl.h>
-
 #include <libaegisub/scoped_ptr.h>
+
+#include <wx/dialog.h>
 
 namespace agi { struct Context; }
 class AssStyle;
@@ -46,6 +42,9 @@ class AssStyleStorage;
 class ColourButton;
 class PersistLocation;
 class SubtitlesPreview;
+class wxCheckBox;
+class wxComboBox;
+class wxTextCtrl;
 
 class DialogStyleEditor : public wxDialog {
 	agi::Context *c;
@@ -88,7 +87,7 @@ class DialogStyleEditor : public wxDialog {
 	wxTextCtrl *PreviewText;
 	SubtitlesPreview *SubsPreview;
 
-	void SetBitmapColor(int n,wxColour color);
+	void SetBitmapColor(int n, wxColour color);
 	int AlignToControl(int n);
 	int ControlToAlign(int n);
 	void UpdateWorkStyle();
@@ -106,8 +105,8 @@ class DialogStyleEditor : public wxDialog {
 	void OnSetColor(int n, wxCommandEvent& evt);
 
 public:
-	DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Context *c, AssStyleStorage *store = 0, wxString const& new_name = "");
+	DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Context *c, AssStyleStorage *store = 0, std::string const& new_name = "");
 	~DialogStyleEditor();
 
-	wxString GetStyleName() const;
+	std::string GetStyleName() const;
 };

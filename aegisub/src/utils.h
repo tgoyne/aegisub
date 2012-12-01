@@ -32,13 +32,13 @@
 /// @ingroup utility
 ///
 
-
 #pragma once
 
 #include <cstdint>
 
 #include <algorithm>
 #include <functional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -50,9 +50,9 @@ class wxMouseEvent;
 class wxWindow;
 
 /// @brief Make a path relative to reference
-wxString MakeRelativePath(wxString path,wxString reference);
+std::string MakeRelativePath(std::string path,std::string reference);
 /// @brief Extract original path from relative
-wxString DecodeRelativePath(wxString path,wxString reference);
+std::string DecodeRelativePath(std::string path,std::string reference);
 wxString AegiFloatToString(double value);
 wxString AegiIntegerToString(int value);
 wxString PrettySize(int bytes);

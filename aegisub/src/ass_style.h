@@ -73,9 +73,9 @@ public:
 	static void GetEncodings(wxArrayString &encodingStrings);
 
 	AssStyle();
-	AssStyle(wxString const& data, int version=1);
+	AssStyle(std::string const& data, int version=1);
 
-	wxString GetSSAText() const override;
+	std::string GetSSAText() const override;
 	AssEntryGroup Group() const override { return ENTRY_STYLE; }
 	AssEntry *Clone() const override;
 

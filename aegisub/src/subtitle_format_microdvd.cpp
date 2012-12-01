@@ -36,8 +36,6 @@
 
 #include "subtitle_format_microdvd.h"
 
-#include <wx/regex.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_time.h"
@@ -46,6 +44,10 @@
 #include "video_context.h"
 
 #include <libaegisub/of_type_adaptor.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+
+#include <wx/regex.h>
 
 MicroDVDSubtitleFormat::MicroDVDSubtitleFormat()
 : SubtitleFormat("MicroDVD")
@@ -62,9 +64,9 @@ wxArrayString MicroDVDSubtitleFormat::GetWriteWildcards() const {
 	return GetReadWildcards();
 }
 
-bool MicroDVDSubtitleFormat::CanReadFile(wxString const& filename) const {
+bool MicroDVDSubtitleFormat::CanReadFile(std::string const& filename) const {
 	// Return false immediately if extension is wrong
-	if (filename.Right(4).Lower() != ".sub") return false;
+	if (!boost::iends_with(filename, ".sub")) return false;
 
 	// Since there is an infinity of .sub formats, load first line and check if it's valid
 	TextFileReader file(filename);
@@ -76,7 +78,7 @@ bool MicroDVDSubtitleFormat::CanReadFile(wxString const& filename) const {
 	return false;
 }
 
-void MicroDVDSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxString const& encoding) const {
+void MicroDVDSubtitleFormat::ReadFile(AssFile *target, std::string const& filename, std::string const& encoding) const {
 	TextFileReader file(filename, encoding);
 	wxRegEx exp("^[\\{\\[]([0-9]+)[\\}\\]][\\{\\[]([0-9]+)[\\}\\]](.*)$", wxRE_ADVANCED);
 
@@ -122,7 +124,7 @@ void MicroDVDSubtitleFormat::ReadFile(AssFile *target, wxString const& filename,
 	}
 }
 
-void MicroDVDSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, wxString const& encoding) const {
+void MicroDVDSubtitleFormat::WriteFile(const AssFile *src, std::string const& filename, std::string const& encoding) const {
 	agi::vfr::Framerate fps = AskForFPS(true, false);
 	if (!fps.IsLoaded()) return;
 

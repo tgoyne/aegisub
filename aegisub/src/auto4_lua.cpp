@@ -710,7 +710,7 @@ namespace Automation4 {
 	{
 		wxString path = check_wxstring(L, 1);
 		lua_pop(L, 1);
-		lua_pushstring(L, StandardPaths::DecodePath(path).utf8_str());
+		lua_pushstring(L, StandardPaths::DecodePath(path).c_str());
 		return 1;
 	}
 

@@ -44,6 +44,6 @@ public:
 	// Naturally the ASS subtitle format can save all Ass files
 	bool CanSave(const AssFile*) const { return true; }
 
-	void ReadFile(AssFile *target, wxString const& filename, wxString const& forceEncoding) const;
-	void WriteFile(const AssFile *src, wxString const& filename, wxString const& encoding) const;
+	void ReadFile(AssFile *target, std::string const& filename, std::string const& forceEncoding) const override;
+	void WriteFile(const AssFile *src, std::string const& filename, std::string const& encoding) const override;
 };

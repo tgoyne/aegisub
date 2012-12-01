@@ -35,8 +35,10 @@
 #include <wx/window.h>
 #include <wx/bitmap.h>
 
+#include <libaegisub/color.h>
 #include <libaegisub/scoped_ptr.h>
 
+class AssDialogue;
 class AssFile;
 class AssStyle;
 class SubtitlesProvider;
@@ -70,7 +72,7 @@ public:
 	/// Set the style to use
 	void SetStyle(AssStyle const& style);
 	/// Set the text to display
-	void SetText(wxString text);
+	void SetText(std::string const& text);
 	/// Set the background color
 	void SetColour(agi::Color col);
 

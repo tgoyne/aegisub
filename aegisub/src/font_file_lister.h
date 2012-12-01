@@ -21,16 +21,21 @@
 
 #pragma once
 
+#include <cstdint>
 #include <list>
 #include <map>
 #include <functional>
 #include <set>
+#include <string>
 #include <vector>
 
 #include <wx/string.h>
 
+#include <libaegisub/scoped_ptr.h>
+
 class AssDialogue;
 class AssFile;
+namespace agi { namespace charset { class IconvWrapper; } }
 
 typedef std::function<void (wxString, int)> FontCollectorStatusCallback;
 
@@ -40,7 +45,7 @@ class FontFileLister {
 public:
 	struct CollectionResult {
 		/// Characters which could not be found in any font files
-		wxString missing;
+		std::u32string missing;
 		/// Paths to the file(s) containing the requested font
 		std::vector<wxString> paths;
 	};
@@ -51,7 +56,7 @@ public:
 	/// @param italic Italic?
 	/// @param characters Characters in this style
 	/// @return Path to the matching font file(s), or empty if not found
-	virtual CollectionResult GetFontPaths(wxString const& facename, int bold, bool italic, std::set<wxUniChar> const& characters) = 0;
+	virtual CollectionResult GetFontPaths(std::string facename, int bold, bool italic, std::set<char32_t> const& characters) = 0;
 };
 
 /// @class FontCollector
@@ -59,7 +64,7 @@ public:
 class FontCollector {
 	/// All data needed to find the font file used to render text
 	struct StyleInfo {
-		wxString facename;
+		std::string facename;
 		int bold;
 		bool italic;
 		bool operator<(StyleInfo const& rgt) const;
@@ -67,9 +72,9 @@ class FontCollector {
 
 	/// Data about where each style is used
 	struct UsageData {
-		std::set<wxUniChar> chars; ///< Characters used in this style which glyphs will be needed for
-		std::set<int> lines;       ///< Lines on which this style is used via overrides
-		std::set<wxString> styles; ///< ASS styles which use this style
+		std::set<char32_t> chars;     ///< Characters used in this style which glyphs will be needed for
+		std::set<int> lines;          ///< Lines on which this style is used via overrides
+		std::set<std::string> styles; ///< ASS styles which use this style
 	};
 
 	/// Message callback provider by caller
@@ -80,13 +85,15 @@ class FontCollector {
 	/// The set of all glyphs used in the file
 	std::map<StyleInfo, UsageData> used_styles;
 	/// Style name -> ASS style definition
-	std::map<wxString, StyleInfo> styles;
+	std::map<std::string, StyleInfo> styles;
 	/// Paths to found required font files
 	std::set<wxString> results;
 	/// Number of fonts which could not be found
 	int missing;
 	/// Number of fonts which were found, but did not contain all used glyphs
 	int missing_glyphs;
+	/// Converter between UTF-8 to UTF-32 for missing glyph checking
+	agi::scoped_ptr<agi::charset::IconvWrapper> u32conv;
 
 	/// Gather all of the unique styles with text on a line
 	void ProcessDialogueLine(const AssDialogue *line, int index);

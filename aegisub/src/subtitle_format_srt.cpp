@@ -49,6 +49,7 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <boost/format.hpp>
 #include <map>
 #include <wx/regex.h>
 
@@ -57,9 +58,9 @@ DEFINE_SIMPLE_EXCEPTION(SRTParseError, SubtitleFormatParseError, "subtitle_io/pa
 namespace {
 class SrtTagParser {
 	struct FontAttribs {
-		wxString face;
-		wxString size;
-		wxString color;
+		std::string face;
+		std::string size;
+		std::string color;
 	};
 
 	enum TagType {
@@ -78,7 +79,7 @@ class SrtTagParser {
 
 	wxRegEx tag_matcher;
 	wxRegEx attrib_matcher;
-	std::map<wxString,TagType> tag_name_cases;
+	std::map<std::string, TagType> tag_name_cases;
 
 public:
 	SrtTagParser()
@@ -297,16 +298,7 @@ AssTime ReadSRTTime(wxString const& ts)
 		char ch = ts[ci];
 		switch (ch)
 		{
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
+		case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
 			s = s * 10 + (ch - '0');
 			break;
 		case ':':
@@ -329,16 +321,7 @@ milliseconds:
 		char ch = ts[ci];
 		switch (ch)
 		{
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
+		case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
 			ms = ms * 10 + (ch - '0');
 			ms_chars++;
 			break;
@@ -353,9 +336,8 @@ allparsed:
 	return ms + 1000*(s + 60*(m + 60*(h + d*24)));
 }
 
-wxString WriteSRTTime(AssTime const& ts)
-{
-	return wxString::Format("%02d:%02d:%02d,%03d", ts.GetTimeHours(), ts.GetTimeMinutes(), ts.GetTimeSeconds(), ts.GetTimeMiliseconds());
+std::string WriteSRTTime(AssTime const& ts) {
+	return str(boost::format("%02d:%02d:%02d,%03d") % ts.GetTimeHours() % ts.GetTimeMinutes() % ts.GetTimeSeconds() % ts.GetTimeMiliseconds());
 }
 
 }
@@ -375,10 +357,10 @@ wxArrayString SRTSubtitleFormat::GetWriteWildcards() const {
 	return GetReadWildcards();
 }
 
-void SRTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxString const& encoding) const {
+void SRTSubtitleFormat::ReadFile(AssFile *target, std::string const& filename, std::string const& encoding) const {
 	using namespace std;
 
-	TextFileReader file(filename, encoding);
+	TextFileReader file(filename, encoding, true);
 	target->LoadDefault(false);
 
 	// See parsing algorithm at <http://devel.aegisub.org/wiki/SubtitleFormats/SRT>
@@ -395,9 +377,8 @@ void SRTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxSt
 	int linebreak_debt = 0;
 	AssDialogue *line = 0;
 	while (file.HasMoreLines()) {
-		wxString text_line = file.ReadLineFromFile();
+		std::string text_line = file.ReadLineFromFile();
 		line_num++;
-		text_line.Trim(true).Trim(false);
 
 		switch (state) {
 			case 1:
@@ -493,7 +474,7 @@ found_timestamps:
 		line->Text = tag_parser.ToAss(line->Text);
 }
 
-void SRTSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, wxString const& encoding) const {
+void SRTSubtitleFormat::WriteFile(const AssFile *src, std::string const& filename, std::string const& encoding) const {
 	TextFileWriter file(filename, encoding);
 
 	// Convert to SRT
@@ -511,7 +492,7 @@ void SRTSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, 
 	// Write lines
 	int i=0;
 	for (auto current : copy.Line | agi::of_type<AssDialogue>()) {
-		file.WriteLineToFile(wxString::Format("%d", ++i));
+		file.WriteLineToFile(std::to_string(++i));
 		file.WriteLineToFile(WriteSRTTime(current->Start) + " --> " + WriteSRTTime(current->End));
 		file.WriteLineToFile(ConvertTags(current));
 		file.WriteLineToFile("");
@@ -519,7 +500,7 @@ void SRTSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, 
 }
 
 bool SRTSubtitleFormat::CanSave(const AssFile *file) const {
-	wxString supported_tags[] = { "\\b", "\\i", "\\s", "\\u" };
+	std::string supported_tags[] = { "\\b", "\\i", "\\s", "\\u" };
 
 	AssStyle defstyle;
 	for (auto const& line : file->Line) {
@@ -548,8 +529,8 @@ bool SRTSubtitleFormat::CanSave(const AssFile *file) const {
 	return true;
 }
 
-wxString SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
-	wxString final;
+std::string SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
+	std::string final;
 	std::map<char, bool> tag_states;
 	tag_states['i'] = false;
 	tag_states['b'] = false;
@@ -567,9 +548,9 @@ wxString SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
 					if (it != tag_states.end()) {
 						bool temp = tag->Params[0]->Get(false);
 						if (temp && !it->second)
-							final += wxString::Format("<%c>", it->first);
+							final += str(boost::format("<%c>") % it->first);
 						if (!temp && it->second)
-							final += wxString::Format("</%c>", it->first);
+							final += str(boost::format("</%c>") % it->first);
 						it->second = temp;
 					}
 				}
@@ -585,7 +566,7 @@ wxString SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
 	// Otherwise unclosed overrides might affect lines they shouldn't, see bug #809 for example
 	for (auto it : tag_states) {
 		if (it.second)
-			final += wxString::Format("</%c>", it.first);
+			final += str(boost::format("</%c>") % it.first);
 	}
 
 	return final;

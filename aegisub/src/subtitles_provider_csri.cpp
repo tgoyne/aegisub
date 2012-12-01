@@ -36,14 +36,15 @@
 
 #ifdef WITH_CSRI
 
-#include <wx/thread.h>
-
 #include "subtitles_provider_csri.h"
 
 #include "ass_file.h"
-#include "text_file_writer.h"
-#include "video_context.h"
+#include "compat.h"
 #include "video_frame.h"
+
+#include <libaegisub/exception.h>
+
+#include <wx/thread.h>
 
 #ifdef WIN32
 #define CSRIAPI
@@ -89,14 +90,13 @@ void CSRISubtitlesProvider::LoadSubtitles(AssFile *subs) {
 	// Open from disk
 	else {
 		if (tempfile.empty()) {
-			tempfile = wxFileName::CreateTempFileName("aegisub");
-			wxRemoveFile(tempfile);
-			tempfile += ".ass";
+			tempfile = from_wx(wxFileName::CreateTempFileName("aegisub")) + ".ass";
+			wxRemoveFile(to_wx(tempfile));
 		}
-		subs->Save(tempfile, false, false, wxSTRING_ENCODING);
+		subs->Save(tempfile, false, false, "UTF-8");
 
 		wxMutexLocker lock(csri_mutex);
-		instance = csri_open_file(renderer, tempfile.utf8_str(), nullptr);
+		instance = csri_open_file(renderer, tempfile.c_str(), nullptr);
 	}
 }
 

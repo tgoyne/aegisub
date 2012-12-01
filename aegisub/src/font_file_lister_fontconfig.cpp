@@ -88,10 +88,9 @@ FontConfigFontFileLister::FontConfigFontFileLister(FontCollectorStatusCallback c
 	FcConfigBuildFonts(config);
 }
 
-FontFileLister::CollectionResult FontConfigFontFileLister::GetFontPaths(wxString const& facename, int bold, bool italic, std::set<wxUniChar> const& characters) {
+FontFileLister::CollectionResult FontConfigFontFileLister::GetFontPaths(std::string family, int bold, bool italic, std::set<char32_t> const& characters) {
 	CollectionResult ret;
 
-	std::string family = STD_STR(facename);
 	if (family[0] == '@')
 		family.erase(0, 1);
 	boost::to_lower(family);
@@ -131,7 +130,7 @@ FontFileLister::CollectionResult FontConfigFontFileLister::GetFontPaths(wxString
 
 	FcCharSet *charset;
 	if (FcPatternGetCharSet(match, FC_CHARSET, 0, &charset) == FcResultMatch) {
-		for (wxUniChar chr : characters) {
+		for (int chr : characters) {
 			if (!FcCharSetHasChar(charset, chr))
 				ret.missing += chr;
 		}

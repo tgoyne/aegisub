@@ -33,12 +33,6 @@
 
 #include "config.h"
 
-#include <fstream>
-#include <list>
-
-#include <wx/regex.h>
-#include <wx/tokenzr.h>
-
 #include "ass_dialogue.h"
 #include "ass_override.h"
 #include "compat.h"
@@ -47,8 +41,24 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <boost/algorithm/string/find_iterator.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/indirected.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/numeric.hpp>
+#include <boost/tokenizer.hpp>
+#include <fstream>
+#include <list>
+
+#include <wx/tokenzr.h>
+
+using namespace boost::adaptors;
+
 AssDialogue::AssDialogue()
-: AssEntry(wxString())
+: AssEntry("")
 , Comment(false)
 , Layer(0)
 , Start(0)
@@ -59,7 +69,7 @@ AssDialogue::AssDialogue()
 }
 
 AssDialogue::AssDialogue(AssDialogue const& that)
-: AssEntry(wxString())
+: AssEntry("")
 , Comment(that.Comment)
 , Layer(that.Layer)
 , Start(that.Start)
@@ -72,101 +82,97 @@ AssDialogue::AssDialogue(AssDialogue const& that)
 	memmove(Margin, that.Margin, sizeof Margin);
 }
 
-AssDialogue::AssDialogue(wxString const& data)
-: AssEntry(wxString())
+AssDialogue::AssDialogue(std::string const& data)
+: AssEntry("")
 , Comment(false)
 , Layer(0)
 , Start(0)
 , End(5000)
 , Style("Default")
 {
-	if (!Parse(data))
-		throw SubtitleFormatParseError(STD_STR("Failed parsing line: " + data), 0);
+	Parse(data);
 }
 
 AssDialogue::~AssDialogue () {
 }
 
-bool AssDialogue::Parse(wxString const& rawData) {
-	size_t pos = 0;
-	wxString temp;
+typedef boost::iterator_range<std::string::const_iterator> string_range;
 
-	// Get type
-	if (rawData.StartsWith("Dialogue:")) {
+class tokenizer {
+	string_range str;
+	boost::char_separator<char> sep;
+	boost::tokenizer<boost::char_separator<char>> tkn;
+	boost::tokenizer<boost::char_separator<char>>::iterator pos;
+
+public:
+	tokenizer(string_range const& str)
+	: str(str)
+	, sep(",", "", boost::keep_empty_tokens)
+	, tkn(str, sep)
+	, pos(tkn.begin())
+	{
+	}
+
+	string_range next_tok() {
+		if (pos == tkn.end())
+			throw SubtitleFormatParseError("Failed parsing line: " + std::string(str.begin(), str.end()), 0);
+		return *pos++;
+	}
+
+	string_range next_tok_trim() {
+		return trim_copy(next_tok());
+	}
+};
+
+void AssDialogue::Parse(std::string const& rawData) {
+	boost::iterator_range<std::string::const_iterator> str;
+	if (boost::starts_with(rawData, "Dialogue:")) {
 		Comment = false;
-		pos = 10;
+		str = boost::make_iterator_range(rawData.begin() + 10, rawData.end());
 	}
-	else if (rawData.StartsWith("Comment:")) {
+	else if (boost::starts_with(rawData, "Comment:")) {
 		Comment = true;
-		pos = 9;
+		str = boost::make_iterator_range(rawData.begin() + 9, rawData.end());
 	}
-	else return false;
+	else
+		throw SubtitleFormatParseError("Failed parsing line: " + rawData, 0);
 
-	wxStringTokenizer tkn(rawData.Mid(pos),",",wxTOKEN_RET_EMPTY_ALL);
-	if (!tkn.HasMoreTokens()) return false;
+	tokenizer tkn(str);
 
 	// Get first token and see if it has "Marked=" in it
-	temp = tkn.GetNextToken().Trim(false).Trim(true);
-	bool ssa = temp.Lower().StartsWith("marked=");
+	string_range tmp = tkn.next_tok_trim();
+	bool ssa = boost::istarts_with(tmp, "marked=");
 
 	// Get layer number
 	if (ssa)
 		Layer = 0;
-	else {
-		long templ;
-		temp.ToLong(&templ);
-		Layer = templ;
-	}
+	else
+		Layer = boost::lexical_cast<int>(tmp);
 
-	// Get start time
-	if (!tkn.HasMoreTokens()) return false;
-	Start = tkn.GetNextToken();
-
-	// Get end time
-	if (!tkn.HasMoreTokens()) return false;
-	End = tkn.GetNextToken();
-
-	// Get style
-	if (!tkn.HasMoreTokens()) return false;
-	Style = tkn.GetNextToken();
-	Style.Trim(true);
-	Style.Trim(false);
-
-	// Get actor
-	if (!tkn.HasMoreTokens()) return false;
-	Actor = tkn.GetNextToken();
-	Actor.Trim(true);
-	Actor.Trim(false);
-
-	// Get margins
-	for (int i = 0; i < 3; ++i) {
-		if (!tkn.HasMoreTokens()) return false;
-		SetMarginString(tkn.GetNextToken().Trim(false).Trim(true), i);
-	}
-
-	if (!tkn.HasMoreTokens()) return false;
-	Effect = tkn.GetNextToken();
-	Effect.Trim(true);
-	Effect.Trim(false);
-
-	// Get text
-	Text = rawData.Mid(pos + tkn.GetPosition());
-
-	return true;
+	Start = tkn.next_tok();
+	End = tkn.next_tok();
+	End = tkn.next_tok();
+	push_back(Style, tkn.next_tok_trim());
+	push_back(Actor, tkn.next_tok_trim());
+	for (int& margin : Margin)
+		margin = mid(0, boost::lexical_cast<int>(tkn.next_tok()), 9999);
+	push_back(Effect, tkn.next_tok_trim());
+	Text.append(tkn.next_tok().begin(), str.end());
 }
 
-wxString AssDialogue::GetData(bool ssa) const {
-	wxString s = Style;
-	wxString a = Actor;
-	wxString e = Effect;
-	s.Replace(",",";");
-	a.Replace(",",";");
-	e.Replace(",",";");
+std::string AssDialogue::GetData(bool ssa) const {
+	std::string s(Style);
+	std::string a(Actor);
+	std::string e(Effect);
+	replace(s.begin(), s.end(), ',', ';');
+	replace(a.begin(), a.end(), ',', ';');
+	replace(e.begin(), e.end(), ',', ';');
 
-	wxString str = wxString::Format(
-		"%s: %s,%s,%s,%s,%s,%d,%d,%d,%s,%s",
+	// TODO: SSA
+	std::string ret(22 + log(Layer) + 10 + 10 + s.size() + a.size() + e.size() + 12 + + Text.size(), '\0');
+	sprintf(&ret[0], "%s: %s,%d,%s,%s,%s,%d,%d,%d,%s,%s",
 		Comment ? "Comment" : "Dialogue",
-		ssa ? "Marked=0" : wxString::Format("%01d", Layer),
+		Layer,
 		Start.GetAssFormated(),
 		End.GetAssFormated(),
 		s, a,
@@ -175,17 +181,16 @@ wxString AssDialogue::GetData(bool ssa) const {
 		Text);
 
 	// Make sure that final has no line breaks
-	str.Replace("\n", "");
-	str.Replace("\r", "");
+	ret.erase(remove_if(ret.begin(), ret.end(), boost::is_any_of("\r\n")), ret.end());
 
-	return str;
+	return ret;
 }
 
-const wxString AssDialogue::GetEntryData() const {
+const std::string AssDialogue::GetEntryData() const {
 	return GetData(false);
 }
 
-wxString AssDialogue::GetSSAText() const {
+std::string AssDialogue::GetSSAText() const {
 	return GetData(true);
 }
 
@@ -194,32 +199,31 @@ std::auto_ptr<boost::ptr_vector<AssDialogueBlock>> AssDialogue::ParseTags() cons
 
 	// Empty line, make an empty block
 	if (Text.empty()) {
-		Blocks.push_back(new AssDialogueBlockPlain);
+		Blocks.push_back(new AssDialogueBlockPlain(""));
 		return Blocks.release();
 	}
 
 	int drawingLevel = 0;
 
-	for (size_t len = Text.size(), cur = 0; cur < len; ) {
+	for (auto cur = Text.begin(); cur != Text.end(); ) {
 		// Overrides block
-		if (Text[cur] == '{') {
-			size_t end = Text.find('}', cur);
+		if (*cur == '{') {
+			auto end = find(cur, Text.end(), '}');
 
 			// VSFilter requires that override blocks be closed, while libass
 			// does not. We match VSFilter here.
-			if (end == wxString::npos)
+			if (end == Text.end())
 				goto plain;
 
-			++cur;
 			// Get contents of block
-			wxString work = Text.substr(cur, end - cur);
+			string_range work(cur + 1, end);
 			cur = end + 1;
 
-			if (work.size() && work.find('\\') == wxString::npos) {
+			if (work.size() && find(work.begin(), work.end(), '\\') == work.end()) {
 				//We've found an override block with no backslashes
 				//We're going to assume it's a comment and not consider it an override block
 				//Currently we'll treat this as a plain text block, but feel free to create a new class
-				Blocks.push_back(new AssDialogueBlockPlain("{" + work + "}"));
+				Blocks.push_back(new AssDialogueBlockPlain(string_range(work.begin() - 1, work.end() + 1)));
 			}
 			else {
 				// Create block
@@ -239,16 +243,8 @@ std::auto_ptr<boost::ptr_vector<AssDialogueBlock>> AssDialogue::ParseTags() cons
 
 		// Plain-text/drawing block
 plain:
-		wxString work;
-		size_t end = Text.find('{', cur + 1);
-		if (end == wxString::npos) {
-			work = Text.substr(cur);
-			cur = len;
-		}
-		else {
-			work = Text.substr(cur, end - cur);
-			cur = end;
-		}
+		string_range work(cur, find(cur, Text.end(), '{'));
+		cur = work.end();
 
 		if (drawingLevel == 0)
 			Blocks.push_back(new AssDialogueBlockPlain(work));
@@ -263,7 +259,15 @@ void AssDialogue::StripTags() {
 	Text = GetStrippedText();
 }
 
-void AssDialogue::StripTag(wxString const& tag_name) {
+template<typename Range>
+std::string join(Range const& r) {
+	std::string ret;
+	for (std::string const& str : r)
+		ret.append(str.begin(), str.end());
+	return ret;
+}
+
+void AssDialogue::StripTag(std::string const& tag_name) {
 	boost::ptr_vector<AssDialogueBlock> blocks(ParseTags());
 	Text.clear();
 
@@ -275,11 +279,9 @@ void AssDialogue::StripTag(wxString const& tag_name) {
 		}
 
 		AssDialogueBlockOverride *over = static_cast<AssDialogueBlockOverride*>(&block);
-		wxString temp;
-		for (auto tag : over->Tags) {
-			if (tag->Name != tag_name)
-				temp += *tag;
-		}
+		std::string temp = join(over->Tags
+			| indirected
+			| filtered([&](AssOverrideTag const& t) { return t.Name != tag_name; }));
 
 		if (!temp.empty())
 			Text += "{" + temp + "}";
@@ -288,6 +290,7 @@ void AssDialogue::StripTag(wxString const& tag_name) {
 
 void AssDialogue::UpdateText(boost::ptr_vector<AssDialogueBlock>& blocks) {
 	if (blocks.empty()) return;
+
 	Text.clear();
 	for (auto& block : blocks) {
 		if (block.GetType() == BLOCK_OVERRIDE) {
@@ -299,29 +302,14 @@ void AssDialogue::UpdateText(boost::ptr_vector<AssDialogueBlock>& blocks) {
 	}
 }
 
-void AssDialogue::SetMarginString(wxString const& origvalue, int which) {
+void AssDialogue::SetMarginString(std::string const& origvalue, int which) {
 	if (which < 0 || which > 2) throw InvalidMarginIdError();
-
-	// Make it numeric
-	wxString strvalue = origvalue;
-	if (!strvalue.IsNumber()) {
-		strvalue.clear();
-		for (size_t i = 0; i < origvalue.Length(); ++i) {
-			if (origvalue.Mid(i, 1).IsNumber()) {
-				strvalue += origvalue.Mid(i, 1);
-			}
-		}
-	}
-
-	// Get value
-	long value = 0;
-	strvalue.ToLong(&value);
-	Margin[which] = mid<int>(0, value, 9999);
+	Margin[which] = mid<int>(0, atoi(origvalue.c_str()), 9999);
 }
 
-wxString AssDialogue::GetMarginString(int which) const {
+std::string AssDialogue::GetMarginString(int which) const {
 	if (which < 0 || which > 2) throw InvalidMarginIdError();
-	return wxString::Format("%d", Margin[which]);
+	return std::to_string(Margin[which]);
 }
 
 bool AssDialogue::CollidesWith(const AssDialogue *target) const {
@@ -329,53 +317,45 @@ bool AssDialogue::CollidesWith(const AssDialogue *target) const {
 	return ((Start < target->Start) ? (target->Start < End) : (Start < target->End));
 }
 
-wxString AssDialogue::GetStrippedText() const {
-	wxString ret;
-	boost::ptr_vector<AssDialogueBlock> blocks(ParseTags());
-	for (auto block : blocks | agi::of_type<AssDialogueBlockPlain>())
-		ret += block->GetText();
-	return ret;
+std::string AssDialogue::GetStrippedText() const {
+	return join(*ParseTags()
+		| agi::of_type<AssDialogueBlockPlain>()
+		| transformed(std::mem_fn(&AssDialogueBlockPlain::GetText))
+		| filtered([&](std::string const& s) { return !boost::starts_with(s, "{"); }));
 }
 
 AssEntry *AssDialogue::Clone() const {
 	return new AssDialogue(*this);
 }
 
-void AssDialogueBlockDrawing::TransformCoords(int mx,int my,double x,double y) {
+void AssDialogueBlockDrawing::TransformCoords(int mx, int my, double x, double y) {
 	// HACK: Implement a proper parser ffs!!
 	// Could use Spline but it'd be slower and this seems to work fine
-	wxStringTokenizer tkn(GetText()," ",wxTOKEN_DEFAULT);
-	wxString cur;
-	wxString final;
-	bool isX = true;
-	long temp;
+	bool is_x = true;
+	std::string final;
 
-	// Process tokens
-	while (tkn.HasMoreTokens()) {
-		cur = tkn.GetNextToken().Lower();
-
-		// Number, process it
-		if (cur.IsNumber()) {
-			// Transform it
-			cur.ToLong(&temp);
-			if (isX) temp = (long int)((temp+mx)*x + 0.5);
-			else temp = (long int)((temp+my)*y + 0.5);
-
-			// Write back to list
-			final += wxString::Format("%i ",temp);
-
-			// Toggle X/Y
-			isX = !isX;
+	boost::char_separator<char> sep(" ");
+	for (auto const& cur : boost::tokenizer<boost::char_separator<char>>(selected, sep)) {
+		if (std::all_of(begin(cur), end(cur), isdigit)) {
+			int val = boost::lexical_cast<int>(cur);
+			if (is_x)
+				val = (int)((val + mx) * x + .5);
+			else
+				val = (int)((val + my) * y + .5);
+			final += std::to_string(val);
+			final += ' ';
 		}
-
-		// Text
-		else {
-			if (cur == "m" || cur == "n" || cur == "l" || cur == "b" || cur == "s" || cur == "p" || cur == "c") isX = true;
-			final += cur + " ";
+		else if (cur.size() == 1) {
+			char c = tolower(cur[0]);
+			if (c == 'm' || c == 'n' || c == 'l' || c == 'b' || c == 's' || c == 'p' || c == 'c') {
+				is_x = true;
+				final += c;
+				final += ' '
+			}
 		}
 	}
 
 	// Write back final
-	final = final.Left(final.Length()-1);
+	final.pop_back();
 	text = final;
 }

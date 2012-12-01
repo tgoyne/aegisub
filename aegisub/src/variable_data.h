@@ -34,8 +34,9 @@
 
 #pragma once
 
+#include <string>
+
 namespace agi { struct Color; }
-class wxString;
 
 enum VariableDataType {
 	VARDATA_NONE,
@@ -56,7 +57,7 @@ private:
 		int *value_int;
 		double *value_float;
 		bool *value_bool;
-		wxString *value_text;
+		std::string *value_text;
 		agi::Color *value_colour;
 		AssDialogueBlockOverride **value_block;
 	};
@@ -72,7 +73,7 @@ public:
 
 	VariableDataType GetType() const;
 	template<class T> void Set(T param);
-	void ResetWith(wxString value);
+	void ResetWith(std::string const& value);
 	template<class T> T Get() const;
 	template<class T> T Get(T def) const {
 		return value ? Get<T>() : def;

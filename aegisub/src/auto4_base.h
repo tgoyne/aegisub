@@ -82,10 +82,10 @@ namespace Automation4 {
 		virtual ScriptDialog* GenerateConfigDialog(wxWindow *parent, agi::Context *c) = 0;
 
 	protected:
-		wxString GetScriptSettingsIdentifier();
+		std::string GetScriptSettingsIdentifier();
 
 	public:
-		ExportFilter(wxString const& name, wxString const& description, int priority);
+		ExportFilter(std::string const& name, std::string const& description, int priority);
 		virtual ~ExportFilter();
 
 		wxWindow* GetConfigDialogWindow(wxWindow *parent, agi::Context *c);
@@ -261,7 +261,7 @@ namespace Automation4 {
 		static inline std::vector<ScriptFactory*>& Factories();
 
 	protected:
-		ScriptFactory(wxString engine_name, wxString filename_pattern);
+		ScriptFactory(wxString const& engine_name, wxString const& filename_pattern);
 		virtual ~ScriptFactory() { }
 
 	public:

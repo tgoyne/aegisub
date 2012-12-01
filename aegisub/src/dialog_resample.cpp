@@ -21,16 +21,6 @@
 
 #include "dialog_resample.h"
 
-#include <algorithm>
-#include <functional>
-
-#include <wx/checkbox.h>
-#include <wx/sizer.h>
-#include <wx/spinctrl.h>
-#include <wx/statbox.h>
-#include <wx/stattext.h>
-#include <wx/valgen.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_override.h"
@@ -41,6 +31,17 @@
 #include "video_context.h"
 
 #include <libaegisub/of_type_adaptor.h>
+
+#include <algorithm>
+#include <boost/algorithm/string/predicate.hpp>
+#include <functional>
+
+#include <wx/checkbox.h>
+#include <wx/sizer.h>
+#include <wx/spinctrl.h>
+#include <wx/statbox.h>
+#include <wx/stattext.h>
+#include <wx/valgen.h>
 
 enum {
 	LEFT = 0,
@@ -153,7 +154,7 @@ namespace {
 		double ar;
 	};
 
-	void resample_tags(wxString const& name, AssOverrideParameter *cur, void *ud) {
+	void resample_tags(std::string const&, AssOverrideParameter *cur, void *ud) {
 		resample_state *state = static_cast<resample_state *>(ud);
 
 		double resizer = 1.0;
@@ -202,7 +203,7 @@ namespace {
 
 	void resample_line(resample_state *state, AssEntry &line) {
 		AssDialogue *diag = dynamic_cast<AssDialogue*>(&line);
-		if (diag && !(diag->Comment && (diag->Effect.StartsWith("template") || diag->Effect.StartsWith("code")))) {
+		if (diag && !(diag->Comment && (boost::starts_with(diag->Effect, "template") || boost::starts_with(diag->Effect, "code")))) {
 			boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
 
 			for (auto block : blocks | agi::of_type<AssDialogueBlockOverride>())
@@ -249,8 +250,8 @@ void ResampleResolution(AssFile *ass, ResampleSettings const& settings) {
 
 	for_each(ass->Line.begin(), ass->Line.end(), std::bind(resample_line, &state, std::placeholders::_1));
 
-	ass->SetScriptInfo("PlayResX", wxString::Format("%d", settings.script_x));
-	ass->SetScriptInfo("PlayResY", wxString::Format("%d", settings.script_y));
+	ass->SetScriptInfo("PlayResX", settings.script_x);
+	ass->SetScriptInfo("PlayResY", settings.script_y);
 
 	ass->Commit(_("resolution resampling"), AssFile::COMMIT_SCRIPTINFO | AssFile::COMMIT_DIAG_FULL);
 }

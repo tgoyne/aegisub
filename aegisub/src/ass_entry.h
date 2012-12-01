@@ -49,10 +49,10 @@ enum AssEntryGroup {
 
 class AssEntry : public boost::intrusive::make_list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink> >::type {
 	/// Raw data, exactly the same line that appears on the .ass (note that this will be in ass even if source wasn't)
-	wxString data;
+	std::string data;
 
 public:
-	AssEntry(wxString const& data) : data(data) { }
+	AssEntry(std::string const& data) : data(data) { }
 	virtual ~AssEntry() { }
 
 	/// Create a copy of this entry
@@ -62,15 +62,15 @@ public:
 	virtual AssEntryGroup Group() const { return ENTRY_INFO; }
 
 	/// ASS or SSA Section header for this entry's group
-	wxString const& GroupHeader(bool ssa=false) const;
+	std::string const& GroupHeader(bool ssa=false) const;
 
 	/// @brief Get this line's raw entry data in ASS format
-	virtual const wxString GetEntryData() const { return data; }
+	virtual const std::string GetEntryData() const { return data; }
 
 	/// @brief Set this line's raw entry data
 	/// @param newData New raw entry data
-	virtual void SetEntryData(wxString const& newData) { data = newData; }
+	virtual void SetEntryData(std::string const& newData) { data = newData; }
 
 	/// Get this line in SSA format
-	virtual wxString GetSSAText() const;
+	virtual std::string GetSSAText() const;
 };

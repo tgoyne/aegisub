@@ -32,8 +32,9 @@
 /// @ingroup custom_control
 ///
 
-
 #include "config.h"
+
+#include "subs_preview.h"
 
 #include <wx/dcclient.h>
 #include <wx/dcmemory.h>
@@ -42,7 +43,6 @@
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_style.h"
-#include "subs_preview.h"
 #include "include/aegisub/subtitles_provider.h"
 #include "video_provider_dummy.h"
 
@@ -82,8 +82,8 @@ void SubtitlesPreview::SetStyle(AssStyle const& newStyle) {
 	UpdateBitmap();
 }
 
-void SubtitlesPreview::SetText(wxString text) {
-	wxString newText = "{\\q2}" + text;
+void SubtitlesPreview::SetText(std::string const& text) {
+	std::string newText = "{\\q2}" + text;
 	if (newText != line->Text) {
 		line->Text = newText;
 		UpdateBitmap();
@@ -141,8 +141,8 @@ void SubtitlesPreview::OnSize(wxSizeEvent &evt) {
 			"No subtitles provider", wxOK | wxICON_ERROR | wxCENTER);
 	}
 
-	subFile->SetScriptInfo("PlayResX", wxString::Format("%d", w));
-	subFile->SetScriptInfo("PlayResY", wxString::Format("%d", h));
+	subFile->SetScriptInfo("PlayResX", w);
+	subFile->SetScriptInfo("PlayResY", h);
 
 	UpdateBitmap();
 }

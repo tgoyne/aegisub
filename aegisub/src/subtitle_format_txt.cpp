@@ -38,7 +38,6 @@
 
 #include "ass_dialogue.h"
 #include "ass_file.h"
-#include "compat.h"
 #include "dialog_text_import.h"
 #include "main.h"
 #include "text_file_reader.h"
@@ -47,6 +46,9 @@
 #include "version.h"
 
 #include <libaegisub/of_type_adaptor.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 TXTSubtitleFormat::TXTSubtitleFormat()
 : SubtitleFormat("Plain-Text")
@@ -67,8 +69,7 @@ bool TXTSubtitleFormat::CanWriteFile(wxString const& filename) const {
 	return (filename.Right(4).Lower() == ".txt" && filename.Right(11).Lower() != ".encore.txt" && filename.Right(16).Lower() != ".transtation.txt");
 }
 
-void TXTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxString const& encoding) const {
-	using namespace std;
+void TXTSubtitleFormat::ReadFile(AssFile *target, std::string const& filename, std::string const& encoding) const {
 	DialogTextImport dlg;
 	if (dlg.ShowModal() == wxID_CANCEL) return;
 
@@ -76,41 +77,40 @@ void TXTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxSt
 
 	target->LoadDefault(false);
 
-	wxString actor;
-	wxString separator = lagi_wxString(OPT_GET("Tool/Import/Text/Actor Separator")->GetString());
-	wxString comment = lagi_wxString(OPT_GET("Tool/Import/Text/Comment Starter")->GetString());
+	std::string actor;
+	std::string separator = OPT_GET("Tool/Import/Text/Actor Separator")->GetString();
+	std::string comment = OPT_GET("Tool/Import/Text/Comment Starter")->GetString();
 
 	// Parse file
 	while (file.HasMoreLines()) {
-		wxString value = file.ReadLineFromFile();
+		std::string value = file.ReadLineFromFile();
 		if(value.empty()) continue;
 
 		// Check if this isn't a timecodes file
-		if (value.StartsWith("# timecode"))
+		if (boost::starts_with(value, "# timecode"))
 			throw SubtitleFormatParseError("File is a timecode file, cannot load as subtitles.", 0);
 
 		// Read comment data
 		bool isComment = false;
-		if (!comment.empty() && value.StartsWith(comment)) {
+		if (!comment.empty() && boost::starts_with(value, comment)) {
 			isComment = true;
-			value = value.Mid(comment.size());
+			value = value.substr(comment.size());
 		}
 
 		// Read actor data
 		if (!isComment && !separator.empty()) {
 			if (value[0] != ' ' && value[0] != '\t') {
-				int pos = value.Find(separator);
-				if (pos != wxNOT_FOUND) {
-					actor = value.Left(pos);
-					actor.Trim(false);
-					actor.Trim(true);
-					value = value.Mid(pos+1);
+				size_t pos = value.find(separator);
+				if (pos != std::string::npos) {
+					actor = value.substr(0, pos);
+					boost::trim(actor);
+					value = value.substr(pos+1);
 				}
 			}
 		}
 
 		// Trim spaces at start
-		value.Trim(false);
+		boost::trim_left(value);
 
 		if (value.empty())
 			isComment = true;
@@ -127,7 +127,7 @@ void TXTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxSt
 	}
 }
 
-void TXTSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, wxString const& encoding) const {
+void TXTSubtitleFormat::WriteFile(const AssFile *src, std::string const& filename, std::string const& encoding) const {
 	size_t num_actor_names = 0, num_dialogue_lines = 0;
 
 	// Detect number of lines with Actor field filled out
@@ -144,11 +144,11 @@ void TXTSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, 
 	bool strip_formatting = true;
 
 	TextFileWriter file(filename, encoding);
-	file.WriteLineToFile(wxString("# Exported by Aegisub ") + GetAegisubShortVersionString());
+	file.WriteLineToFile(std::string("# Exported by Aegisub ") + GetAegisubShortVersionString());
 
 	// Write the file
 	for (auto dia : src->Line | agi::of_type<AssDialogue>()) {
-		wxString out_line;
+		std::string out_line;
 
 		if (dia->Comment)
 			out_line = "# ";
@@ -156,7 +156,7 @@ void TXTSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, 
 		if (write_actors)
 			out_line += dia->Actor + ": ";
 
-		wxString out_text = strip_formatting ? dia->GetStrippedText() : dia->Text;
+		std::string out_text = strip_formatting ? dia->GetStrippedText() : dia->Text;
 		out_line += out_text;
 
 		if (!out_text.empty())

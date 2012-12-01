@@ -44,7 +44,9 @@ class AssTime {
 
 public:
 	AssTime(int ms = 0);
-	AssTime(wxString const& text);
+
+	template<typename String>
+	AssTime(String const& text);
 
 	/// Get millisecond, rounded to centisecond precision
 	operator int() const { return time / 10 * 10; }

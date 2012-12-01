@@ -48,7 +48,7 @@
 #include <wx/intl.h>
 
 AssStyle::AssStyle()
-: AssEntry(wxString())
+: AssEntry("")
 , name("Default")
 , font("Arial")
 , fontsize(20.)
@@ -73,23 +73,28 @@ AssStyle::AssStyle()
 	UpdateData();
 }
 
+namespace {
 class parser {
-	std::string str;
-	std::vector<boost::iterator_range<std::string::iterator>> tkns;
+	typedef boost::iterator_range<std::string::const_iterator> string_range;
+	string_range str;
+	std::vector<string_range> tkns;
 	size_t tkn_idx;
 
-	boost::iterator_range<std::string::iterator>& next_tok() {
+	string_range& next_tok() {
 		if (tkn_idx >= tkns.size())
 			throw SubtitleFormatParseError("Malformed style: not enough fields", 0);
 		return tkns[tkn_idx++];
 	}
 
 public:
-	parser(wxString const& str)
-	: str(from_wx(str.AfterFirst(':')))
-	, tkn_idx(0)
+	parser(std::string const& str)
+	: tkn_idx(0)
 	{
-		split(tkns, this->str, [](char c) { return c == ','; });
+		auto pos = find(str.begin(), str.end(), ':');
+		if (pos != str.end()) {
+			this->str = string_range(pos + 1, str.end());
+			split(tkns, this->str, [](char c) { return c == ','; });
+		}
 	}
 
 	~parser() {
@@ -129,9 +134,10 @@ public:
 		++tkn_idx;
 	}
 };
+}
 
-AssStyle::AssStyle(wxString const& rawData, int version)
-: AssEntry(wxString())
+AssStyle::AssStyle(std::string const& rawData, int version)
+: AssEntry("")
 {
 	parser p(rawData);
 
@@ -200,14 +206,18 @@ AssStyle::AssStyle(wxString const& rawData, int version)
 
 	UpdateData();
 }
+}
+
+#ifdef _WIN32
+#define snprintf(buf, _, fmt, ...) _snprintf_s(buf, _TRUNCATE, fmt, __VA_ARGS__)
+#endif
 
 void AssStyle::UpdateData() {
 	replace(begin(name), end(name), ',', ';');
 	replace(begin(font), end(font), ',', ';');
 
 	char buff[8192];
-
-	sprintf(buff, "Style: %s,%s,%g,%s,%s,%s,%s,%d,%d,%d,%d,%g,%g,%g,%g,%d,%g,%g,%i,%i,%i,%i,%i",
+	snprintf(buff, sizeof(buff), "Style: %s,%s,%g,%s,%s,%s,%s,%d,%d,%d,%d,%g,%g,%g,%g,%d,%g,%g,%i,%i,%i,%i,%i",
 		name.c_str(), font.c_str(), fontsize,
 		primary.GetAssStyleFormatted().c_str(),
 		secondary.GetAssStyleFormatted().c_str(),
@@ -219,18 +229,20 @@ void AssStyle::UpdateData() {
 		borderstyle, outline_w, shadow_w, alignment,
 		Margin[0], Margin[1], Margin[2], encoding);
 
-	SetEntryData(wxString::FromUTF8(buff));
+	SetEntryData(buff);
 }
 
-wxString AssStyle::GetSSAText() const {
-	return wxString::Format("Style: %s,%s,%g,%s,%s,0,%s,%d,%d,%d,%g,%g,%d,%d,%d,%d,0,%i",
-		name, font, fontsize,
+std::string AssStyle::GetSSAText() const {
+	char buff[8192];
+	snprintf(buff, sizeof(buff), "Style: %s,%s,%g,%s,%s,0,%s,%d,%d,%d,%g,%g,%d,%d,%d,%d,0,%i",
+		name.c_str(), font.c_str(), fontsize,
 		primary.GetSsaFormatted(),
 		secondary.GetSsaFormatted(),
 		shadow.GetSsaFormatted(),
 		(bold? -1 : 0), (italic ? -1 : 0),
-		borderstyle,outline_w,shadow_w,AssToSsa(alignment),
-		Margin[0],Margin[1],Margin[2],encoding);
+		borderstyle, outline_w, shadow_w, AssToSsa(alignment),
+		Margin[0], Margin[1], Margin[2], encoding);
+	return buff;
 }
 
 AssEntry *AssStyle::Clone() const {
@@ -239,25 +251,25 @@ AssEntry *AssStyle::Clone() const {
 
 void AssStyle::GetEncodings(wxArrayString &encodingStrings) {
 	encodingStrings.Clear();
-	encodingStrings.Add(wxString("0 - ") + _("ANSI"));
-	encodingStrings.Add(wxString("1 - ") + _("Default"));
-	encodingStrings.Add(wxString("2 - ") + _("Symbol"));
-	encodingStrings.Add(wxString("77 - ") + _("Mac"));
-	encodingStrings.Add(wxString("128 - ") + _("Shift_JIS"));
-	encodingStrings.Add(wxString("129 - ") + _("Hangeul"));
-	encodingStrings.Add(wxString("130 - ") + _("Johab"));
-	encodingStrings.Add(wxString("134 - ") + _("GB2312"));
-	encodingStrings.Add(wxString("136 - ") + _("Chinese BIG5"));
-	encodingStrings.Add(wxString("161 - ") + _("Greek"));
-	encodingStrings.Add(wxString("162 - ") + _("Turkish"));
-	encodingStrings.Add(wxString("163 - ") + _("Vietnamese"));
-	encodingStrings.Add(wxString("177 - ") + _("Hebrew"));
-	encodingStrings.Add(wxString("178 - ") + _("Arabic"));
-	encodingStrings.Add(wxString("186 - ") + _("Baltic"));
-	encodingStrings.Add(wxString("204 - ") + _("Russian"));
-	encodingStrings.Add(wxString("222 - ") + _("Thai"));
-	encodingStrings.Add(wxString("238 - ") + _("East European"));
-	encodingStrings.Add(wxString("255 - ") + _("OEM"));
+	encodingStrings.Add("0 - " + _("ANSI"));
+	encodingStrings.Add("1 - " + _("Default"));
+	encodingStrings.Add("2 - " + _("Symbol"));
+	encodingStrings.Add("77 - " + _("Mac"));
+	encodingStrings.Add("128 - " + _("Shift_JIS"));
+	encodingStrings.Add("129 - " + _("Hangeul"));
+	encodingStrings.Add("130 - " + _("Johab"));
+	encodingStrings.Add("134 - " + _("GB2312"));
+	encodingStrings.Add("136 - " + _("Chinese BIG5"));
+	encodingStrings.Add("161 - " + _("Greek"));
+	encodingStrings.Add("162 - " + _("Turkish"));
+	encodingStrings.Add("163 - " + _("Vietnamese"));
+	encodingStrings.Add("177 - " + _("Hebrew"));
+	encodingStrings.Add("178 - " + _("Arabic"));
+	encodingStrings.Add("186 - " + _("Baltic"));
+	encodingStrings.Add("204 - " + _("Russian"));
+	encodingStrings.Add("222 - " + _("Thai"));
+	encodingStrings.Add("238 - " + _("East European"));
+	encodingStrings.Add("255 - " + _("OEM"));
 }
 
 int AssStyle::AssToSsa(int ass_align) {

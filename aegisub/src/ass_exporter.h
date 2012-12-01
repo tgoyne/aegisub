@@ -49,7 +49,7 @@ class AssExporter {
 	typedef FilterList::const_iterator filter_iterator;
 
 	/// Sizers for configuration panels
-	std::map<wxString, wxSizer*> Sizers;
+	std::map<std::string, wxSizer*> Sizers;
 
 	/// Filters which will be applied to the subtitles
 	FilterList filters;
@@ -70,7 +70,7 @@ public:
 
 	/// Add the named filter to the list of filters to be run
 	/// @throws wxString if filter is not found
-	void AddFilter(wxString const& name);
+	void AddFilter(std::string const& name);
 
 	/// Add all export filters which have indicated they should apply in
 	/// non-transform contexts
@@ -86,7 +86,7 @@ public:
 	/// @param file Target filename
 	/// @param charset Target charset
 	/// @param parent_window Parent window the filters should use when opening dialogs
-	void Export(wxString const& file, wxString const& charset, wxWindow *parent_window= 0);
+	void Export(std::string const& file, std::string const& charset, wxWindow *parent_window= 0);
 
 	/// Add configuration panels for all registered filters to the target sizer
 	/// @param parent Parent window for controls
@@ -94,9 +94,9 @@ public:
 	void DrawSettings(wxWindow *parent, wxSizer *target_sizer);
 
 	/// Get the sizer created by DrawSettings for a specific filter
-	wxSizer *GetSettingsSizer(wxString const& name);
+	wxSizer *GetSettingsSizer(std::string const& name);
 
 	/// Get the description of the named export filter
 	/// @throws wxString if filter is not found
-	wxString const& GetDescription(wxString const& name) const;
+	std::string const& GetDescription(std::string const& name) const;
 };

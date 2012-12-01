@@ -34,10 +34,6 @@
 
 #include "config.h"
 
-#include <wx/filename.h>
-
-#include <istream>
-
 #include "ass_attachment.h"
 
 #include "compat.h"
@@ -45,16 +41,17 @@
 #include <libaegisub/io.h>
 #include <libaegisub/scoped_ptr.h>
 
-AssAttachment::AssAttachment(wxString const& name, AssEntryGroup group)
-: AssEntry(wxString())
+#include <boost/algorithm/string/predicate.hpp>
+#include <istream>
+
+AssAttachment::AssAttachment(std::string const& name, AssEntryGroup group)
+: AssEntry("")
 , data(new std::vector<char>)
 , filename(name)
 , group(group)
 {
-	wxFileName fname(filename);
-	wxString ext = fname.GetExt().Lower();
-	if (ext == "ttf")
-		filename = fname.GetName() + "_0." + ext;
+	if (boost::iends_with(name, ".ttf"))
+		filename = filename.substr(0, filename.size() - 4) + "_0.ttf";
 }
 
 AssEntry *AssAttachment::Clone() const {
@@ -63,7 +60,7 @@ AssEntry *AssAttachment::Clone() const {
 	return clone;
 }
 
-const wxString AssAttachment::GetEntryData() const {
+const std::string AssAttachment::GetEntryData() const {
 	size_t pos = 0;
 	size_t size = data->size();
 	size_t written = 0;
@@ -71,7 +68,8 @@ const wxString AssAttachment::GetEntryData() const {
 	unsigned char dst[4];
 
 	// Write header
-	wxString entryData = (group == ENTRY_FONT ? "fontname: " : "filename: ") + filename + "\r\n";
+	std::string entryData = (group == ENTRY_FONT ? "fontname: " : "filename: ") + filename + "\r\n";
+	entryData.reserve(80);
 
 	// Read three bytes
 	while (pos < size) {
@@ -97,8 +95,8 @@ const wxString AssAttachment::GetEntryData() const {
 		size_t toWrite = read+1;
 
 		// Convert to text
-		for (size_t i=0;i<toWrite;i++) {
-			entryData += dst[i]+33;
+		for (size_t i = 0; i < toWrite; ++i) {
+			entryData += dst[i] + 33;
 			written++;
 
 			// Line break
@@ -112,27 +110,27 @@ const wxString AssAttachment::GetEntryData() const {
 	return entryData;
 }
 
-void AssAttachment::Extract(wxString const& filename) const {
-	agi::io::Save(STD_STR(filename), true).Get().write(&(*data)[0], data->size());
+void AssAttachment::Extract(std::string const& filename) const {
+	agi::io::Save(filename, true).Get().write(&(*data)[0], data->size());
 }
 
-void AssAttachment::Import(wxString const& filename) {
-	agi::scoped_ptr<std::istream> file(agi::io::Open(STD_STR(filename), true));
+void AssAttachment::Import(std::string const& filename) {
+	agi::scoped_ptr<std::istream> file(agi::io::Open(filename, true));
 	file->seekg(0, std::ios::end);
 	data->resize(file->tellg());
 	file->seekg(0, std::ios::beg);
 	file->read(&(*data)[0], data->size());
 }
 
-wxString AssAttachment::GetFileName(bool raw) const {
-	if (raw || filename.Right(4).Lower() != ".ttf") return filename;
+std::string AssAttachment::GetFileName(bool raw) const {
+	if (raw || !boost::iends_with(filename, ".ttf")) return filename;
 
 	// Remove stuff after last underscore if it's a font
-	wxString::size_type last_under = filename.rfind('_');
-	if (last_under == wxString::npos)
+	std::string::size_type last_under = filename.rfind('_');
+	if (last_under == std::string::npos)
 		return filename;
 
-	return filename.Left(last_under) + ".ttf";
+	return filename.substr(0, last_under) + ".ttf";
 }
 
 void AssAttachment::Finish() {
@@ -164,5 +162,4 @@ void AssAttachment::Finish() {
 
 	// Clear buffer
 	buffer.clear();
-	buffer.Shrink();
 }

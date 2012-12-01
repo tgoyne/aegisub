@@ -35,15 +35,6 @@
 
 #include "frame_main.h"
 
-#include <wx/clipbrd.h>
-#include <wx/dnd.h>
-#include <wx/filename.h>
-#include <wx/image.h>
-#include <wx/msgdlg.h>
-#include <wx/statline.h>
-#include <wx/sysopt.h>
-#include <wx/tokenzr.h>
-
 #include <libaegisub/log.h>
 
 #include "include/aegisub/context.h"
@@ -75,7 +66,17 @@
 #include "video_context.h"
 #include "video_display.h"
 #include "video_provider_manager.h"
-#include "video_slider.h"
+
+#include <boost/algorithm/string/predicate.hpp>
+
+#include <wx/clipbrd.h>
+#include <wx/dnd.h>
+#include <wx/filename.h>
+#include <wx/image.h>
+#include <wx/msgdlg.h>
+#include <wx/statline.h>
+#include <wx/sysopt.h>
+#include <wx/tokenzr.h>
 
 enum {
 	ID_APP_TIMER_AUTOSAVE					= 12001,
@@ -404,17 +405,14 @@ void FrameMain::InitContents() {
 	StartupLog("Leaving InitContents");
 }
 
-void FrameMain::LoadSubtitles(wxString const& filename, wxString const& charset) {
-	if (context->ass->loaded) {
-		if (TryToCloseSubs() == wxCANCEL) return;
-	}
+void FrameMain::LoadSubtitles(std::string const& filename, std::string const& charset) {
+	if (context->ass->loaded && TryToCloseSubs() == wxCANCEL) return;
 
 	try {
 		// Make sure that file isn't actually a timecode file
 		try {
 			TextFileReader testSubs(filename, charset);
-			wxString cur = testSubs.ReadLineFromFile();
-			if (cur.Left(10) == "# timecode") {
+			if (boost::starts_with(testSubs.ReadLineFromFile(), "# timecode")) {
 				context->videoController->LoadTimecodes(filename);
 				return;
 			}
@@ -428,13 +426,13 @@ void FrameMain::LoadSubtitles(wxString const& filename, wxString const& charset)
 
 		wxFileName file(filename);
 		StandardPaths::SetPathValue("?script", file.GetPath());
-		config::mru->Add("Subtitle", STD_STR(filename));
-		OPT_SET("Path/Last/Subtitles")->SetString(STD_STR(file.GetPath()));
+		config::mru->Add("Subtitle", filename);
+		OPT_SET("Path/Last/Subtitles")->SetString(to_wx(file.GetPath()));
 
 		// Save backup of file
 		if (context->ass->CanSave() && OPT_GET("App/Auto/Backup")->GetBool()) {
 			if (file.FileExists()) {
-				wxString path = lagi_wxString(OPT_GET("Path/Auto/Backup")->GetString());
+				wxString path = from_wx(OPT_GET("Path/Auto/Backup")->GetString());
 				if (path.empty()) path = file.GetPath();
 				wxFileName dstpath(StandardPaths::DecodePath(path + "/"));
 				if (!dstpath.DirExists())
@@ -448,11 +446,11 @@ void FrameMain::LoadSubtitles(wxString const& filename, wxString const& charset)
 	}
 	catch (agi::FileNotFoundError const&) {
 		wxMessageBox(filename + " not found.", "Error", wxOK | wxICON_ERROR | wxCENTER, this);
-		config::mru->Remove("Subtitle", STD_STR(filename));
+		config::mru->Remove("Subtitle", filename);
 		return;
 	}
 	catch (agi::Exception const& err) {
-		wxMessageBox(lagi_wxString(err.GetChainedMessage()), "Error", wxOK | wxICON_ERROR | wxCENTER, this);
+		wxMessageBox(to_wx(err.GetChainedMessage()), "Error", wxOK | wxICON_ERROR | wxCENTER, this);
 	}
 	catch (...) {
 		wxMessageBox("Unknown error", "Error", wxOK | wxICON_ERROR | wxCENTER, this);
@@ -565,7 +563,7 @@ void FrameMain::OnVideoOpen() {
 			LOG_D("video/open/audio") << "File " << context->videoController->GetVideoName() << " has no audio data: " << e.GetChainedMessage();
 		}
 		catch (agi::AudioOpenError const& err) {
-			wxMessageBox(lagi_wxString(err.GetMessage()), "Error loading audio", wxOK | wxICON_ERROR | wxCENTER);
+			wxMessageBox(to_wx(err.GetMessage()), "Error loading audio", wxOK | wxICON_ERROR | wxCENTER);
 		}
 	}
 }
@@ -577,7 +575,7 @@ void FrameMain::OnVideoDetach(agi::OptionValue const& opt) {
 		SetDisplayMode(1, -1);
 }
 
-void FrameMain::StatusTimeout(wxString text,int ms) {
+void FrameMain::StatusTimeout(wxString const& text, int ms) {
 	SetStatusText(text,1);
 	StatusClear.SetOwner(this, ID_APP_TIMER_STATUSCLEAR);
 	StatusClear.Start(ms,true);
@@ -722,14 +720,14 @@ void FrameMain::OnSubtitlesOpen() {
 
 	// Video
 	if (videoChanged) {
-		wxString arString = context->ass->GetScriptInfo("Video Aspect Ratio");
+		std::string arString = context->ass->GetScriptInfo("Video Aspect Ratio");
 		context->videoController->SetVideo(curSubsVideo);
 		if (context->videoController->IsLoaded()) {
 			context->videoController->JumpToFrame(context->ass->GetScriptInfoAsInt("Video Position"));
 
 			long videoAr = 0;
 			double videoArValue = 0.;
-			if (arString.StartsWith("c")) {
+			if (arString[0] == 'c') {
 				videoAr = 4;
 				arString.Mid(1).ToDouble(&videoArValue);
 			}
@@ -777,14 +775,11 @@ void FrameMain::OnMouseWheel(wxMouseEvent &evt) {
 wxString FrameMain::GetScriptFileName() const {
 	if (context->ass->filename.empty()) {
 		// Apple HIG says "untitled" should not be capitalised
-		// and the window is a document window, it shouldn't contain the app name
-		// (The app name is already present in the menu bar)
 #ifndef __WXMAC__
 		return _("Untitled");
 #else
 		return _("untitled");
 #endif
 	}
-	else
-		return wxFileName(context->ass->filename).GetFullName();
+	return wxFileName(to_wx(context->ass->filename)).GetFullName();
 }

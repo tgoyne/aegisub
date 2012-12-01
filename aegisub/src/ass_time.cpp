@@ -45,7 +45,8 @@
 
 AssTime::AssTime(int time) : time(mid(0, time, 10 * 60 * 60 * 1000 - 1)) { }
 
-AssTime::AssTime(wxString const& text)
+template<typename String>
+AssTime::AssTime(String const& text)
 : time(0)
 {
 	size_t pos = 0, end = 0;
@@ -73,6 +74,10 @@ AssTime::AssTime(wxString const& text)
 
 	// Limit to the valid range
 	time = mid(0, time, 10 * 60 * 60 * 1000 - 1);
+}
+
+static void force_instantiate() {
+	(void)AssTime(wxString());
 }
 
 wxString AssTime::GetAssFormated(bool msPrecision) const {

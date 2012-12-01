@@ -32,8 +32,7 @@
 /// @ingroup video_input
 ///
 
-#include <map>
-#include <wx/string.h>
+#include <string>
 
 #include <libaegisub/exception.h>
 
@@ -44,7 +43,7 @@ class AssFile;
 class MatroskaWrapper {
 public:
 	/// Check if the file is a matroska file with at least one subtitle track
-	static bool HasSubtitles(wxString const& filename);
+	static bool HasSubtitles(std::string const& filename);
 	/// Load subtitles from a matroska file
-	static void GetSubtitles(wxString const& filename, AssFile *target);
+	static void GetSubtitles(std::string const& filename, AssFile *target);
 };

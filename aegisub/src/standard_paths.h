@@ -33,21 +33,21 @@
 ///
 
 #include <map>
-#include <wx/string.h>
+#include <string>
 
 class StandardPaths {
 	static StandardPaths &GetInstance();
 
-	std::map<wxString, wxString> paths;
+	std::map<std::string, std::string> paths;
 
 	StandardPaths();
 	StandardPaths(StandardPaths const&);
 	StandardPaths& operator=(StandardPaths const&);
 
-	wxString DoDecodePath(wxString path);
-	void DoSetPathValue(const wxString &path, const wxString &value);
+	std::string DoDecodePath(std::string path);
+	void DoSetPathValue(const std::string &path, const std::string &value);
 
 public:
-	static wxString DecodePath(const wxString &path) { return GetInstance().DoDecodePath(path); }
-	static void SetPathValue(const wxString &path, const wxString &value) { GetInstance().DoSetPathValue(path,value); }
+	static std::string DecodePath(const std::string &path) { return GetInstance().DoDecodePath(path); }
+	static void SetPathValue(const std::string &path, const std::string &value) { GetInstance().DoSetPathValue(path,value); }
 };

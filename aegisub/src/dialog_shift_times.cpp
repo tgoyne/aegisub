@@ -99,7 +99,7 @@ static wxString get_history_string(json::Object &obj) {
 DialogShiftTimes::DialogShiftTimes(agi::Context *context)
 : wxDialog(context->parent, -1, _("Shift Times"))
 , context(context)
-, history_filename(STD_STR(StandardPaths::DecodePath("?user/shift_history.json")))
+, history_filename(StandardPaths::DecodePath("?user/shift_history.json"))
 , history(new json::Array)
 , timecodes_loaded_slot(context->videoController->AddTimecodesListener(&DialogShiftTimes::OnTimecodesLoaded, this))
 , selected_set_changed_slot(context->selectionController->AddSelectionListener(&DialogShiftTimes::OnSelectedSetChanged, this))
@@ -235,7 +235,7 @@ void DialogShiftTimes::OnSelectedSetChanged() {
 
 
 void DialogShiftTimes::OnClear(wxCommandEvent &) {
-	wxRemoveFile(lagi_wxString(history_filename));
+	wxRemoveFile(from_wx(history_filename));
 	history_box->Clear();
 	history->clear();
 }
@@ -256,12 +256,12 @@ void DialogShiftTimes::OnHistoryClick(wxCommandEvent &evt) {
 
 	json::Object& obj = (*history)[entry];
 	if (obj["is by time"]) {
-		shift_time->SetTime(AssTime(lagi_wxString(obj["amount"])));
+		shift_time->SetTime(AssTime(obj["amount"]));
 		shift_by_time->SetValue(true);
 		OnByTime(evt);
 	}
 	else {
-		shift_frames->SetValue(lagi_wxString(obj["amount"]));
+		shift_frames->SetValue(to_wx(obj["amount"]));
 		if (shift_by_frames->IsEnabled()) {
 			shift_by_frames->SetValue(true);
 			OnByFrames(evt);

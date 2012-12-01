@@ -75,7 +75,7 @@ public:
 	/// The lines in the file
 	EntryList Line;
 	/// The filename of this file, if any
-	wxString filename;
+	std::string filename;
 	/// Is the file loaded?
 	bool loaded;
 
@@ -95,7 +95,7 @@ public:
 	/// Add a line to the file at the end of the appropriate section
 	void InsertLine(AssEntry *line);
 	/// Attach a file to the ass file
-	void InsertAttachment(wxString filename);
+	void InsertAttachment(std::string const& filename);
 	/// Get the names of all of the styles available
 	std::vector<std::string> GetStyles() const;
 	/// @brief Get a style by name
@@ -108,24 +108,24 @@ public:
 	/// @brief Load from a file
 	/// @param file File name
 	/// @param charset Character set of file or empty to autodetect
-	void Load(const wxString &file, wxString const& charset="");
+	void Load(const std::string &file, std::string const& charset="");
 
 	/// @brief Save to a file
 	/// @param file Path to save to
 	/// @param setfilename Should the filename be changed to the passed path?
 	/// @param addToRecent Should the file be added to the MRU list?
 	/// @param encoding Encoding to use, or empty to let the writer decide (which usually means "App/Save Charset")
-	void Save(wxString file,bool setfilename=false,bool addToRecent=true,const wxString encoding="");
+	void Save(std::string const& file,bool setfilename=false,bool addToRecent=true,std::string const& encoding="");
 
 	/// @brief Autosave the file if there have been any chances since the last autosave
 	/// @return File name used or empty if no save was performed
-	wxString AutoSave();
+	std::string AutoSave();
 
 	/// @brief Save to a memory buffer. Used for subtitle providers which support it
 	/// @param[out] dst Destination vector
 	void SaveMemory(std::vector<char> &dst);
 	/// Add file name to the MRU list
-	void AddToRecent(wxString const& file) const;
+	void AddToRecent(std::string const& file) const;
 	/// Can the file be saved in its current format?
 	bool CanSave() const;
 
@@ -134,11 +134,12 @@ public:
 	/// @param[in] h Height
 	void GetResolution(int &w,int &h) const;
 	/// Get the value in a [Script Info] key as int, or 0 if it is not present
-	int GetScriptInfoAsInt(wxString const& key) const;
+	int GetScriptInfoAsInt(std::string const& key) const;
 	/// Get the value in a [Script Info] key as string.
-	wxString GetScriptInfo(wxString key) const;
+	std::string GetScriptInfo(std::string const& key) const;
 	/// Set the value of a [Script Info] key. Adds it if it doesn't exist.
-	void SetScriptInfo(wxString const& key, wxString const& value);
+	void SetScriptInfo(std::string const& key, std::string const& value);
+	void SetScriptInfo(std::string const& key, int value);
 
 	/// Type of changes made in a commit
 	enum CommitType {

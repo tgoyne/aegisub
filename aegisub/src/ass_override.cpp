@@ -44,6 +44,12 @@
 #include "ass_override.h"
 #include "utils.h"
 
+#include <boost/algorithm/string/join.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
+
 AssOverrideParameter::AssOverrideParameter()
 : classification(PARCLASS_NORMAL)
 , omitted(false)
@@ -70,33 +76,30 @@ AssDialogueBlockOverride::~AssDialogueBlockOverride() {
 void AssDialogueBlockOverride::ParseTags() {
 	delete_clear(Tags);
 
-	wxStringTokenizer tkn(text, "\\", wxTOKEN_STRTOK);
-	wxString curTag;
-	if (text.StartsWith("\\")) curTag = "\\";
-
-	while (tkn.HasMoreTokens()) {
-		curTag += tkn.GetNextToken();
-
-		// Check for parenthesis matching for \t
-		while (curTag.Freq('(') > curTag.Freq(')') && tkn.HasMoreTokens()) {
-			curTag << "\\" << tkn.GetNextToken();
+	int depth = 0;
+	size_t start = 0;
+	for (size_t i = 1; i < text.size(); ++i) {
+		if (depth > 0) {
+			if (text[i] == ')')
+				--depth;
 		}
-
-		Tags.push_back(new AssOverrideTag(curTag));
-
-		curTag = "\\";
+		else if (text[i] == '\\') {
+			AddTag(text.substr(start, i - start));
+			start  = 1;
+		}
+		else if (text[i] == '(')
+			++depth;
 	}
+
+	if (!text.empty())
+		AddTag(text.substr(start));
 }
-void AssDialogueBlockOverride::AddTag(wxString const& tag) {
+
+void AssDialogueBlockOverride::AddTag(std::string const& tag) {
 	Tags.push_back(new AssOverrideTag(tag));
 }
 
-wxString AssDialogueBlockOverride::GetText() {
-	text.clear();
-	for (auto tag : Tags)
-		text += *tag;
-	return text;
-}
+using namespace boost::adaptors;
 
 void AssDialogueBlockOverride::ProcessParameters(ProcessParametersCallback callback, void *userData) {
 	for (auto tag : Tags) {
@@ -112,6 +115,10 @@ void AssDialogueBlockOverride::ProcessParameters(ProcessParametersCallback callb
 	}
 }
 
+std::string const& AssDialogueBlockOverride::GetText() {
+	return text = boost::accumulate(Tags | indirected);
+}
+
 AssOverrideParamProto::AssOverrideParamProto(VariableDataType type,int opt,AssParameterClass classi)
 : optional(opt)
 , type(type)
@@ -123,7 +130,7 @@ void AssOverrideTagProto::AddParam(VariableDataType type, AssParameterClass clas
 	params.emplace_back(type, opt, classi);
 }
 
-void AssOverrideTagProto::Set(wxString newName, VariableDataType type, AssParameterClass classi, int opt) {
+void AssOverrideTagProto::Set(std::string const& newName, VariableDataType type, AssParameterClass classi, int opt) {
 	name = newName;
 	params.emplace_back(type, opt, classi);
 }
@@ -265,7 +272,7 @@ static void load_protos() {
 }
 
 AssOverrideTag::AssOverrideTag() : valid(false) { }
-AssOverrideTag::AssOverrideTag(wxString text) {
+AssOverrideTag::AssOverrideTag(std::string const& text) {
 	SetText(text);
 }
 
@@ -279,88 +286,71 @@ void AssOverrideTag::Clear() {
 	valid = false;
 }
 
-void AssOverrideTag::SetText(const wxString &text) {
+void AssOverrideTag::SetText(std::string const& text) {
 	load_protos();
-	for (AssOverrideTagProto::iterator cur = proto.begin(); cur != proto.end(); ++cur) {
-		if (text.StartsWith(cur->name)) {
-			Name = cur->name;
-			ParseParameters(text.Mid(Name.length()), cur);
-			valid = true;
-			return;
-		}
+	auto p = find_if(proto.begin(), proto.end(), [&](AssOverrideTagProto const& p) {
+		return boost::starts_with(text, p.name);
+	});
+
+	if (p != proto.end()) {
+		Name = p->name;
+		ParseParameters(text.Mid(Name.size()), p);
+		valid = true;
 	}
-	// Junk tag
-	Name = text;
-	valid = false;
+	else {
+		Name = text;
+		valid = false;
+	}
 }
 
-std::vector<wxString> tokenize(const wxString &text) {
-	std::vector<wxString> paramList;
-	paramList.reserve(6);
+std::vector<std::string> tokenize(std::string const& text) {
+	std::vector<std::string> params;
+	if (text.empty()) return params;
 
-	if (text.empty()) {
-		return paramList;
-	}
+	params.reserve(6);
+
 	if (text[0] != '(') {
 		// There's just one parameter (because there's no parentheses)
 		// This means text is all our parameters
-		wxString param(text);
-		paramList.push_back(param.Trim(true).Trim(false));
-		return paramList;
+		params.push_back(boost::trim_copy(text));
+		return params;
 	}
 
-	// Ok, so there are parentheses used here, so there may be more than one parameter
-	// Enter fullscale parsing!
-	size_t i = 0, textlen = text.size();
-	size_t start = 0;
-	int parDepth = 1;
-	while (i < textlen && parDepth > 0) {
-		// Just skip until next ',' or ')', whichever comes first
-		// (Next ')' is achieved when parDepth == 0)
-		start = ++i;
-		while (i < textlen && parDepth > 0) {
-			wxChar c = text[i];
-			// parDepth 1 is where we start, and the tag-level we're interested in parsing on
-			if (c == ',' && parDepth == 1) break;
-			if (c == '(') parDepth++;
-			else if (c == ')') {
-				parDepth--;
-				if (parDepth < 0) {
-					wxLogWarning("Unmatched parenthesis near '%s'!\nTag-parsing incomplete.", text.SubString(i, 10));
-					return paramList;
-				}
-				else if (parDepth == 0) {
-					// We just ate the parenthesis ending this parameter block
-					// Make sure it doesn't get included in the parameter text
-					break;
-				}
+	auto start = text.begin() + 1;
+	int depth = 0;
+	for (size_t i = 0; i < text.size(); ++i) {
+		if (text[i] == '(')
+			++depth;
+		else if (text[i] == ')') {
+			--depth;
+			if (depth == 0) {
+				params.emplace_back(start, text.begin() + i);
+				start = text.begin() + i + 1;
 			}
-			i++;
 		}
-		// i now points to the first character not member of this parameter
-		paramList.push_back(text.SubString(start, i-1).Trim(true).Trim(false));
+		else if (depth == 1 && text[i] == ',') {
+			params.emplace_back(start, text.begin() + i);
+			start = text.begin() + i + 1;
+		}
 	}
 
-	if (i+1 < textlen) {
-		// There's some additional garbage after the parentheses
-		// Just add it in for completeness
-		paramList.push_back(text.Mid(i+1));
-	}
-	return paramList;
+	if (start != text.end())
+		params.emplace_back(start, text.end());
+
+	return params;
 }
 
-void AssOverrideTag::ParseParameters(const wxString &text, AssOverrideTagProto::iterator proto_it) {
+void AssOverrideTag::ParseParameters(std::string const& text, AssOverrideTagProto::iterator proto_it) {
 	Clear();
 
 	// Tokenize text, attempting to find all parameters
-	std::vector<wxString> paramList = tokenize(text);
+	std::vector<std::string> paramList(tokenize(text));
 	size_t totalPars = paramList.size();
 
 	int parsFlag = 1 << (totalPars - 1); // Get optional parameters flag
 	// vector (i)clip is the second clip proto_ittype in the list
-	if ((Name == "\\clip" || Name == "\\iclip") && totalPars != 4) {
+	if ((Name == "\\clip" || Name == "\\iclip") && totalPars != 4)
 		++proto_it;
-	}
 
 	unsigned curPar = 0;
 	for (auto& curproto : proto_it->params) {
@@ -375,14 +365,14 @@ void AssOverrideTag::ParseParameters(const wxString &text, AssOverrideTagProto::
 			continue;
 		}
 
-		wxString curtok = paramList[curPar++];
+		std::string const& curtok = paramList[curPar++];
 
 		if (curtok.empty()) {
 			curPar++;
 			continue;
 		}
 
-		wxChar firstChar = curtok[0];
+		char firstChar = curtok[0];
 		bool auto4 = (firstChar == '!' || firstChar == '$' || firstChar == '%') && curproto.type != VARDATA_BLOCK;
 		if (auto4) {
 			newparam->Set(curtok);
@@ -390,27 +380,18 @@ void AssOverrideTag::ParseParameters(const wxString &text, AssOverrideTagProto::
 		}
 
 		switch (curproto.type) {
-			case VARDATA_INT: {
-				long temp;
-				curtok.ToLong(&temp);
-				newparam->Set<int>(temp);
+			case VARDATA_INT:
+				newparam->Set(boost::lexical_cast<int>(curtok));
 				break;
-			}
-			case VARDATA_FLOAT: {
-				double temp;
-				curtok.ToDouble(&temp);
-				newparam->Set(temp);
+			case VARDATA_FLOAT:
+				newparam->Set(boost::lexical_cast<double>(curtok));
 				break;
-			}
 			case VARDATA_TEXT:
 				newparam->Set(curtok);
 				break;
-			case VARDATA_BOOL: {
-				long temp;
-				curtok.ToLong(&temp);
-				newparam->Set<bool>(temp != 0);
+			case VARDATA_BOOL:
+				newparam->Set(boost::lexical_cast<int>(curtok) != 0);
 				break;
-			}
 			case VARDATA_BLOCK: {
 				AssDialogueBlockOverride *temp = new AssDialogueBlockOverride(curtok);
 				temp->ParseTags();
@@ -423,32 +404,16 @@ void AssOverrideTag::ParseParameters(const wxString &text, AssOverrideTagProto::
 	}
 }
 
-AssOverrideTag::operator wxString() const {
-	wxString result = Name;
+AssOverrideTag::operator std::string() const {
+	std::string result(Name);
 
-	// Determine if it needs parentheses
-	bool parentheses =
-		Name == "\\t" ||
-		Name == "\\pos" ||
-		Name == "\\fad" ||
-		Name == "\\org" ||
-		Name == "\\clip" ||
-		Name == "\\iclip" ||
-		Name == "\\move" ||
-		Name == "\\fade";
-	if (parentheses) result += "(";
+	if (Params.size() > 1) result += '(';
 
-	// Add parameters
-	bool any = false;
-	for (auto param : Params) {
-		if (param->GetType() != VARDATA_NONE && !param->omitted) {
-			result += param->Get<wxString>();
-			result += ",";
-			any = true;
-		}
-	}
-	if (any) result.resize(result.size() - 1);
+	result += boost::join(Params
+		| filtered([](const AssOverrideParameter *p) { return p->GetType() != VARDATA_NONE && !p->omitted; })
+		| transformed(std::mem_fn(&AssOverrideParameter::Get<std::string>)),
+		std::string(","));
 
-	if (parentheses) result += ")";
+	if (Params.size() > 1) result += ')';
 	return result;
 }

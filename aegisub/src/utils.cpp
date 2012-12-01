@@ -58,7 +58,7 @@
 
 wxDEFINE_EVENT(EVT_CALL_THUNK, wxThreadEvent);
 
-wxString MakeRelativePath(wxString _path, wxString reference) {
+std::string MakeRelativePath(std::string _path, std::string reference) {
 	if (_path.empty() || _path[0] == '?') return _path;
 	wxFileName path(_path);
 	wxFileName refPath(reference);
@@ -66,7 +66,7 @@ wxString MakeRelativePath(wxString _path, wxString reference) {
 	return path.GetFullPath();
 }
 
-wxString DecodeRelativePath(wxString _path,wxString reference) {
+std::string DecodeRelativePath(std::string _path,std::string reference) {
 	if (_path.empty() || _path[0] == '?') return _path;
 	wxFileName path(_path);
 	wxFileName refPath(reference);
@@ -119,8 +119,7 @@ int SmallestPowerOf2(int x) {
 	return x;
 }
 
-bool IsWhitespace(wchar_t c)
-{
+bool IsWhitespace(wchar_t c) {
 	const wchar_t whitespaces[] = {
 		// http://en.wikipedia.org/wiki/Space_(punctuation)#Table_of_spaces
 		0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x0020, 0x0085, 0x00A0,
@@ -132,13 +131,8 @@ bool IsWhitespace(wchar_t c)
 	return std::binary_search(whitespaces, whitespaces + num_chars, c);
 }
 
-bool StringEmptyOrWhitespace(const wxString &str)
-{
-	for (size_t i = 0; i < str.size(); ++i)
-		if (!IsWhitespace(str[i]))
-			return false;
-
-	return true;
+bool StringEmptyOrWhitespace(const wxString &str) {
+	return std::all_of(str.begin(), std.end(), IsWhitespace);
 }
 
 int AegiStringToInt(const wxString &str,int start,int end) {

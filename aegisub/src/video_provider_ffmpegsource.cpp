@@ -178,7 +178,7 @@ void FFmpegSourceVideoProvider::LoadVideo(wxString filename) {
 		DAR = double(Width) / Height;
 
 	// Assuming TV for unspecified
-	wxString ColorRange = TempFrame->ColorRange == FFMS_CR_JPEG ? "PC" : "TV";
+	ColorSpace = TempFrame->ColorRange == FFMS_CR_JPEG ? "PC." : "TV.";
 
 	int CS = TempFrame->ColorSpace;
 #if FFMS_VERSION >= ((2 << 24) | (17 << 16) | (1 << 8) | 0)
@@ -195,20 +195,20 @@ void FFmpegSourceVideoProvider::LoadVideo(wxString filename) {
 			ColorSpace = "None";
 			break;
 		case FFMS_CS_BT709:
-			ColorSpace = wxString::Format("%s.709", ColorRange);
+			ColorSpace += "709";
 			break;
 		case FFMS_CS_UNSPECIFIED:
-			ColorSpace = wxString::Format("%s.%s", ColorRange, Width > 1024 || Height >= 600 ? "709" : "601");
+			ColorSpace += Width > 1024 || Height >= 600 ? "709" : "601";
 			break;
 		case FFMS_CS_FCC:
-			ColorSpace = wxString::Format("%s.FCC", ColorRange);
+			ColorSpace += "FCC";
 			break;
 		case FFMS_CS_BT470BG:
 		case FFMS_CS_SMPTE170M:
-			ColorSpace = wxString::Format("%s.601", ColorRange);
+			ColorSpace += "601";
 			break;
 		case FFMS_CS_SMPTE240M:
-			ColorSpace = wxString::Format("%s.240M", ColorRange);
+			ColorSpace += "240M";
 			break;
 		default:
 			throw VideoOpenError("Unknown video color space");

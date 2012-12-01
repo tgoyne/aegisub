@@ -39,5 +39,5 @@ public:
 	MKVSubtitleFormat();
 	wxArrayString GetReadWildcards() const;
 
-	void ReadFile(AssFile *target, wxString const& filename, wxString const& forceEncoding) const;
+	void ReadFile(AssFile *target, std::string const& filename, std::string const& forceEncoding) const;
 };

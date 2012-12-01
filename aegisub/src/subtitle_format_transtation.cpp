@@ -34,8 +34,6 @@
 
 #include "config.h"
 
-#include <cstdio>
-
 #include "subtitle_format_transtation.h"
 
 #include "ass_dialogue.h"
@@ -46,6 +44,8 @@
 #include "text_file_writer.h"
 
 #include <libaegisub/of_type_adaptor.h>
+
+#include <boost/format.hpp>
 
 TranStationSubtitleFormat::TranStationSubtitleFormat()
 : SubtitleFormat("TranStation")
@@ -62,7 +62,7 @@ bool TranStationSubtitleFormat::CanWriteFile(wxString const& filename) const {
 	return filename.Lower().EndsWith(".transtation.txt");
 }
 
-void TranStationSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, wxString const& encoding) const {
+void TranStationSubtitleFormat::WriteFile(const AssFile *src, std::string const& filename, std::string const& encoding) const {
 	agi::vfr::Framerate fps = AskForFPS(false, true);
 	if (!fps.IsLoaded()) return;
 
@@ -70,8 +70,10 @@ void TranStationSubtitleFormat::WriteFile(const AssFile *src, wxString const& fi
 	AssFile copy(*src);
 	copy.Sort();
 	StripComments(copy);
+	StripTags(copy);
 	RecombineOverlaps(copy);
 	MergeIdentical(copy);
+	ConvertNewlines(copy, "\r\n");
 
 	SmpteFormatter ft(fps);
 	TextFileWriter file(filename, encoding);
@@ -93,11 +95,11 @@ void TranStationSubtitleFormat::WriteFile(const AssFile *src, wxString const& fi
 	file.WriteLineToFile("SUB[");
 }
 
-wxString TranStationSubtitleFormat::ConvertLine(AssFile *file, AssDialogue *current, agi::vfr::Framerate const& fps, SmpteFormatter const& ft, int nextl_start) const {
+std::string TranStationSubtitleFormat::ConvertLine(AssFile *file, AssDialogue *current, agi::vfr::Framerate const& fps, SmpteFormatter const& ft, int nextl_start) const {
 	int valign = 0;
 	const char *halign = " "; // default is centered
 	const char *type = "N"; // no special style
-	if (AssStyle *style = file->GetStyle(from_wx(current->Style))) {
+	if (AssStyle *style = file->GetStyle(current->Style)) {
 		if (style->alignment >= 4) valign = 4;
 		if (style->alignment >= 7) valign = 9;
 		if (style->alignment == 1 || style->alignment == 4 || style->alignment == 7) halign = "L";
@@ -118,15 +120,5 @@ wxString TranStationSubtitleFormat::ConvertLine(AssFile *file, AssDialogue *curr
 	if (nextl_start > 0 && end == nextl_start)
 		end = fps.TimeAtFrame(fps.FrameAtTime(end, agi::vfr::END) - 1, agi::vfr::END);
 
-	wxString header = wxString::Format("SUB[%i%s%s ", valign, halign, type) + ft.ToSMPTE(current->Start) + ">" + ft.ToSMPTE(end) + "]\r\n";
-
-	// Process text
-	wxString lineEnd = "\r\n";
-	current->StripTags();
-	current->Text.Replace("\\h", " ", true);
-	current->Text.Replace("\\n", lineEnd, true);
-	current->Text.Replace("\\N", lineEnd, true);
-	while (current->Text.Replace(lineEnd + lineEnd, lineEnd, true));
-
-	return header + current->Text;
+	return str(boost::format("SUB[%i%s%s %s>%s]\r\n%s") % valign % halign % type % ft.ToSMPTE(current->Start) % ft.ToSMPTE(end) % current->Text);
 }

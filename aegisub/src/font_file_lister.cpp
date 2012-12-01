@@ -27,11 +27,14 @@
 #include "ass_file.h"
 #include "ass_override.h"
 #include "ass_style.h"
+#include "compat.h"
 #include "utils.h"
 
+#include <libaegisub/charset_conv.h>
 #include <libaegisub/of_type_adaptor.h>
 
 #include <algorithm>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <wx/intl.h>
 
@@ -42,6 +45,7 @@ FontCollector::FontCollector(FontCollectorStatusCallback status_callback, FontFi
 , lister(lister)
 , missing(0)
 , missing_glyphs(0)
+, u32conv(new agi::charset::IconvWrapper("UTF-8", "UTF-32LE"))
 {
 }
 
@@ -57,7 +61,7 @@ void FontCollector::ProcessDialogueLine(const AssDialogue *line, int index) {
 	for (auto& block : blocks) {
 		if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride *>(&block)) {
 			for (auto tag : ovr->Tags) {
-				wxString name = tag->Name;
+				std::string name = tag->Name;
 
 				if (name == "\\r") {
 					style = styles[tag->Params[0]->Get(line->Style)];
@@ -78,26 +82,26 @@ void FontCollector::ProcessDialogueLine(const AssDialogue *line, int index) {
 			}
 		}
 		else if (AssDialogueBlockPlain *txt = dynamic_cast<AssDialogueBlockPlain *>(&block)) {
-			wxString text = txt->GetText();
+			std::string text = txt->GetText();
 
-			if (text.empty() || (text.size() >= 2 && text.StartsWith("{") && text.EndsWith("}")))
+			if (text.empty() || (text.size() >= 2 && boost::starts_with(text, "{") && boost::ends_with(text, "}")))
 				continue;
 
 			if (overriden)
 				used_styles[style].lines.insert(index);
-			std::set<wxUniChar>& chars = used_styles[style].chars;
-			for (wxString::const_iterator it = text.begin(); it != text.end(); ++it) {
-				wxUniChar cur = *it;
-				if (cur == L'\\' && it + 1 != text.end()) {
-					wxUniChar next = *++it;
+			std::set<uint32_t>& chars = used_styles[style].chars;
+			std::u32string utext(u32conv->Convert32(text));
+			for (auto it = utext.begin(); it != utext.end(); ++it) {
+				if (*it == '\\' && it + 1 != utext.end()) {
+					char32_t next = *++it;
 					if (next == 'N' || next == 'n')
 						continue;
 					if (next == 'h')
-						cur = 0xA0;
+						*it = 0xA0;
 					else
 						--it;
 				}
-				chars.insert(cur);
+				chars.insert(*it);
 			}
 		}
 		// Do nothing with drawing blocks
@@ -110,21 +114,21 @@ void FontCollector::ProcessChunk(std::pair<StyleInfo, UsageData> const& style) {
 	FontFileLister::CollectionResult res = lister.GetFontPaths(style.first.facename, style.first.bold, style.first.italic, style.second.chars);
 
 	if (res.paths.empty()) {
-		status_callback(wxString::Format(_("Could not find font '%s'\n"), style.first.facename), 2);
+		status_callback(wxString::Format(_("Could not find font '%s'\n"), to_wx(style.first.facename)), 2);
 		PrintUsage(style.second);
 		++missing;
 	}
 	else {
 		for (size_t i = 0; i < res.paths.size(); ++i) {
 			if (results.insert(res.paths[i]).second)
-				status_callback(wxString::Format(_("Found '%s' at '%s'\n"), style.first.facename, res.paths[i]), 0);
+				status_callback(wxString::Format(_("Found '%s' at '%s'\n"), to_wx(style.first.facename), res.paths[i]), 0);
 		}
 
 		if (res.missing.size()) {
 			if (res.missing.size() > 50)
-				status_callback(wxString::Format(_("'%s' is missing %d glyphs used.\n"), style.first.facename, (int)res.missing.size()), 2);
+				status_callback(wxString::Format(_("'%s' is missing %d glyphs used.\n"), to_wx(style.first.facename), (int)res.missing.size()), 2);
 			else if (res.missing.size() > 0)
-				status_callback(wxString::Format(_("'%s' is missing the following glyphs used: %s\n"), style.first.facename, res.missing), 2);
+				status_callback(wxString::Format(_("'%s' is missing the following glyphs used: %s\n"), to_wx(style.first.facename), to_wx(res.missing)), 2);
 			PrintUsage(style.second);
 			++missing_glyphs;
 		}
@@ -135,7 +139,7 @@ void FontCollector::PrintUsage(UsageData const& data) {
 	if (data.styles.size()) {
 		status_callback(wxString::Format(_("Used in styles:\n")), 2);
 		for (auto const& style : data.styles)
-			status_callback(wxString::Format("  - %s\n", style), 2);
+			status_callback(wxString::Format("  - %s\n", to_wx(style)), 2);
 	}
 
 	if (data.lines.size()) {

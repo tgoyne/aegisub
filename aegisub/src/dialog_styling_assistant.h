@@ -19,8 +19,6 @@
 /// @ingroup tools_ui
 ///
 
-#include "selection_controller.h"
-
 #include <wx/dialog.h>
 #include <wx/event.h>
 

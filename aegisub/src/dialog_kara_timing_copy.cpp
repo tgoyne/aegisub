@@ -37,6 +37,9 @@
 
 #include "dialog_kara_timing_copy.h"
 
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/format.hpp>
 #include <deque>
 
 #include <wx/checkbox.h>
@@ -81,14 +84,14 @@ class KaraokeLineMatchDisplay : public wxControl {
 
 	struct MatchGroup {
 		std::vector<MatchSyllable> src;
-		wxString dst;
+		std::string dst;
 		int last_render_width;
 		MatchGroup() : last_render_width(0) { }
 	};
 
 	std::vector<MatchGroup> matched_groups;
 	std::deque<MatchSyllable> unmatched_source;
-	wxString unmatched_destination;
+	std::string unmatched_destination;
 
 	int last_total_matchgroup_render_width;
 
@@ -97,13 +100,13 @@ class KaraokeLineMatchDisplay : public wxControl {
 
 	void OnPaint(wxPaintEvent &event);
 
-	const wxString label_source, label_destination;
+	const std::string label_source, label_destination;
 
 public:
 	/// Start processing a new line pair
 	void SetInputData(AssDialogue *src, AssDialogue *dst);
 	/// Build and return the output line from the matched syllables
-	wxString GetOutputLine() const;
+	std::string GetOutputLine() const;
 
 	/// Number of syllables not yet matched from source
 	size_t GetRemainingSource() const { return unmatched_source.size(); }
@@ -159,7 +162,7 @@ wxSize KaraokeLineMatchDisplay::GetBestSize() const
 	return wxSize(min_width * 2, h_src + h_dst + 7);
 }
 
-int DrawBoxedText(wxDC &dc, const wxString &txt, int x, int y)
+int DrawBoxedText(wxDC &dc, std::string const& txt, int x, int y)
 {
 	int tw, th;
 	// Assume the pen, brush and font properties have already been set in the DC.
@@ -176,9 +179,10 @@ int DrawBoxedText(wxDC &dc, const wxString &txt, int x, int y)
 	}
 	else
 	{
-		dc.GetTextExtent(txt, &tw, &th);
+		wxString wtxt(to_wx(txt));
+		dc.GetTextExtent(wtxt, &tw, &th);
 		dc.DrawRectangle(x, y-2, tw+4, th+4);
-		dc.DrawText(txt, x+2, y);
+		dc.DrawText(wtxt, x+2, y);
 		return tw+3;
 	}
 }
@@ -310,7 +314,7 @@ void KaraokeLineMatchDisplay::OnPaint(wxPaintEvent &)
 	}
 
 	// Remaining destination
-	wxString txt = unmatched_destination.Left(destination_sel_length);
+	std::string txt = unmatched_destination.substr(0, destination_sel_length);
 	if (!txt.empty())
 	{
 		dc.SetTextBackground(sel_back);
@@ -319,7 +323,7 @@ void KaraokeLineMatchDisplay::OnPaint(wxPaintEvent &)
 		next_x += DrawBoxedText(dc, txt, next_x, y_line2);
 	}
 
-	txt = unmatched_destination.Mid(destination_sel_length);
+	txt = unmatched_destination.substr(destination_sel_length);
 	if (!txt.empty())
 	{
 		dc.SetTextBackground(inner_back);
@@ -358,16 +362,16 @@ void KaraokeLineMatchDisplay::SetInputData(AssDialogue *src, AssDialogue *dst)
 	Refresh(true);
 }
 
-wxString KaraokeLineMatchDisplay::GetOutputLine() const
+std::string KaraokeLineMatchDisplay::GetOutputLine() const
 {
-	wxString res;
+	std::string res;
 
 	for (auto const& match : matched_groups)
 	{
 		int duration = 0;
 		for (auto const& syl : match.src)
 			duration += syl.duration;
-		res = wxString::Format("%s{\\k%d}%s", res, duration / 10, match.dst);
+		res = str(boost::format("%s{\\k%d}%s") % res % (duration / 10) % match.dst);
 	}
 
 	return res;
@@ -414,8 +418,8 @@ void KaraokeLineMatchDisplay::AutoMatchJapanese()
 	}
 
 	// We'll first see if we can do something with the first unmatched source syllable
-	wxString src(unmatched_source[0].text.Lower());
-	wxString dst(unmatched_destination);
+	std::string src(boost::to_lower_copy(unmatched_source[0].text));
+	std::string dst(unmatched_destination);
 	source_sel_length = 1; // we're working on the first, assume it was matched
 	destination_sel_length = 0;
 
@@ -581,8 +585,8 @@ bool KaraokeLineMatchDisplay::AcceptMatch()
 	source_sel_length = 0;
 
 	assert(destination_sel_length <= unmatched_destination.size());
-	match.dst = unmatched_destination.Left(destination_sel_length);
-	unmatched_destination = unmatched_destination.Mid(destination_sel_length);
+	match.dst = unmatched_destination.substr(0, destination_sel_length);
+	unmatched_destination = unmatched_destination.substr(destination_sel_length);
 	destination_sel_length = 0;
 
 	matched_groups.push_back(match);
@@ -710,6 +714,10 @@ BEGIN_EVENT_TABLE(DialogKanjiTimer,wxDialog)
 	EVT_KEY_DOWN(DialogKanjiTimer::OnKeyDown)
 END_EVENT_TABLE()
 
+static std::string get_value(wxComboBox *ctrl) {
+	return from_wx(ctrl->GetValue());
+}
+
 void DialogKanjiTimer::OnClose(wxCommandEvent &) {
 	OPT_SET("Tool/Kanji Timer/Interpolation")->SetBool(Interpolate->IsChecked());
 
@@ -724,13 +732,13 @@ void DialogKanjiTimer::OnClose(wxCommandEvent &) {
 }
 
 void DialogKanjiTimer::OnStart(wxCommandEvent &) {
-	if (SourceStyle->GetValue().empty() || DestStyle->GetValue().empty())
+	if (get_value(SourceStyle).empty() || get_value(DestStyle).empty())
 		wxMessageBox(_("Select source and destination styles first."),_("Error"),wxICON_EXCLAMATION | wxOK);
-	else if (SourceStyle->GetValue() == DestStyle->GetValue())
+	else if (get_value(SourceStyle) == get_value(DestStyle))
 		wxMessageBox(_("The source and destination styles must be different."),_("Error"),wxICON_EXCLAMATION | wxOK);
 	else {
-		currentSourceLine = FindNextStyleMatch(&*subs->Line.begin(), SourceStyle->GetValue());
-		currentDestinationLine = FindNextStyleMatch(&*subs->Line.begin(), DestStyle->GetValue());
+		currentSourceLine = FindNextStyleMatch(&*subs->Line.begin(), get_value(SourceStyle));
+		currentDestinationLine = FindNextStyleMatch(&*subs->Line.begin(), get_value(DestStyle));
 		ResetForNewLine();
 	}
 	LinesToChange.clear();
@@ -750,12 +758,12 @@ void DialogKanjiTimer::OnUnlink(wxCommandEvent &) {
 }
 
 void DialogKanjiTimer::OnSkipSource(wxCommandEvent &) {
-	currentSourceLine = FindNextStyleMatch(currentSourceLine, SourceStyle->GetValue());
+	currentSourceLine = FindNextStyleMatch(currentSourceLine, get_value(SourceStyle));
 	ResetForNewLine();
 }
 
 void DialogKanjiTimer::OnSkipDest(wxCommandEvent &) {
-	currentDestinationLine = FindNextStyleMatch(currentDestinationLine, DestStyle->GetValue());
+	currentDestinationLine = FindNextStyleMatch(currentDestinationLine, get_value(DestStyle));
 	ResetForNewLine();
 }
 
@@ -763,8 +771,8 @@ void DialogKanjiTimer::OnGoBack(wxCommandEvent &) {
 	if (LinesToChange.size())
 		LinesToChange.pop_back(); //If we go back, then take out the modified line we saved.
 
-	currentSourceLine = FindPrevStyleMatch(currentSourceLine, SourceStyle->GetValue());
-	currentDestinationLine = FindPrevStyleMatch(currentDestinationLine, DestStyle->GetValue());
+	currentSourceLine = FindPrevStyleMatch(currentSourceLine, get_value(SourceStyle));
+	currentDestinationLine = FindPrevStyleMatch(currentDestinationLine, get_value(DestStyle));
 	ResetForNewLine();
 }
 
@@ -776,8 +784,8 @@ void DialogKanjiTimer::OnAccept(wxCommandEvent &) {
 	else if (AssDialogue *destLine = dynamic_cast<AssDialogue*>(currentDestinationLine)) {
 		LinesToChange.push_back(std::make_pair(destLine, display->GetOutputLine()));
 
-		currentSourceLine = FindNextStyleMatch(currentSourceLine, SourceStyle->GetValue());
-		currentDestinationLine = FindNextStyleMatch(currentDestinationLine, DestStyle->GetValue());
+		currentSourceLine = FindNextStyleMatch(currentSourceLine, get_value(SourceStyle));
+		currentDestinationLine = FindNextStyleMatch(currentDestinationLine, get_value(DestStyle));
 		ResetForNewLine();
 	}
 }
@@ -855,13 +863,13 @@ static AssEntry *find_next(Iterator from, Iterator to, wxString const& style_nam
 	return nullptr;
 }
 
-AssEntry *DialogKanjiTimer::FindNextStyleMatch(AssEntry *search_from, const wxString &search_style)
+AssEntry *DialogKanjiTimer::FindNextStyleMatch(AssEntry *search_from, std::string const& search_style)
 {
 	if (!search_from) return search_from;
 	return find_next(subs->Line.iterator_to(*search_from), subs->Line.end(), search_style);
 }
 
-AssEntry *DialogKanjiTimer::FindPrevStyleMatch(AssEntry *search_from, const wxString &search_style)
+AssEntry *DialogKanjiTimer::FindPrevStyleMatch(AssEntry *search_from, std::string const& search_style)
 {
 	if (!search_from) return search_from;
 	return find_next(EntryList::reverse_iterator(subs->Line.iterator_to(*search_from)), subs->Line.rend(), search_style);

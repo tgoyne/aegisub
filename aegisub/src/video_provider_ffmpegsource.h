@@ -52,7 +52,7 @@ class FFmpegSourceVideoProvider : public VideoProvider, FFmpegSourceProvider {
 	int FrameNumber;                ///< current framenumber
 	std::vector<int> KeyFramesList; ///< list of keyframes
 	agi::vfr::Framerate Timecodes;  ///< vfr object
-	wxString ColorSpace;            ///< Colorspace name
+	std::string ColorSpace;         ///< Colorspace name
 
 	AegiVideoFrame CurFrame;        ///< current video frame
 
@@ -72,7 +72,7 @@ public:
 	double GetDAR() const { return DAR; }
 	agi::vfr::Framerate GetFPS() const { return Timecodes; }
 
-	wxString GetColorSpace() const { return ColorSpace; }
+	std::string GetColorSpace() const { return ColorSpace; }
 
 	/// @brief Gets a list of keyframes
 	/// @return	Returns a wxArrayInt of keyframes.

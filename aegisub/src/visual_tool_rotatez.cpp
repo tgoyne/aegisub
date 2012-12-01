@@ -21,6 +21,7 @@
 #include "config.h"
 
 #include <cmath>
+#include <boost/format.hpp>
 
 #include "visual_tool_rotatez.h"
 
@@ -114,7 +115,7 @@ void VisualToolRotateZ::UpdateHold() {
 
 	angle = fmodf(angle + 360.f, 360.f);
 
-	SetSelectedOverride("\\frz", wxString::Format("%.4g", angle));
+	SetSelectedOverride("\\frz", str(boost::format("%.4g") % angle));
 }
 
 void VisualToolRotateZ::UpdateDrag(feature_iterator feature) {

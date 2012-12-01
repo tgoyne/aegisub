@@ -36,11 +36,11 @@
 #include "variable_data.h"
 
 #include "ass_dialogue.h"
-#include "ass_style.h"
-#include "compat.h"
 #include "utils.h"
 
 #include <libaegisub/color.h>
+
+#include <boost/lexical_cast.hpp>
 
 VariableData::VariableData() {
 	type = VARDATA_NONE;
@@ -69,27 +69,13 @@ void VariableData::DeleteValue() {
 
 template<class T> static inline VariableDataType get_type();
 
-template<> inline VariableDataType get_type<int>() {
-	return VARDATA_INT;
-}
-template<> inline VariableDataType get_type<float>() {
-	return VARDATA_FLOAT;
-}
-template<> inline VariableDataType get_type<double>() {
-	return VARDATA_FLOAT;
-}
-template<> inline VariableDataType get_type<bool>() {
-	return VARDATA_BOOL;
-}
-template<> inline VariableDataType get_type<wxString>() {
-	return VARDATA_TEXT;
-}
-template<> inline VariableDataType get_type<agi::Color>() {
-	return VARDATA_COLOUR;
-}
-template<> inline VariableDataType get_type<AssDialogueBlockOverride *>() {
-	return VARDATA_BLOCK;
-}
+template<> inline VariableDataType get_type<int>() { return VARDATA_INT; }
+template<> inline VariableDataType get_type<float>() { return VARDATA_FLOAT; }
+template<> inline VariableDataType get_type<double>() { return VARDATA_FLOAT; }
+template<> inline VariableDataType get_type<bool>() { return VARDATA_BOOL; }
+template<> inline VariableDataType get_type<std::string>() { return VARDATA_TEXT; }
+template<> inline VariableDataType get_type<agi::Color>() { return VARDATA_COLOUR; }
+template<> inline VariableDataType get_type<AssDialogueBlockOverride *>() { return VARDATA_BLOCK; }
 
 template<class T>
 void VariableData::Set(T param) {
@@ -101,34 +87,26 @@ template void VariableData::Set<int>(int param);
 template void VariableData::Set<float>(float param);
 template void VariableData::Set<double>(double param);
 template void VariableData::Set<bool>(bool param);
-template void VariableData::Set(wxString param);
+template void VariableData::Set(std::string param);
 template void VariableData::Set<agi::Color>(agi::Color param);
 template void VariableData::Set<AssDialogueBlockOverride *>(AssDialogueBlockOverride * param);
 
 /// @brief Resets a value with a string, preserving current type
 /// @param value
-void VariableData::ResetWith(wxString value) {
+void VariableData::ResetWith(std::string const& value) {
 	switch (type) {
-		case VARDATA_INT: {
-			long temp = 0;
-			value.ToLong(&temp);
-			Set<int>(temp);
+		case VARDATA_INT:
+			Set(boost::lexical_cast<int>(value));
 			break;
-		}
-		case VARDATA_FLOAT: {
-			double temp = 0;
-			value.ToDouble(&temp);
-			Set(temp);
+		case VARDATA_FLOAT:
+			Set(boost::lexical_cast<double>(value));
 			break;
-		}
 		case VARDATA_BOOL:
-			if (value == "1") Set(true);
-			else Set(false);
+			Set(value == "1");
 			break;
-		case VARDATA_COLOUR: {
-			Set(agi::Color(from_wx(value)));
+		case VARDATA_COLOUR:
+			Set<agi::Color>(value);
 			break;
-		}
 		default:
 			Set(value);
 			break;
@@ -172,7 +150,7 @@ template<> agi::Color VariableData::Get<agi::Color>() const {
 	if (!value) throw "Null parameter";
 	if (type == VARDATA_COLOUR) return *value_colour;
 	else if (type == VARDATA_TEXT) {
-		return agi::Color(from_wx(*value_text));
+		return agi::Color(*value_text);
 	}
 	else throw "Wrong parameter type, should be colour";
 }
@@ -183,12 +161,12 @@ template<> AssDialogueBlockOverride *VariableData::Get<AssDialogueBlockOverride 
 	return *value_block;
 }
 
-template<> wxString VariableData::Get<wxString>() const {
+template<> std::string VariableData::Get<std::string>() const {
 	if (!value) throw "Null parameter";
 	if (type != VARDATA_TEXT) {
-		if (type == VARDATA_INT) return wxString::Format("%i",*value_int);
-		else if (type == VARDATA_FLOAT) return wxString::Format("%g",*value_float);
-		else if (type == VARDATA_COLOUR) return to_wx(value_colour->GetHexFormatted());
+		if (type == VARDATA_INT) return std::to_string(*value_int);
+		else if (type == VARDATA_FLOAT) return std::to_string(*value_float);
+		else if (type == VARDATA_COLOUR) return value_colour->GetHexFormatted();
 		else if (type == VARDATA_BOOL) return *value_bool ? "1" : "0";
 		else if (type == VARDATA_BLOCK) return (*value_block)->GetText();
 		else throw "Wrong parameter type, should be text";
@@ -204,7 +182,7 @@ void VariableData::operator= (const VariableData &param) {
 	switch(param.GetType()) {
 		case VARDATA_INT: Set(param.Get<int>()); break;
 		case VARDATA_FLOAT: Set(param.Get<double>()); break;
-		case VARDATA_TEXT: Set(param.Get<wxString>()); break;
+		case VARDATA_TEXT: Set(param.Get<std::string>()); break;
 		case VARDATA_BOOL: Set(param.Get<bool>()); break;
 		case VARDATA_COLOUR: Set(param.Get<agi::Color>()); break;
 		case VARDATA_BLOCK: Set(param.Get<AssDialogueBlockOverride*>()); break;

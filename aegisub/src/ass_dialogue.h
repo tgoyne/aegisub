@@ -73,19 +73,21 @@ class AssOverrideTag;
 class AssDialogueBlock {
 protected:
 	/// Text of this block
-	wxString text;
+	std::string text;
 public:
-	AssDialogueBlock(wxString const& text) : text(text) { }
+	template<typename Range>
+	AssDialogueBlock(Range const& r) : text(std::begin(r), std::end(r)) { }
 	virtual ~AssDialogueBlock() { }
 
 	virtual AssBlockType GetType() const = 0;
-	virtual wxString GetText() { return text; }
+	virtual std::string const& GetText() { return text; }
 };
 
 class AssDialogueBlockPlain : public AssDialogueBlock {
 public:
 	AssBlockType GetType() const override { return BLOCK_PLAIN; }
-	AssDialogueBlockPlain(wxString const& text = wxString()) : AssDialogueBlock(text) { }
+	template<typename Range>
+	AssDialogueBlockPlain(Range const& r) : AssDialogueBlock(r) { }
 };
 
 class AssDialogueBlockDrawing : public AssDialogueBlock {
@@ -93,24 +95,26 @@ public:
 	int Scale;
 
 	AssBlockType GetType() const override { return BLOCK_DRAWING; }
-	AssDialogueBlockDrawing(wxString const& text, int scale) : AssDialogueBlock(text), Scale(scale) { }
-	void TransformCoords(int trans_x,int trans_y,double mult_x,double mult_y);
+	void TransformCoords(int trans_x, int trans_y, double mult_x, double mult_y);
+	template<typename Range>
+	AssDialogueBlockDrawing(Range const& r, int scale) : AssDialogueBlock(r), Scale(scale) { }
 };
 
 class AssDialogueBlockOverride : public AssDialogueBlock {
 public:
-	AssDialogueBlockOverride(wxString const& text = wxString()) : AssDialogueBlock(text) { }
+	template<typename Range>
+	AssDialogueBlockOverride(Range const& r) : AssDialogueBlock(r) { }
 	~AssDialogueBlockOverride();
 
 	std::vector<AssOverrideTag *> Tags;
 
 	AssBlockType GetType() const override { return BLOCK_OVERRIDE; }
-	wxString GetText() override;
+	std::string const& GetText() override;
 	void ParseTags();
-	void AddTag(wxString const& tag);
+	void AddTag(std::string const& tag);
 
 	/// Type of callback function passed to ProcessParameters
-	typedef void (*ProcessParametersCallback)(wxString const&, AssOverrideParameter *, void *);
+	typedef void (*ProcessParametersCallback)(std::string const&, AssOverrideParameter *, void *);
 	/// @brief Process parameters via callback
 	/// @param callback The callback function to call per tag parameter
 	/// @param userData User data to pass to callback function
@@ -118,7 +122,7 @@ public:
 };
 
 class AssDialogue : public AssEntry {
-	wxString GetData(bool ssa) const;
+	std::string GetData(bool ssa) const;
 public:
 	/// Is this a comment line?
 	bool Comment;
@@ -131,20 +135,19 @@ public:
 	/// Ending time
 	AssTime End;
 	/// Style name
-	wxString Style;
+	std::string Style;
 	/// Actor name
-	wxString Actor;
+	std::string Actor;
 	/// Effect name
-	wxString Effect;
+	std::string Effect;
 	/// Raw text data
-	wxString Text;
+	std::string Text;
 
 	AssEntryGroup Group() const override { return ENTRY_DIALOGUE; }
 
 	/// @brief Parse raw ASS data into everything else
 	/// @param data ASS line
-	/// @return Did it successfully parse?
-	bool Parse(wxString const& data);
+	void Parse(std::string const& data);
 
 	/// Parse text as ASS and return block information
 	std::auto_ptr<boost::ptr_vector<AssDialogueBlock>> ParseTags() const;
@@ -153,27 +156,28 @@ public:
 	void StripTags();
 	/// Strip a specific ASS tag from the text
 	/// @param tag_name Tag to strip, with leading slash
-	void StripTag(wxString const& tag_name);
+	void StripTag(std::string const& tagName);
 	/// Get text without tags
-	wxString GetStrippedText() const;
+	std::string GetStrippedText() const;
 
 	/// Update the text of the line from parsed blocks
 	void UpdateText(boost::ptr_vector<AssDialogueBlock>& blocks);
-	const wxString GetEntryData() const override;
+	const std::string GetEntryData() const override;
+
 	/// Do nothing
-	void SetEntryData(wxString const&) override { }
+	void SetEntryData(std::string const&) override { }
 
 	template<int which>
-	void SetMarginString(wxString const& value) { SetMarginString(value, which);}
+	void SetMarginString(std::string const& value) { SetMarginString(value, which);}
 	/// @brief Set a margin
 	/// @param value New value of the margin
 	/// @param which 0 = left, 1 = right, 2 = vertical
-	void SetMarginString(wxString const& value, int which);
+	void SetMarginString(std::string const& value, int which);
 	/// @brief Get a margin
 	/// @param which 0 = left, 1 = right, 2 = vertical
-	wxString GetMarginString(int which) const;
+	std::string GetMarginString(int which) const;
 	/// Get the line as SSA rather than ASS
-	wxString GetSSAText() const override;
+	std::string GetSSAText() const override;
 	/// Does this line collide with the passed line?
 	bool CollidesWith(const AssDialogue *target) const;
 
@@ -181,7 +185,7 @@ public:
 
 	AssDialogue();
 	AssDialogue(AssDialogue const&);
-	AssDialogue(wxString const& data);
+	AssDialogue(std::string const& data);
 	~AssDialogue();
 };
 

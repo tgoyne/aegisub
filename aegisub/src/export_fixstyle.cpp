@@ -37,26 +37,27 @@
 #include "export_fixstyle.h"
 
 #include <algorithm>
+#include <boost/algorithm/string/case_conv.hpp>
 #include <functional>
 
 #include "ass_file.h"
 #include "ass_dialogue.h"
-#include "compat.h""
+#include "compat.h"
 
 #include <libaegisub/of_type_adaptor.h>
 
 AssFixStylesFilter::AssFixStylesFilter()
-: AssExportFilter(_("Fix Styles"), _("Fixes styles by replacing any style that isn't available on file with Default."), -5000, true)
+: AssExportFilter(from_wx(_("Fix Styles")), from_wx(_("Fixes styles by replacing any style that isn't available on file with Default.")), -5000, true)
 {
 }
 
 void AssFixStylesFilter::ProcessSubs(AssFile *subs, wxWindow *) {
-	wxArrayString styles = to_wx(subs->GetStyles());
-	for_each(styles.begin(), styles.end(), std::mem_fun_ref(&wxString::MakeLower));
-	styles.Sort();
+	std::vector<std::string> styles(subs->GetStyles());
+	for (auto& s : styles) boost::to_lower(s);
+	sort(begin(styles), end(styles));
 
 	for (auto diag : subs->Line | agi::of_type<AssDialogue>()) {
-		if (!std::binary_search(styles.begin(), styles.end(), diag->Style.Lower()))
+		if (!binary_search(begin(styles), end(styles), boost::to_lower_copy(diag->Style)))
 			diag->Style = "Default";
 	}
 }

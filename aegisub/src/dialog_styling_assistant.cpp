@@ -36,6 +36,7 @@
 #include "help_button.h"
 #include "libresrc/libresrc.h"
 #include "persist_location.h"
+#include "selection_controller.h"
 #include "video_context.h"
 
 #include <wx/checkbox.h>
@@ -170,9 +171,10 @@ void DialogStyling::OnActiveLineChanged(AssDialogue *new_line) {
 }
 
 void DialogStyling::Commit(bool next) {
-	if (!c->ass->GetStyle(from_wx(style_name->GetValue()))) return;
+	std::string name(from_wx(style_name->GetValue));
+	if (!c->ass->GetStyle(name)) return;
 
-	active_line->Style = style_name->GetValue();
+	active_line->Style = name;
 	c->ass->Commit(_("styling assistant"), AssFile::COMMIT_DIAG_META);
 
 	if (next) cmd::call("grid/line/next", c);

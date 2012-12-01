@@ -44,7 +44,7 @@ public:
 	/// @param cb Callback for status logging
 	FontConfigFontFileLister(FontCollectorStatusCallback cb);
 
-	CollectionResult GetFontPaths(wxString const& facename, int bold, bool italic, std::set<wxUniChar> const& characters);
+	CollectionResult GetFontPaths(std::string family, int bold, bool italic, std::set<char32_t> const& characters) override;
 };
 
 #endif

@@ -34,21 +34,25 @@
 
 #include "config.h"
 
-#include <algorithm>
-
-#include <wx/button.h>
-#include <wx/dialog.h>
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-
 #include "dialog_properties.h"
 
 #include "ass_file.h"
+#include "compat.h"
 #include "help_button.h"
 #include "include/aegisub/context.h"
 #include "libresrc/libresrc.h"
 #include "validators.h"
 #include "video_context.h"
+
+#include <algorithm>
+
+#include <wx/button.h>
+#include <wx/checkbox.h>
+#include <wx/combobox.h>
+#include <wx/dialog.h>
+#include <wx/sizer.h>
+#include <wx/stattext.h>
+#include <wx/textctrl.h>
 
 DialogProperties::DialogProperties(agi::Context *c)
 : wxDialog(c->parent, -1, _("Script Properties"))
@@ -133,31 +137,31 @@ DialogProperties::DialogProperties(agi::Context *c)
 	CenterOnParent();
 }
 
-void DialogProperties::AddProperty(wxSizer *sizer, wxString const& label, wxString const& property) {
-	wxTextCtrl *ctrl = new wxTextCtrl(this, -1, c->ass->GetScriptInfo(property), wxDefaultPosition, wxSize(200, 20));
+void DialogProperties::AddProperty(wxSizer *sizer, wxString const& label, std::string const& property) {
+	wxTextCtrl *ctrl = new wxTextCtrl(this, -1, from_wx(c->ass->GetScriptInfo(property)), wxDefaultPosition, wxSize(200, 20));
 	sizer->Add(new wxStaticText(this, -1, label), wxSizerFlags().Center().Left());
 	sizer->Add(ctrl, wxSizerFlags(1).Expand());
-	properties.push_back(std::make_pair(property, ctrl));
+	properties.emplace_back(property, ctrl);
 }
 
 void DialogProperties::OnOK(wxCommandEvent &) {
 	int count = 0;
 	for (auto const& prop : properties)
-		count += SetInfoIfDifferent(prop.first, prop.second->GetValue());
+		count += SetInfoIfDifferent(prop.first, from_wx(prop.second->GetValue()));
 
-	count += SetInfoIfDifferent("PlayResX", ResX->GetValue());
-	count += SetInfoIfDifferent("PlayResY", ResY->GetValue());
-	count += SetInfoIfDifferent("WrapStyle", wxString::Format("%d", WrapStyle->GetSelection()));
-	wxString col[2] = { "Normal", "Reverse" };
+	count += SetInfoIfDifferent("PlayResX", from_wx(ResX->GetValue()));
+	count += SetInfoIfDifferent("PlayResY", from_wx(ResY->GetValue()));
+	count += SetInfoIfDifferent("WrapStyle", std::to_string(WrapStyle->GetSelection()));
+	std::string col[2] = { "Normal", "Reverse" };
 	count += SetInfoIfDifferent("Collisions", col[collision->GetSelection()]);
-	count += SetInfoIfDifferent("ScaledBorderAndShadow", ScaleBorder->GetValue()? "yes" : "no");
+	count += SetInfoIfDifferent("ScaledBorderAndShadow", ScaleBorder->GetValue() ? "yes" : "no");
 
 	if (count) c->ass->Commit(_("property changes"), AssFile::COMMIT_SCRIPTINFO);
 
 	EndModal(!!count);
 }
 
-int DialogProperties::SetInfoIfDifferent(wxString key,wxString value) {
+int DialogProperties::SetInfoIfDifferent(std::string const& key, std::string const& value) {
 	if (c->ass->GetScriptInfo(key) != value) {
 		c->ass->SetScriptInfo(key, value);
 		return 1;

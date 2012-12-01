@@ -36,15 +36,16 @@
 
 #include "ass_style_storage.h"
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <functional>
 
 #include "ass_style.h"
+#include "compat.h"
 #include "standard_paths.h"
-#include "text_file_reader.h"
-#include "text_file_writer.h"
 #include "utils.h"
 
-#include <boost/algorithm/string/predicate.hpp>
+#include <libaegisub/io.h>
+#include <libaegisub/line_iterator.h>
 
 AssStyleStorage::~AssStyleStorage() {
 	delete_clear(style);
@@ -53,27 +54,26 @@ AssStyleStorage::~AssStyleStorage() {
 void AssStyleStorage::Save() const {
 	if (storage_name.empty()) return;
 
-	wxString dirname = StandardPaths::DecodePath("?user/catalog/");
-	if (!wxDirExists(dirname) && !wxMkdir(dirname))
+	std::string dirname(StandardPaths::DecodePath("?user/catalog/"));
+	if (!wxDirExists(to_wx(dirname)) && !wxMkdir(to_wx(dirname)))
 		throw "Failed creating directory for style catalogs";
 
-	TextFileWriter file(StandardPaths::DecodePath("?user/catalog/" + storage_name + ".sty"), "UTF-8");
-	for (const AssStyle *cur : style)
-		file.WriteLineToFile(cur->GetEntryData());
+	agi::io::Save file(dirname + storage_name + ".sty");
+	transform(style.begin(), style.end(),
+		std::ostream_iterator<std::string>(file.Get(), "\n"),
+		std::mem_fn(&AssStyle::GetEntryData));
 }
 
-void AssStyleStorage::Load(wxString const& name) {
+void AssStyleStorage::Load(std::string const& name) {
 	storage_name = name;
 	Clear();
 
 	try {
-		TextFileReader file(StandardPaths::DecodePath("?user/catalog/" + name + ".sty"), "UTF-8");
-
-		while (file.HasMoreLines()) {
-			wxString data = file.ReadLineFromFile();
-			if (data.StartsWith("Style:")) {
+		agi::scoped_ptr<std::istream> file(agi::io::Open(StandardPaths::DecodePath("?user/catalog/" + name + ".sty")));
+		for (std::string const& line : boost::make_iterator_range(agi::line_iterator<std::string>(*file, "UTF-8"), agi::line_iterator<std::string>())) {
+			if (boost::starts_with(line, "Style:")) {
 				try {
-					style.push_back(new AssStyle(data));
+					style.push_back(new AssStyle(line));
 				} catch(...) {
 					/* just ignore invalid lines for now */
 				}

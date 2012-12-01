@@ -34,21 +34,23 @@
 
 #include "config.h"
 
-#include <wx/button.h>
-#include <wx/filedlg.h>
-#include <wx/msgdlg.h>
-#include <wx/stattext.h>
-#include <wx/tokenzr.h>
-
 #include "dialog_export.h"
 
 #include "ass_exporter.h"
 #include "ass_file.h"
 #include "include/aegisub/context.h"
 #include "charset_conv.h"
+#include "compat.h"
 #include "help_button.h"
 #include "libresrc/libresrc.h"
 #include "subtitle_format.h"
+
+#include <boost/tokenizer.hpp>
+
+#include <wx/button.h>
+#include <wx/filedlg.h>
+#include <wx/msgdlg.h>
+#include <wx/stattext.h>
 
 // Swap the items at idx and idx + 1
 static void swap(wxCheckListBox *list, int idx, int sel_dir) {
@@ -80,12 +82,11 @@ DialogExport::DialogExport(agi::Context *c)
 	filter_list->Bind(wxEVT_COMMAND_LISTBOX_SELECTED, &DialogExport::OnChange, this);
 
 	// Get selected filters
-	wxString selected = c->ass->GetScriptInfo("Export filters");
-	wxStringTokenizer token(selected, "|");
-	while (token.HasMoreTokens()) {
-		wxString cur = token.GetNextToken();
+	std::string selected = c->ass->GetScriptInfo("Export filters");
+	boost::char_separator<char> sep("|");
+	for (auto const& cur : boost::tokenizer<boost::char_separator<char>>(selected, sep)) {
 		if (!cur.empty()) {
-			int idx = filters.Index(cur);
+			int idx = filters.Index(to_wx(cur));
 			if (idx != wxNOT_FOUND)
 				filter_list->Check(idx);
 		}
@@ -144,12 +145,12 @@ DialogExport::DialogExport(agi::Context *c)
 }
 
 DialogExport::~DialogExport() {
-	wxString infoList;
+	std::string infoList;
 	for (size_t i = 0; i < filter_list->GetCount(); ++i) {
 		if (filter_list->IsChecked(i))
-			infoList += filter_list->GetString(i) + "|";
+			infoList += from_wx(filter_list->GetString(i)) + "|";
 	}
-	if (!infoList.empty()) infoList.RemoveLast();
+	if (!infoList.empty()) infoList.pop_back();
 	c->ass->SetScriptInfo("Export filters", infoList);
 }
 
@@ -161,13 +162,13 @@ void DialogExport::OnProcess(wxCommandEvent &) {
 
 	for (size_t i = 0; i < filter_list->GetCount(); ++i) {
 		if (filter_list->IsChecked(i))
-			exporter->AddFilter(filter_list->GetString(i));
+			exporter->AddFilter(from_wx(filter_list->GetString(i)));
 	}
 
 	try {
 		wxBusyCursor busy;
-		c->ass->SetScriptInfo("Export Encoding", charset_list->GetStringSelection());
-		exporter->Export(filename, charset_list->GetStringSelection(), this);
+		c->ass->SetScriptInfo("Export Encoding", from_wx(charset_list->GetStringSelection()));
+		exporter->Export(from_wx(filename), from_wx(charset_list->GetStringSelection()), this);
 	}
 	catch (agi::UserCancelException const&) {
 	}
@@ -191,7 +192,7 @@ void DialogExport::OnChange(wxCommandEvent &) {
 	int n = filter_list->GetSelection();
 	if (n != wxNOT_FOUND) {
 		wxString name = filter_list->GetString(n);
-		filter_description->SetValue(exporter->GetDescription(name));
+		filter_description->SetValue(to_wx(exporter->GetDescription(from_wx(name))));
 	}
 }
 
@@ -206,7 +207,7 @@ void DialogExport::SetAll(bool new_value) {
 
 void DialogExport::RefreshOptions() {
 	for (size_t i = 0; i < filter_list->GetCount(); ++i) {
-		if (wxSizer *sizer = exporter->GetSettingsSizer(filter_list->GetString(i)))
+		if (wxSizer *sizer = exporter->GetSettingsSizer(from_wx(filter_list->GetString(i))))
 			opt_sizer->Show(sizer, filter_list->IsChecked(i), true);
 	}
 	Layout();

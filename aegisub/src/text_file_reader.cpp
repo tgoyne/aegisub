@@ -21,52 +21,30 @@
 
 #include "config.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cerrno>
-#include <string>
-
-#include <wx/string.h>
-
-#include <libaegisub/io.h>
-#include <libaegisub/log.h>
-
-#include "charset_detect.h"
-#include "compat.h"
 #include "text_file_reader.h"
 
-TextFileReader::TextFileReader(wxString const& filename, wxString encoding, bool trim)
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
+
+#include <libaegisub/io.h>
+
+#include "charset_detect.h"
+
+TextFileReader::TextFileReader(std::string const& filename, std::string encoding, bool trim)
 : trim(trim)
 {
 	if (encoding.empty()) encoding = CharSetDetect::GetEncoding(filename);
-	file.reset(agi::io::Open(STD_STR(filename), true));
-	iter = agi::line_iterator<wxString>(*file, STD_STR(encoding));
+	file.reset(agi::io::Open(filename, true));
+	iter = agi::line_iterator<std::string>(*file, encoding);
 }
 
 TextFileReader::~TextFileReader() {
 }
 
-wxString TextFileReader::ReadLineFromFile() {
-	wxString str = *iter;
+std::string TextFileReader::ReadLineFromFile() {
+	std::string str = *iter;
 	++iter;
-	if (trim) str.Trim(true).Trim(false);
-	if (str.StartsWith(L"\uFEFF")) str = str.Mid(1);
+	if (trim) boost::trim(str);
+	if (boost::starts_with(str, "\xEF\xBB\xBF")) str.erase(0, 3);
 	return str;
-}
-
-namespace agi {
-#ifdef _WIN32
-	template<> void line_iterator<wxString>::init() {
-		conv.reset(new agi::charset::IconvWrapper(encoding.c_str(), "utf-16le"));
-	}
-	template<> bool line_iterator<wxString>::convert(std::string &str) {
-		value = wxString(str.c_str(), wxMBConvUTF16LE(), str.size());
-		return true;
-	}
-#else
-	template<> bool line_iterator<wxString>::convert(std::string &str) {
-		value = str;
-		return true;
-	}
-#endif
 }
