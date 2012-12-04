@@ -50,6 +50,9 @@ class IconvWrapper {
 	size_t fromNulLen;
 	agi::scoped_ptr<Converter> conv;
 
+	template<typename SrcString, typename DstString>
+	void Convert(SrcString const& source, DstString &dest);
+
 public:
 	/// @brief Create a converter
 	/// @param sourceEncoding Source encoding name, may be a pretty name
@@ -66,11 +69,9 @@ public:
 	///         terminator, so c_str() may not return a valid string if the dest
 	///         charset has wider terminators
 	std::string Convert(std::string const& source);
-	/// @brief Convert a string from the source to destination charset
-	/// @param source String to convert
-	/// @param[out] dest String to place the result in
-	void Convert(std::string const& source, std::string &dest);
 	size_t Convert(const char* source, size_t sourceSize, char* dest, size_t destSize);
+	std::u32string Convert32(std::string const& source);
+	std::string Convert(std::u32string const& source);
 	/// Bare wrapper around iconv; see iconv documention for details
 	size_t Convert(const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
 

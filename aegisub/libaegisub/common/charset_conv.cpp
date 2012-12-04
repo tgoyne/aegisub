@@ -297,24 +297,20 @@ IconvWrapper::IconvWrapper(const char* sourceEncoding, const char* destEncoding,
 IconvWrapper::~IconvWrapper() {
 }
 
-std::string IconvWrapper::Convert(std::string const& source) {
-	std::string dest;
-	Convert(source, dest);
-	return dest;
-}
-void IconvWrapper::Convert(std::string const& source, std::string &dest) {
-	char buff[512];
+template<typename SrcString, typename DstString>
+void IconvWrapper::Convert(SrcString const& source, DstString &dest) {
+	typename DstString::value_type buff[512];
 
-	const char *src = source.data();
-	size_t srcLen = source.size();
+	const char *src = (const char *)source.data();
+	size_t srcLen = source.size() * sizeof(SrcString::value_type);
 	size_t res;
 	do {
-		char *dst = buff;
+		char *dst = (char *)buff;
 		size_t dstLen = sizeof(buff);
 		res = conv->Convert(&src, &srcLen, &dst, &dstLen);
 		if (res == 0) conv->Convert(nullptr, nullptr, &dst, &dstLen);
 
-		dest.append(buff, sizeof(buff) - dstLen);
+		dest.append(buff, (sizeof(buff) - dstLen) / sizeof(DstString::value_type));
 	} while (res == iconv_failed && errno == E2BIG);
 	
 	if (res == iconv_failed) {
@@ -334,6 +330,24 @@ void IconvWrapper::Convert(std::string const& source, std::string &dest) {
 				throw ConversionFailure("An unknown conversion failure occurred");
 		}
 	}
+}
+
+std::string IconvWrapper::Convert(std::string const& source) {
+	std::string dest;
+	Convert(source, dest);
+	return dest;
+}
+
+std::u32string IconvWrapper::Convert32(std::string const& source) {
+	std::u32string dest;
+	Convert(source, dest);
+	return dest;
+}
+
+std::string IconvWrapper::Convert(std::u32string const& source) {
+	std::string dest;
+	Convert(source, dest);
+	return dest;
 }
 
 size_t IconvWrapper::Convert(const char* source, size_t sourceSize, char *dest, size_t destSize) {
