@@ -60,8 +60,10 @@ SubtitlesGrid::SubtitlesGrid(wxWindow *parent, agi::Context *context)
 static void trim_text(AssDialogue *diag) {
 	static wxRegEx start("^( |\t|\\\\[nNh])+");
 	static wxRegEx end("( |\t|\\\\[nNh])+$");
-	start.ReplaceFirst(&diag->Text, "");
-	end.ReplaceFirst(&diag->Text, "");
+	wxString text = diag->Text;
+	start.ReplaceFirst(&text, "");
+	end.ReplaceFirst(&text, "");
+	diag->Text = text;
 }
 
 static void expand_times(AssDialogue *src, AssDialogue *dst) {
@@ -94,39 +96,39 @@ void SubtitlesGrid::RecombineLines() {
 		}
 
 		// 1, 1+2, 1 turns into 1, 2, [empty]
-		if (d1->Text.empty()) {
+		if (d1->Text.get().empty()) {
 			delete d1;
 			continue;
 		}
 		// If d2 is the last line in the selection it'll never hit the above test
-		if (d2 == end && (*d2)->Text.empty()) {
+		if (d2 == end && (*d2)->Text.get().empty()) {
 			delete *d2;
 			continue;
 		}
 
 		// 1, 1+2
-		while (d2 <= end && (*d2)->Text.StartsWith(d1->Text, &(*d2)->Text)) {
+		while (d2 <= end && (*d2)->Text.get().StartsWith(d1->Text, &(*d2)->Text)) {
 			expand_times(*d2, d1);
 			trim_text(*d2);
 			++d2;
 		}
 
 		// 1, 2+1
-		while (d2 <= end && (*d2)->Text.EndsWith(d1->Text, &(*d2)->Text)) {
+		while (d2 <= end && (*d2)->Text.get().EndsWith(d1->Text, &(*d2)->Text)) {
 			expand_times(*d2, d1);
 			trim_text(*d2);
 			++d2;
 		}
 
 		// 1+2, 2
-		while (d2 <= end && d1->Text.EndsWith((*d2)->Text, &d1->Text)) {
+		while (d2 <= end && d1->Text.get().EndsWith((*d2)->Text, &d1->Text)) {
 			expand_times(d1, *d2);
 			trim_text(d1);
 			++d2;
 		}
 
 		// 2+1, 2
-		while (d2 <= end && d1->Text.StartsWith((*d2)->Text, &d1->Text)) {
+		while (d2 <= end && d1->Text.get().StartsWith((*d2)->Text, &d1->Text)) {
 			expand_times(d1, *d2);
 			trim_text(d1);
 			++d2;
