@@ -46,6 +46,13 @@
 #include "../auto4_base.h"
 #include "../video_context.h"
 #include "../frame_main.h"
+#include "../ass_file.h"
+
+#include "windows.h"
+#include "psapi.h"
+#include <libaegisub/log.h>
+
+#pragma comment(lib, "psapi.lib")
 
 namespace {
 	using cmd::Command;
@@ -84,6 +91,13 @@ struct open_manager : public Command {
 	STR_HELP("Open automation manager")
 
 	void operator()(agi::Context *c) {
+		PROCESS_MEMORY_COUNTERS_EX pmc;
+		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+		LOG_D("bench") << "memory initial: " << pmc.PrivateUsage;
+		for (size_t i = 0; i < 100; ++i)
+			c->ass->Commit("test", AssFile::COMMIT_DIAG_FULL);
+		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+		LOG_D("bench") << "memory final: " << pmc.PrivateUsage;
 		c->dialog->Show<DialogAutomation>(c);
 	}
 };

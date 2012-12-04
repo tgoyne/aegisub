@@ -147,10 +147,7 @@ bool AegisubApp::OnInit() {
 
 	// logging.
 	agi::log::log = new agi::log::LogSink;
-
-#ifdef _DEBUG
 	agi::log::log->Subscribe(new agi::log::EmitSTDOUT());
-#endif
 
 	// Set config file
 	StartupLog("Load local configuration");
