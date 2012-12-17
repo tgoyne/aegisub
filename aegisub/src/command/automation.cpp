@@ -94,8 +94,10 @@ struct open_manager : public Command {
 		PROCESS_MEMORY_COUNTERS_EX pmc;
 		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
 		LOG_D("bench") << "memory initial: " << pmc.PrivateUsage;
-		for (size_t i = 0; i < 100; ++i)
-			c->ass->Commit("test", AssFile::COMMIT_DIAG_FULL);
+		AssEntry *e = &*std::next(c->ass->Line.begin(), 5000);
+		int commitId = -1;
+		for (size_t i = 0; i < 1000; ++i)
+			commitId = c->ass->Commit("test", AssFile::COMMIT_DIAG_FULL, commitId, e);
 		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
 		LOG_D("bench") << "memory final: " << pmc.PrivateUsage;
 		c->dialog->Show<DialogAutomation>(c);
