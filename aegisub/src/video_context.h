@@ -32,8 +32,7 @@
 /// @ingroup video
 ///
 
-#include <time.h>
-
+#include <ctime>
 #include <list>
 #include <memory>
 
@@ -45,6 +44,7 @@
 #include <libaegisub/vfr.h>
 
 class AegiVideoFrame;
+class AssEntry;
 class SubtitlesProviderErrorEvent;
 class ThreadedFrameSource;
 class VideoProvider;
@@ -139,7 +139,7 @@ class VideoContext : public wxEvtHandler {
 	void OnVideoError(VideoProviderErrorEvent const& err);
 	void OnSubtitlesError(SubtitlesProviderErrorEvent const& err);
 
-	void OnSubtitlesCommit();
+	void OnSubtitlesCommit(int type, std::set<const AssEntry *> const& changed);
 	void OnSubtitlesSave();
 
 	/// Close the video, keyframes and timecodes
