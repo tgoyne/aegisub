@@ -54,7 +54,7 @@
 #include <libaegisub/of_type_adaptor.h>
 
 #include <algorithm>
-#include <cstdarg>
+#include <tuple>
 
 #include <wx/bmpbuttn.h>
 #include <wx/checkbox.h>
@@ -238,7 +238,7 @@ wxSpinCtrl *spin_ctrl(wxWindow *parent, T *value, int max_value) {
 }
 
 wxTextCtrl *num_text_ctrl(wxWindow *parent, double *value, wxString const& tooltip, wxSize size = wxSize(70, 20)) {
-	auto ctrl = new wxTextCtrl(parent, -1, "", wxDefaultPosition, size, 0, wxFloatingPointValidator<double>(value));
+	auto ctrl = new wxTextCtrl(parent, -1, "", wxDefaultPosition, size, 0, wxFloatingPointValidator<double>(value, wxNUM_VAL_NO_TRAILING_ZEROES));
 	ctrl->SetToolTip(tooltip);
 	return ctrl;
 }
@@ -262,25 +262,28 @@ wxComboBox *combo_box(wxWindow *parent, wxString const& tooltip, wxArrayString c
 	return ctrl;
 }
 
-wxSizer *stack(wxOrientation dir, ...) {
-	wxSizer *sizer = new wxBoxSizer(dir);
-	wxSizerFlags flags = wxSizerFlags().Expand().Center();
-	bool first = true;
-
-	va_list argp;
-	va_start(argp, dir);
-	while (wxSizer *sub = va_arg(argp, wxSizer*)) {
-		sizer->Add(sub, flags);
-		if (first) {
-			first = false;
-			flags = flags.Border(dir == wxVERTICAL ? wxTOP : wxLEFT);
-		}
+template<typename Tuple>
+struct add_to_sizer {
+	template<int N>
+	void add(wxSizer *sizer, wxSizerFlags flags, Tuple const& t) {
+		sizer->Add(std::get<N>(t), flags);
+		add<N + 1>(sizer, flags, t);
 	}
 
-	va_end(argp);
+	template<>
+	void add<std::tuple_size<Tuple>::value>(wxSizer *sizer, wxSizerFlags flags, Tuple const&) { }
+};
+
+template<typename Tuple>
+wxSizer *stack(wxOrientation dir, Tuple const& ctrls) {
+	wxSizer *sizer = new wxBoxSizer(dir);
+	wxSizerFlags flags = wxSizerFlags().Expand().Center();
+	sizer->Add(std::get<0>(ctrls), flags);
+	add_to_sizer<Tuple>().add<1>(sizer, flags.Border(dir == wxVERTICAL ? wxTOP : wxLEFT), ctrls);
 	return sizer;
 }
 
+using std::make_tuple;
 }
 
 DialogStyleEditor::DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Context *c, AssStyleStorage *store, wxString const& new_name)
@@ -289,7 +292,7 @@ DialogStyleEditor::DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Con
 , is_new(false)
 , style(style)
 , store(store)
-, preview_text(from_wx(OPT_GET("Tool/Style Editor/Preview Text")->GetString()))
+, preview_text(to_wx(OPT_GET("Tool/Style Editor/Preview Text")->GetString()))
 , subs_preview(nullptr)
 {
 	if (new_name.size()) {
@@ -328,10 +331,9 @@ DialogStyleEditor::DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Con
 	else
 		preview_box->Add(new wxStaticText(this, -1, _("No subtitle providers available. Cannot preview subs.")), wxSizerFlags().Center());
 
-	wxSizer *control_sizer = stack(wxHORIZONTAL,
-		stack(wxVERTICAL, MakeStyleNameBox(), MakeFontBox(), MakeColors(), stack(wxHORIZONTAL, MakeMargins(), alignment, 0), 0),
-		stack(wxVERTICAL, outline_box, MakeMiscBox(), preview_box, 0),
-		0);
+	wxSizer *control_sizer = stack(wxHORIZONTAL, make_tuple(
+		stack(wxVERTICAL, make_tuple(MakeStyleNameBox(), MakeFontBox(), MakeColors(), stack(wxHORIZONTAL, make_tuple(MakeMargins(), alignment)))),
+		stack(wxVERTICAL, make_tuple(outline_box, MakeMiscBox(), preview_box))));
 
 	// General Layout
 	wxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
@@ -376,7 +378,7 @@ wxSizer *DialogStyleEditor::MakeMargins() {
 	for (int i = 0; i < 3; ++i) {
 		auto ctrl = spin_ctrl(this, &work->Margin[i], 9999);
 		ctrl->SetToolTip(tooltips[i]);
-		sizer->Add(stack(wxVERTICAL, new wxStaticText(this, -1, labels[i]), ctrl, 0), 0, wxLEFT, i ? 3 : 0);
+		sizer->Add(stack(wxVERTICAL, make_tuple(new wxStaticText(this, -1, labels[i]), ctrl)), 0, wxLEFT, i ? 3 : 0);
 	}
 	return sizer;
 }
@@ -401,14 +403,14 @@ wxSizer *DialogStyleEditor::MakeColors() {
 		auto alpha = spin_ctrl(this, &field->a, 255);
 		alpha->SetToolTip(_("Set opacity, from 0 (opaque) to 255 (transparent)"));
 
-		sizer->Add(stack(wxVERTICAL, new wxStaticText(this, -1, labels[i]), btn, alpha, 0), 0, wxLEFT, i ? 5 : 0);
+		sizer->Add(stack(wxVERTICAL, make_tuple(new wxStaticText(this, -1, labels[i]), btn, alpha)), 0, wxLEFT, i ? 3 : 0);
 	}
 	return sizer;
 }
 
 wxSizer *DialogStyleEditor::MakeStyleNameBox() {
 	wxSizer *sizer = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Style Name"));
-	sizer->Add(text_ctrl(this, &work->name, _("Style name"), wxSize(500, -1)), wxSizerFlags(1).Border());
+	sizer->Add(text_ctrl(this, &work->name, _("Style name"), wxSize(200, -1)), wxSizerFlags(1).Border());
 	return sizer;
 }
 
@@ -494,6 +496,8 @@ bool DialogStyleEditor::NameIsDuplicate() const {
 		if (s != style && work->name.CmpNoCase(s->name) == 0)
 			return true;
 	}
+
+	return false;
 }
 
 bool DialogStyleEditor::StyleRefsNeedRename(StyleRenamer& renamer) const {
