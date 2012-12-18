@@ -32,20 +32,17 @@
 /// @ingroup style_editor
 ///
 
-#include <wx/checkbox.h>
-#include <wx/combobox.h>
-#include <wx/radiobox.h>
-#include <wx/spinctrl.h>
-#include <wx/textctrl.h>
+#include <wx/dialog.h>
 
 #include <libaegisub/scoped_ptr.h>
 
+namespace { class StyleRenamer; }
 namespace agi { struct Context; }
 class AssStyle;
 class AssStyleStorage;
-class ColourButton;
 class PersistLocation;
 class SubtitlesPreview;
+class wxSizer;
 
 class DialogStyleEditor : public wxDialog {
 	agi::Context *c;
@@ -66,44 +63,29 @@ class DialogStyleEditor : public wxDialog {
 	/// The style storage style is in, if applicable
 	AssStyleStorage *store;
 
-	wxTextCtrl *StyleName;
-	wxComboBox *FontName;
-	wxTextCtrl *FontSize;
-	wxCheckBox *BoxBold;
-	wxCheckBox *BoxItalic;
-	wxCheckBox *BoxUnderline;
-	wxCheckBox *BoxStrikeout;
-	ColourButton *colorButton[4];
-	wxSpinCtrl *colorAlpha[4];
-	wxSpinCtrl *margin[3];
-	wxRadioBox *Alignment;
-	wxTextCtrl *Outline;
-	wxTextCtrl *Shadow;
-	wxCheckBox *OutlineType;
-	wxTextCtrl *ScaleX;
-	wxTextCtrl *ScaleY;
-	wxTextCtrl *Angle;
-	wxComboBox *Encoding;
-	wxTextCtrl *Spacing;
-	wxTextCtrl *PreviewText;
-	SubtitlesPreview *SubsPreview;
+	wxString preview_text;
+	SubtitlesPreview *subs_preview;
 
-	void SetBitmapColor(int n,wxColour color);
-	int AlignToControl(int n);
-	int ControlToAlign(int n);
 	void UpdateWorkStyle();
+	bool NameIsDuplicate() const;
+	bool StyleRefsNeedRename(StyleRenamer& renamer) const;
 
-	void OnChildFocus(wxChildFocusEvent &event);
 	void OnCommandPreviewUpdate(wxCommandEvent &event);
 
-	void OnPreviewTextChange(wxCommandEvent &event);
-	void OnPreviewColourChange(wxCommandEvent &event);
+	void MakePreviewBox(wxSizer *PreviewBox);
 
-	/// @brief Maybe apply changes and maybe close the dialog
-	/// @param apply Should changes be applied?
-	/// @param close Should the dialog be closed?
-	void Apply(bool apply,bool close);
-	void OnSetColor(int n, wxCommandEvent& evt);
+	wxSizer *MakeColors();
+	wxSizer *MakeMargins();
+	wxSizer *MakeMiscBox();
+	wxSizer *MakeFontBox();
+	wxSizer *MakeStyleNameBox();
+
+	/// Save the current changes to the file or storage
+	void Apply();
+
+	/// Close the dialog
+	/// @param apply Save the current changes first
+	void Close(bool apply);
 
 public:
 	DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Context *c, AssStyleStorage *store = 0, wxString const& new_name = "");
