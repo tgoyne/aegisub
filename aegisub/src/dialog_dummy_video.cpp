@@ -39,6 +39,7 @@
 #include "libresrc/libresrc.h"
 #include "main.h"
 #include "video_provider_dummy.h"
+#include "wx_helpers.h"
 
 namespace {
 
@@ -69,7 +70,7 @@ wxSpinCtrl *spin_ctrl(wxWindow *parent, int min, int max, int *value) {
 wxControl *spin_ctrl(wxWindow *parent, double min, double max, double *value) {
 	wxFloatingPointValidator<double> val(4, value);
 	val.SetRange(min, max);
-	return new wxTextCtrl(parent, -1, "", wxDefaultPosition, wxSize(50, -1), 0, val);
+	return TextCtrl(parent, "", wxSize(50, -1), 0, val);
 }
 
 wxComboBox *resolution_shortcuts(wxWindow *parent, int width, int height) {

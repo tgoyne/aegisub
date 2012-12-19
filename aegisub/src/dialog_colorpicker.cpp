@@ -70,6 +70,7 @@
 #include "main.h"
 #include "persist_location.h"
 #include "utils.h"
+#include "wx_helpers.h"
 
 #ifdef __WXMAC__
 #include <ApplicationServices/ApplicationServices.h>
@@ -651,8 +652,8 @@ DialogColorPicker::DialogColorPicker(wxWindow *parent, agi::Color initial_color,
 	for (int i = 0; i < 3; ++i)
 		rgb_input[i] = new wxSpinCtrl(this, -1, "", wxDefaultPosition, colorinput_size, wxSP_ARROW_KEYS, 0, 255);
 
-	ass_input = new wxTextCtrl(this, -1, "", wxDefaultPosition, colorinput_size);
-	html_input = new wxTextCtrl(this, -1, "", wxDefaultPosition, colorinput_size);
+	ass_input = TextCtrl(this, "", colorinput_size);
+	html_input = TextCtrl(this, "", colorinput_size);
 
 	for (int i = 0; i < 3; ++i)
 		hsl_input[i] = new wxSpinCtrl(this, -1, "", wxDefaultPosition, colorinput_size, wxSP_ARROW_KEYS, 0, 255);

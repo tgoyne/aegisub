@@ -44,10 +44,11 @@
 #include "utils.h"
 #include "video_context.h"
 #include "video_provider_manager.h"
+#include "wx_helpers.h"
 
 static void make_field(wxWindow *parent, wxSizer *sizer, wxString const& name, wxString const& value) {
 	sizer->Add(new wxStaticText(parent, -1, name), 0, wxALIGN_CENTRE_VERTICAL);
-	sizer->Add(new wxTextCtrl(parent, -1, value, wxDefaultPosition, wxSize(300,-1), wxTE_READONLY), 0, wxALIGN_CENTRE_VERTICAL | wxEXPAND);
+	sizer->Add(TextCtrl(parent, value, wxSize(300,-1), wxTE_READONLY), 0, wxALIGN_CENTRE_VERTICAL | wxEXPAND);
 }
 
 static wxString pretty_ar(int width, int height) {

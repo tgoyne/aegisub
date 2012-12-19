@@ -49,6 +49,7 @@
 #include "libresrc/libresrc.h"
 #include "validators.h"
 #include "video_context.h"
+#include "wx_helpers.h"
 
 DialogProperties::DialogProperties(agi::Context *c)
 : wxDialog(c->parent, -1, _("Script Properties"))
@@ -74,8 +75,8 @@ DialogProperties::DialogProperties(agi::Context *c)
 
 	// Resolution box
 	wxSizer *ResSizer = new wxStaticBoxSizer(wxHORIZONTAL,this,_("Resolution"));
-	ResX = new wxTextCtrl(this,-1,"",wxDefaultPosition,wxSize(50,20),0,NumValidator(c->ass->GetScriptInfo("PlayResX")));
-	ResY = new wxTextCtrl(this,-1,"",wxDefaultPosition,wxSize(50,20),0,NumValidator(c->ass->GetScriptInfo("PlayResY")));
+	ResX = TextCtrl(this,"",wxSize(50,20),0,NumValidator(c->ass->GetScriptInfo("PlayResX")));
+	ResY = TextCtrl(this,"",wxSize(50,20),0,NumValidator(c->ass->GetScriptInfo("PlayResY")));
 	wxStaticText *ResText = new wxStaticText(this,-1,"x");
 
 	wxButton *FromVideo = new wxButton(this,-1,_("From &video"));
@@ -134,7 +135,7 @@ DialogProperties::DialogProperties(agi::Context *c)
 }
 
 void DialogProperties::AddProperty(wxSizer *sizer, wxString const& label, wxString const& property) {
-	wxTextCtrl *ctrl = new wxTextCtrl(this, -1, c->ass->GetScriptInfo(property), wxDefaultPosition, wxSize(200, 20));
+	wxTextCtrl *ctrl = TextCtrl(this, c->ass->GetScriptInfo(property), wxSize(200, 20));
 	sizer->Add(new wxStaticText(this, -1, label), wxSizerFlags().Center().Left());
 	sizer->Add(ctrl, wxSizerFlags(1).Expand());
 	properties.push_back(std::make_pair(property, ctrl));

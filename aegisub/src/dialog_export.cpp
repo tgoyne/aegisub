@@ -49,6 +49,7 @@
 #include "help_button.h"
 #include "libresrc/libresrc.h"
 #include "subtitle_format.h"
+#include "wx_helpers.h"
 
 // Swap the items at idx and idx + 1
 static void swap(wxCheckListBox *list, int idx, int sel_dir) {
@@ -107,7 +108,7 @@ DialogExport::DialogExport(agi::Context *c)
 	top_buttons->Add(btn_all, wxSizerFlags(1).Expand());
 	top_buttons->Add(btn_none, wxSizerFlags(1).Expand());
 
-	filter_description = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(200, 60), wxTE_MULTILINE | wxTE_READONLY);
+	filter_description = TextCtrl(this, "", wxSize(200, 60), wxTE_MULTILINE | wxTE_READONLY);
 
 	// Charset dropdown list
 	wxStaticText *charset_list_label = new wxStaticText(this, -1, _("Text encoding:"));

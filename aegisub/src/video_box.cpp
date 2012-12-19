@@ -62,6 +62,7 @@
 #include "video_context.h"
 #include "video_display.h"
 #include "video_slider.h"
+#include "wx_helpers.h"
 
 VideoBox::VideoBox(wxWindow *parent, bool isDetached, agi::Context *context)
 : wxPanel(parent,-1)
@@ -75,11 +76,11 @@ VideoBox::VideoBox(wxWindow *parent, bool isDetached, agi::Context *context)
 	wxToolBar *mainToolbar = toolbar::GetToolbar(this, "video", context, "Video", false);
 
 	// Position
-	VideoPosition = new wxTextCtrl(this,-1,"",wxDefaultPosition,wxSize(110,20),wxTE_READONLY);
+	VideoPosition = TextCtrl(this, "", wxSize(110, 20), wxTE_READONLY);
 	VideoPosition->SetToolTip(_("Current frame time and number"));
 
 	// Times of sub relative to video
-	VideoSubsPos = new wxTextCtrl(this,-1,"",wxDefaultPosition,wxSize(110,20),wxTE_READONLY);
+	VideoSubsPos = TextCtrl(this, "", wxSize(110, 20), wxTE_READONLY);
 	VideoSubsPos->SetToolTip(_("Time of this frame relative to start and end of current subs"));
 
 	// Zoom box

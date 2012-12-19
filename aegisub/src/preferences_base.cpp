@@ -43,6 +43,7 @@
 #include "preferences.h"
 #include "standard_paths.h"
 #include "video_provider_manager.h"
+#include "wx_helpers.h"
 
 #define OPTION_UPDATER(type, evttype, opt, body)                            \
 	class type {                                                            \
@@ -154,7 +155,7 @@ wxControl *OptionPage::OptionAdd(wxFlexGridSizer *flex, const wxString &name, co
 		}
 
 		case agi::OptionValue::Type_String: {
-			wxTextCtrl *text = new wxTextCtrl(this, -1 , lagi_wxString(opt->GetString()));
+			wxTextCtrl *text = TextCtrl(this, to_wx(opt->GetString()));
 			text->Bind(wxEVT_COMMAND_TEXT_UPDATED, StringUpdater(opt_name, parent));
 			Add(flex, name, text);
 			return text;
@@ -218,7 +219,7 @@ void OptionPage::OptionBrowse(wxFlexGridSizer *flex, const wxString &name, const
 	if (opt->GetType() != agi::OptionValue::Type_String)
 		throw PreferenceIncorrectType("Option must be agi::OptionValue::Type_String for BrowseButton.");
 
-	wxTextCtrl *text = new wxTextCtrl(this, -1 , opt->GetString());
+	wxTextCtrl *text = TextCtrl(this, to_wx(opt->GetString()));
 	text->SetMinSize(wxSize(160, -1));
 	text->Bind(wxEVT_COMMAND_TEXT_UPDATED, StringUpdater(opt_name, parent));
 
@@ -250,7 +251,7 @@ void OptionPage::OptionFont(wxSizer *sizer, std::string opt_prefix) {
 	parent->AddChangeableOption(face_opt->GetName());
 	parent->AddChangeableOption(size_opt->GetName());
 
-	wxTextCtrl *font_name = new wxTextCtrl(this, -1, face_opt->GetString());
+	wxTextCtrl *font_name = TextCtrl(this, to_wx(face_opt->GetString()));
 	font_name->SetMinSize(wxSize(160, -1));
 	font_name->Bind(wxEVT_COMMAND_TEXT_UPDATED, StringUpdater(face_opt->GetName().c_str(), parent));
 

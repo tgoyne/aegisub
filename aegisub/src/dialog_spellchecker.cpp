@@ -35,6 +35,7 @@
 #include "text_selection_controller.h"
 #include "subs_edit_ctrl.h"
 #include "utils.h"
+#include "wx_helpers.h"
 
 #include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/exception.h>
@@ -76,9 +77,9 @@ DialogSpellChecker::DialogSpellChecker(agi::Context *context)
 	// Misspelled word and currently selected correction
 	current_word_sizer->AddGrowableCol(1, 1);
 	current_word_sizer->Add(new wxStaticText(this, -1, _("Misspelled word:")), 0, wxALIGN_CENTER_VERTICAL);
-	current_word_sizer->Add(orig_word = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxDefaultSize, wxTE_READONLY), wxSizerFlags(1).Expand());
+	current_word_sizer->Add(orig_word = TextCtrl(this, "", wxDefaultSize, wxTE_READONLY), wxSizerFlags(1).Expand());
 	current_word_sizer->Add(new wxStaticText(this, -1, _("Replace with:")), 0, wxALIGN_CENTER_VERTICAL);
-	current_word_sizer->Add(replace_word = new wxTextCtrl(this, -1, ""), wxSizerFlags(1).Expand());
+	current_word_sizer->Add(replace_word = TextCtrl(this, ""), wxSizerFlags(1).Expand());
 
 	// List of suggested corrections
 	suggest_list = new wxListBox(this, -1, wxDefaultPosition, wxSize(300, 150));

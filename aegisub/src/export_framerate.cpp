@@ -50,6 +50,7 @@
 #include "include/aegisub/context.h"
 #include "utils.h"
 #include "video_context.h"
+#include "wx_helpers.h"
 
 #include <libaegisub/of_type_adaptor.h>
 
@@ -87,7 +88,7 @@ wxWindow *AssTransformFramerateFilter::GetConfigDialogWindow(wxWindow *parent, a
 		initialInput = "23.976";
 		FromVideo->Enable(false);
 	}
-	InputFramerate = new wxTextCtrl(base,-1,initialInput,wxDefaultPosition,wxSize(60,20));
+	InputFramerate = TextCtrl(base, initialInput, wxSize(60,20));
 	InputSizer->Add(InputFramerate,0,wxEXPAND | wxLEFT,5);
 	InputSizer->Add(FromVideo,0,wxEXPAND | wxLEFT,5);
 	InputSizer->AddStretchSpacer(1);
@@ -108,7 +109,7 @@ wxWindow *AssTransformFramerateFilter::GetConfigDialogWindow(wxWindow *parent, a
 		RadioOutputVFR->Enable(false);
 		RadioOutputCFR->SetValue(true);
 	}
-	OutputFramerate = new wxTextCtrl(base,-1,initialOutput,wxDefaultPosition,wxSize(60,20));
+	OutputFramerate = TextCtrl(base, initialOutput, wxSize(60,20));
 	OutputSizerBottom->Add(RadioOutputCFR,0,wxEXPAND,0);
 	OutputSizerBottom->Add(OutputFramerate,0,wxEXPAND | wxLEFT,5);
 	OutputSizerBottom->AddStretchSpacer(1);

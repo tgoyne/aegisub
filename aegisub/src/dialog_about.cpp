@@ -45,6 +45,7 @@
 #include "dialog_about.h"
 #include "libresrc/libresrc.h"
 #include "version.h"
+#include "wx_helpers.h"
 
 AboutScreen::AboutScreen(wxWindow *parent)
 : wxDialog (parent, -1, _("About Aegisub"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX , _("About Aegisub"))
@@ -138,7 +139,7 @@ AboutScreen::AboutScreen(wxWindow *parent)
 	wxChar copySymbol = 0xA9;
 	aboutString.Replace("(c)",wxString(copySymbol));
 
-	wxTextCtrl *textctrl = new wxTextCtrl(this, -1, aboutString, wxDefaultPosition, wxSize(-1,200), wxTE_MULTILINE|wxTE_READONLY|wxBORDER_NONE);
+	wxTextCtrl *textctrl = TextCtrl(this, aboutString, wxSize(-1,200), wxTE_MULTILINE|wxTE_READONLY|wxBORDER_NONE);
 
 	wxSizer *MainSizer = new wxBoxSizer(wxVERTICAL);
 	MainSizer->Add(new wxStaticBitmap(this, -1, GETIMAGE(splash)), 0, wxCENTER, 0);

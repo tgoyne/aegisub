@@ -67,6 +67,7 @@
 #include "utils.h"
 #include "validators.h"
 #include "video_context.h"
+#include "wx_helpers.h"
 
 #include <libaegisub/of_type_adaptor.h>
 
@@ -124,7 +125,7 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	Bind(wxEVT_COMMAND_COMBOBOX_SELECTED, &SubsEditBox::OnEffectChange, this, effect_box->GetId());
 	top_sizer->Add(effect_box, 3, wxALIGN_CENTER, 5);
 
-	char_count = new wxTextCtrl(this, -1, "0", wxDefaultPosition, wxSize(30, -1), wxTE_READONLY | wxTE_CENTER);
+	char_count = TextCtrl(this, "0", wxSize(30, -1), wxTE_READONLY | wxTE_CENTER);
 	char_count->SetToolTip(_("Number of characters in the longest line of this subtitle."));
 	top_sizer->Add(char_count, 0, wxALIGN_CENTER, 5);
 
@@ -208,7 +209,7 @@ SubsEditBox::~SubsEditBox() {
 }
 
 wxTextCtrl *SubsEditBox::MakeMarginCtrl(wxString const& tooltip, int margin, wxString const& commit_msg) {
-	wxTextCtrl *ctrl = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(40,-1), wxTE_CENTRE | wxTE_PROCESS_ENTER, NumValidator());
+	wxTextCtrl *ctrl = TextCtrl(this, "", wxSize(40,-1), wxTE_CENTRE | wxTE_PROCESS_ENTER, NumValidator());
 	ctrl->SetMaxLength(4);
 	ctrl->SetToolTip(tooltip);
 	middle_left_sizer->Add(ctrl, wxSizerFlags().Center());

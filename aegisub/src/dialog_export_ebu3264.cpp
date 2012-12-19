@@ -27,6 +27,7 @@
 
 #include "main.h"
 #include "text_file_writer.h"
+#include "wx_helpers.h"
 
 #include <wx/checkbox.h>
 #include <wx/combobox.h>
@@ -122,7 +123,7 @@ EbuExportConfigurationDialog::EbuExportConfigurationDialog(wxWindow *owner, EbuE
 	};
 	wxRadioBox *tv_standard_box = new wxRadioBox(this, -1, _("TV standard"), wxDefaultPosition, wxDefaultSize, 6, tv_standards, 0, wxRA_SPECIFY_ROWS);
 
-	wxTextCtrl *timecode_offset_entry = new wxTextCtrl(this, -1, "00:00:00:00");
+	wxTextCtrl *timecode_offset_entry = TextCtrl(this, "00:00:00:00");
 	wxCheckBox *inclusive_end_times_check = new wxCheckBox(this, -1, _("Out-times are inclusive"));
 
 	wxString text_encodings[] = {

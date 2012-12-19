@@ -60,6 +60,7 @@
 #include "selection_controller.h"
 #include "utils.h"
 #include "video_context.h"
+#include "wx_helpers.h"
 
 namespace {
 using std::placeholders::_1;
@@ -72,7 +73,7 @@ void set_ctrl_state(wxCommandEvent &evt, wxCheckBox *cb, wxTextCtrl *tc) {
 wxTextCtrl *make_ctrl(wxWindow *parent, wxSizer *sizer, wxString const& desc, int *value, wxCheckBox *cb, wxString const& tooltip) {
 	wxIntegerValidator<int> validator(value);
 	validator.SetMin(0);
-	wxTextCtrl *ctrl = new wxTextCtrl(parent, -1, "", wxDefaultPosition, wxSize(60,-1), 0, validator);
+	wxTextCtrl *ctrl = TextCtrl(parent, "", wxSize(60,-1), 0, validator);
 	ctrl->SetToolTip(tooltip);
 	if (!desc.empty())
 		sizer->Add(new wxStaticText(parent, -1, desc), wxSizerFlags().Center().Border(wxRIGHT));

@@ -48,6 +48,7 @@
 #include "timeedit_ctrl.h"
 #include "validators.h"
 #include "video_context.h"
+#include "wx_helpers.h"
 
 DialogJumpTo::DialogJumpTo(agi::Context *c)
 : wxDialog(c->parent, -1, _("Jump to"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxWANTS_CHARS)
@@ -63,7 +64,7 @@ DialogJumpTo::DialogJumpTo(agi::Context *c)
 	wxStaticText *LabelFrame = new wxStaticText(this,-1,_("Frame: "));
 	wxStaticText *LabelTime = new wxStaticText(this,-1,_("Time: "));
 
-	JumpFrame = new wxTextCtrl(this,-1,"",wxDefaultPosition,wxSize(-1,-1),wxTE_PROCESS_ENTER, NumValidator((int)jumpframe));
+	JumpFrame = TextCtrl(this, "", wxSize(-1,-1), wxTE_PROCESS_ENTER, NumValidator((int)jumpframe));
 	JumpFrame->SetMaxLength(maxLength.size());
 	JumpTime = new TimeEdit(this, -1, c, AssTime(c->videoController->TimeAtFrame(jumpframe)).GetAssFormated(), wxSize(-1,-1));
 

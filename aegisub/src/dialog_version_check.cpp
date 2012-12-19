@@ -69,6 +69,7 @@
 #include "main.h"
 #include "string_codec.h"
 #include "version.h"
+#include "wx_helpers.h"
 
 #include <libaegisub/exception.h>
 #include <libaegisub/scoped_ptr.h>
@@ -505,7 +506,7 @@ VersionCheckerResultDialog::VersionCheckerResultDialog(const wxString &main_text
 		text->SetFont(boldfont);
 		main_sizer->Add(text, 0, wxEXPAND|wxBOTTOM, 6);
 
-		wxTextCtrl *descbox = new wxTextCtrl(this, -1, upd_iterator->description, wxDefaultPosition, wxSize(controls_width,60), wxTE_MULTILINE|wxTE_READONLY);
+		wxTextCtrl *descbox = TextCtrl(this, upd_iterator->description, wxSize(controls_width,60), wxTE_MULTILINE|wxTE_READONLY);
 		main_sizer->Add(descbox, 0, wxEXPAND|wxBOTTOM, 6);
 
 		main_sizer->Add(new wxHyperlinkCtrl(this, -1, upd_iterator->url, upd_iterator->url), 0, wxALIGN_LEFT|wxBOTTOM, 6);

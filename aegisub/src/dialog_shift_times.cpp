@@ -53,6 +53,7 @@
 #include "standard_paths.h"
 #include "timeedit_ctrl.h"
 #include "video_context.h"
+#include "wx_helpers.h"
 
 static wxString get_history_string(json::Object &obj) {
 	wxString filename = lagi_wxString(obj["filename"]);
@@ -118,7 +119,7 @@ DialogShiftTimes::DialogShiftTimes(agi::Context *context)
 	shift_time = new TimeEdit(this, -1, context);
 	shift_time->SetToolTip(_("Enter time in h:mm:ss.cs notation"));
 
-	shift_frames = new wxTextCtrl(this, -1);
+	shift_frames = TextCtrl(this, -1);
 	shift_frames->SetToolTip(_("Enter number of frames to shift by"));
 
 	shift_forward = new wxRadioButton(this, -1, _("For&ward"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);

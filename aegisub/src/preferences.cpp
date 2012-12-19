@@ -53,6 +53,7 @@
 #include "main.h"
 #include "preferences_base.h"
 #include "video_provider_manager.h"
+#include "wx_helpers.h"
 
 #ifdef WITH_PORTAUDIO
 #include "audio_player_portaudio.h"

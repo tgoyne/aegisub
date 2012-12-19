@@ -36,6 +36,7 @@
 #include "selection_controller.h"
 #include "standard_paths.h"
 #include "utils.h"
+#include "wx_helpers.h"
 
 #include <libaegisub/scoped_ptr.h>
 
@@ -228,7 +229,7 @@ DialogFontsCollector::DialogFontsCollector(agi::Context *c)
 	wxStaticBoxSizer *destination_box = new wxStaticBoxSizer(wxVERTICAL, this, _("Destination"));
 
 	dest_label = new wxStaticText(this, -1, " ");
-	dest_ctrl = new wxTextCtrl(this, -1, StandardPaths::DecodePath(lagi_wxString(OPT_GET("Path/Fonts Collector Destination")->GetString())));
+	dest_ctrl = TextCtrl(this, StandardPaths::DecodePath(to_wx(OPT_GET("Path/Fonts Collector Destination")->GetString())));
 	dest_browse_button = new wxButton(this, -1, _("&Browse..."));
 
 	wxSizer *dest_browse_sizer = new wxBoxSizer(wxHORIZONTAL);

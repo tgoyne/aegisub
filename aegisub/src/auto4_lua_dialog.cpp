@@ -63,6 +63,7 @@
 #include "compat.h"
 #include "string_codec.h"
 #include "utils.h"
+#include "wx_helpers.h"
 
 // These must be after the headers above.
 #ifdef __WINDOWS__
@@ -195,8 +196,7 @@ namespace Automation4 {
 
 			wxControl *Create(wxWindow *parent)
 			{
-				cw = new wxTextCtrl(parent, -1, text);
-				cw->SetValidator(wxGenericValidator(&text));
+				cw = TextCtrl(parent, text, wxDefaultSize, 0, wxGenericValidator(&text));
 				cw->SetToolTip(hint);
 				return cw;
 			}
@@ -269,7 +269,7 @@ namespace Automation4 {
 			// Same serialisation interface as single-line edit
 			wxControl *Create(wxWindow *parent)
 			{
-				cw = new wxTextCtrl(parent, -1, text, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE, wxGenericValidator(&text));
+				cw = TextCtrl(parent, text, wxDefaultSize, wxTE_MULTILINE, wxGenericValidator(&text));
 				cw->SetMinSize(wxSize(0, 30));
 				cw->SetToolTip(hint);
 				return cw;
@@ -391,7 +391,7 @@ namespace Automation4 {
 				wxFloatingPointValidator<double> val(4, &value, wxNUM_VAL_NO_TRAILING_ZEROES);
 				val.SetRange(min, max);
 
-				cw = new wxTextCtrl(parent, -1, SerialiseValue(), wxDefaultPosition, wxDefaultSize, 0, val);
+				cw = TextCtrl(parent, SerialiseValue(), wxDefaultSize, 0, val);
 				cw->SetToolTip(hint);
 				return cw;
 			}
