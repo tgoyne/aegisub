@@ -27,11 +27,7 @@
   </ItemDefinitionGroup>
   <!-- Update git_version.h -->
   <Target Name="UpdateVersion" BeforeTargets="ClCompile">
-    <ExecShellScript
-      Command="$(MSBuildThisFileDirectory)..\version.sh"
-      WorkingDirectory="$(AegisubSourceBase)"
-      Configuration="@(ExecShellScript)"
-      Arguments=".." />
+    <ExecShellScript Command="$(MSBuildThisFileDirectory)..\version.sh" WorkingDirectory="$(AegisubSourceBase)" Configuration="@(ExecShellScript)" Arguments=".." />
   </Target>
   <!-- Project References -->
   <ItemGroup>
@@ -256,6 +252,7 @@
     <ClInclude Include="$(SrcDir)visual_tool_scale.h" />
     <ClInclude Include="$(SrcDir)visual_tool_vector_clip.h" />
     <ClInclude Include="$(SrcDir)ass_info.h" />
+    <ClInclude Include="..\..\src\wx_helpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)aegisublocale.cpp" />
