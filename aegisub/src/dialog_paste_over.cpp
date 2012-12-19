@@ -45,13 +45,14 @@
 
 #include "help_button.h"
 #include "main.h"
+#include "wx_helpers.h"
 
 DialogPasteOver::DialogPasteOver(wxWindow *parent)
 : wxDialog (parent, -1, _("Select Fields to Paste Over"))
 {
 	// Label and list sizer
 	wxSizer *ListSizer = new wxStaticBoxSizer(wxVERTICAL, this, _("Fields"));
-	ListSizer->Add(new wxStaticText(this, -1, _("Please select the fields that you want to paste over:")), wxSizerFlags());
+	ListSizer->Add(StaticText(this,  _("Please select the fields that you want to paste over:")), wxSizerFlags());
 
 	// List box
 	wxArrayString choices;

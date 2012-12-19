@@ -57,8 +57,8 @@ enum {
 	Time_Edit_Paste
 };
 
-TimeEdit::TimeEdit(wxWindow* parent, wxWindowID id, agi::Context *c, const wxString& value, const wxSize& size, bool asEnd)
-: wxTextCtrl(parent, id, value, wxDefaultPosition, size, wxTE_CENTRE | wxTE_PROCESS_ENTER)
+TimeEdit::TimeEdit(wxWindow* parent, agi::Context *c, const wxString& value, const wxSize& size, bool asEnd)
+: wxTextCtrl(parent, -1, value, wxDefaultPosition, size, wxTE_CENTRE | wxTE_PROCESS_ENTER)
 , c(c)
 , byFrame(false)
 , isEnd(asEnd)

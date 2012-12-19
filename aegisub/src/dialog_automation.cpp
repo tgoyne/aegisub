@@ -54,6 +54,7 @@
 #include "libresrc/libresrc.h"
 #include "main.h"
 #include "subtitle_format.h"
+#include "wx_helpers.h"
 
 using std::placeholders::_1;
 
@@ -90,26 +91,18 @@ DialogAutomation::DialogAutomation(agi::Context *c)
 	list->InsertColumn(2, _("Filename"), wxLIST_FORMAT_LEFT, 90);
 	list->InsertColumn(3, _("Description"), wxLIST_FORMAT_LEFT, 330);
 
-	// button layout
-	wxSizer *button_box = new wxBoxSizer(wxHORIZONTAL);
-	button_box->AddStretchSpacer(2);
-	button_box->Add(add_button, 0);
-	button_box->Add(remove_button, 0);
-	button_box->AddSpacer(10);
-	button_box->Add(reload_button, 0);
-	button_box->Add(info_button, 0);
-	button_box->AddSpacer(10);
-	button_box->Add(reload_autoload_button, 0);
-	button_box->AddSpacer(10);
-	button_box->Add(new HelpButton(this,"Automation Manager"), 0);
-	button_box->Add(close_button, 0);
-	button_box->AddStretchSpacer(2);
-
 	// main layout
-	wxSizer *main_box = new wxBoxSizer(wxVERTICAL);
-	main_box->Add(list, wxSizerFlags(1).Expand().Border());
-	main_box->Add(button_box, wxSizerFlags().Expand().Border(wxALL & ~wxTOP));
-	SetSizerAndFit(main_box);
+	SetSizerAndFit(VERTBOX(
+		wxSizerFlags(1).Expand().Border(), list,
+		wxSizerFlags().Center().Border(wxALL & ~wxTOP), HORZBOX(
+			add_button, remove_button,
+			new wxSizerItem(10, 1),
+			reload_button, info_button,
+			new wxSizerItem(10, 1),
+			reload_autoload_button,
+			new wxSizerItem(10, 1),
+			new HelpButton(this,"Automation Manager"),
+			close_button)));
 	Center();
 
 	// why doesn't this work... the button gets the "default" decoration but doesn't answer to Enter

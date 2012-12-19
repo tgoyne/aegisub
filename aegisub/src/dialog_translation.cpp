@@ -38,6 +38,7 @@
 #include "selection_controller.h"
 #include "utils.h"
 #include "video_context.h"
+#include "wx_helpers.h"
 
 #include <wx/checkbox.h>
 #include <wx/msgdlg.h>
@@ -46,8 +47,8 @@
 #include <wx/stattext.h>
 
 static void add_hotkey(wxSizer *sizer, wxWindow *parent, const char *command, wxString const& text) {
-	sizer->Add(new wxStaticText(parent, -1, text));
-	sizer->Add(new wxStaticText(parent, -1, hotkey::get_hotkey_str_first("Translation Assistant", command)));
+	sizer->Add(StaticText(parent, text));
+	sizer->Add(StaticText(parent, hotkey::get_hotkey_str_first("Translation Assistant", command)));
 }
 
 // Skip over override blocks, comments, and whitespace between blocks
@@ -78,7 +79,7 @@ DialogTranslation::DialogTranslation(agi::Context *c)
 	{
 		wxSizer *original_box = new wxStaticBoxSizer(wxVERTICAL, this, _("Original"));
 
-		line_number_display = new wxStaticText(this, -1, "");
+		line_number_display = StaticText(this, "");
 		original_box->Add(line_number_display, 0, wxBOTTOM, 5);
 
 		original_text = new ScintillaTextCtrl(this, -1, "", wxDefaultPosition, wxSize(320, 80));

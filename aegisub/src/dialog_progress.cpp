@@ -123,9 +123,9 @@ DialogProgress::DialogProgress(wxWindow *parent, wxString const& title_text, wxS
 : wxDialog(parent, -1, title_text, wxDefaultPosition, wxDefaultSize, wxBORDER_RAISED)
 , pulse_timer(GetEventHandler())
 {
-	title = new wxStaticText(this, -1, title_text, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE | wxST_NO_AUTORESIZE);
+	title = StaticText(this, title_text, wxALIGN_CENTRE | wxST_NO_AUTORESIZE);
 	gauge = new wxGauge(this, -1, 100, wxDefaultPosition, wxSize(300,20));
-	text = new wxStaticText(this, -1, message, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE | wxST_NO_AUTORESIZE);
+	text = StaticText(this, message, wxALIGN_CENTRE | wxST_NO_AUTORESIZE);
 	cancel_button = new wxButton(this, wxID_CANCEL);
 	log_output = TextCtrl(this, "", wxSize(300, 120), wxTE_MULTILINE | wxTE_READONLY);
 

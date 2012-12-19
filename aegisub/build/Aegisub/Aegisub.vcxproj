@@ -22,7 +22,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>agi_pre.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>agi_pre.h</ForcedIncludeFiles>
-      <AdditionalOptions>/Zm150 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zm190 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
   <!-- Update git_version.h -->

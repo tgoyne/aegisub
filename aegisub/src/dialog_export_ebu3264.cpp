@@ -144,7 +144,7 @@ EbuExportConfigurationDialog::EbuExportConfigurationDialog(wxWindow *owner, EbuE
 	};
 
 	wxSpinCtrl *max_line_length_ctrl = new wxSpinCtrl(this, -1, wxString(), wxDefaultPosition, wxSize(65, -1));
-	wxComboBox *wrap_mode_ctrl = new wxComboBox(this, -1, wrap_modes[0], wxDefaultPosition, wxDefaultSize, 4, wrap_modes, wxCB_DROPDOWN | wxCB_READONLY);
+	wxComboBox *wrap_mode_ctrl = DropDownList(this, wrap_modes[0], wrap_modes);
 	wxCheckBox *translate_alignments_check = new wxCheckBox(this, -1, _("Translate alignments"));
 
 	max_line_length_ctrl->SetRange(10, 99);
@@ -155,14 +155,14 @@ EbuExportConfigurationDialog::EbuExportConfigurationDialog(wxWindow *owner, EbuE
 		_("Level-2 teletext")
 	};
 
-	wxComboBox *display_standard_ctrl = new wxComboBox(this, -1, "", wxDefaultPosition, wxDefaultSize, 2, display_standards, wxCB_DROPDOWN | wxCB_READONLY);
+	wxComboBox *display_standard_ctrl = DropDownList(this, "", display_standards);
 
 	wxSizer *max_line_length_labelled = new wxBoxSizer(wxHORIZONTAL);
-	max_line_length_labelled->Add(new wxStaticText(this, -1, _("Max. line length:")), 1, wxALIGN_CENTRE|wxRIGHT, 12);
+	max_line_length_labelled->Add(StaticText(this, _("Max. line length:")), 1, wxALIGN_CENTRE|wxRIGHT, 12);
 	max_line_length_labelled->Add(max_line_length_ctrl, 0, 0, 0);
 
 	wxSizer *timecode_offset_labelled = new wxBoxSizer(wxHORIZONTAL);
-	timecode_offset_labelled->Add(new wxStaticText(this, -1, _("Time code offset:")), 1, wxALIGN_CENTRE|wxRIGHT, 12);
+	timecode_offset_labelled->Add(StaticText(this, _("Time code offset:")), 1, wxALIGN_CENTRE|wxRIGHT, 12);
 	timecode_offset_labelled->Add(timecode_offset_entry, 0, 0, 0);
 
 	wxSizer *text_formatting_sizer = new wxStaticBoxSizer(wxVERTICAL, this, _("Text formatting"));
@@ -192,7 +192,7 @@ EbuExportConfigurationDialog::EbuExportConfigurationDialog(wxWindow *owner, EbuE
 
 	wxSizer *buttons_sizer = new wxBoxSizer(wxHORIZONTAL);
 	// Developers are requested to leave this message in! Intentionally not translatable.
-	wxStaticText *sponsor_label = new wxStaticText(this, -1, "EBU STL format writing sponsored by Bandai");
+	wxStaticText *sponsor_label = StaticText(this, "EBU STL format writing sponsored by Bandai");
 	sponsor_label->Enable(false);
 	buttons_sizer->Add(sponsor_label, 1, wxALIGN_BOTTOM, 0);
 	buttons_sizer->Add(CreateStdDialogButtonSizer(wxOK | wxCANCEL), 0, wxLEFT, 6);

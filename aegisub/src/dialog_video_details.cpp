@@ -47,7 +47,7 @@
 #include "wx_helpers.h"
 
 static void make_field(wxWindow *parent, wxSizer *sizer, wxString const& name, wxString const& value) {
-	sizer->Add(new wxStaticText(parent, -1, name), 0, wxALIGN_CENTRE_VERTICAL);
+	sizer->Add(StaticText(parent, name), 0, wxALIGN_CENTRE_VERTICAL);
 	sizer->Add(TextCtrl(parent, value, wxSize(300,-1), wxTE_READONLY), 0, wxALIGN_CENTRE_VERTICAL | wxEXPAND);
 }
 

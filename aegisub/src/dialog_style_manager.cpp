@@ -64,6 +64,7 @@
 #include "standard_paths.h"
 #include "subtitle_format.h"
 #include "utils.h"
+#include "wx_helpers.h"
 
 #include <libaegisub/of_type_adaptor.h>
 
@@ -72,8 +73,7 @@ using std::placeholders::_1;
 namespace {
 
 wxBitmapButton *add_bitmap_button(wxWindow *parent, wxSizer *sizer, wxBitmap const& img, wxString const& tooltip) {
-	wxBitmapButton *btn = new wxBitmapButton(parent, -1, img);
-	btn->SetToolTip(tooltip);
+	wxBitmapButton *btn = BitmapButton(parent, img, tooltip);
 	sizer->Add(btn, wxSizerFlags().Expand());
 	return btn;
 }
@@ -161,7 +161,7 @@ DialogStyleManager::DialogStyleManager(agi::Context *context)
 
 	// Catalog
 	wxSizer *CatalogBox = new wxStaticBoxSizer(wxHORIZONTAL,this,_("Catalog of available storages"));
-	CatalogList = new wxComboBox(this,-1, "", wxDefaultPosition, wxSize(-1,-1), 0, nullptr, wxCB_READONLY);
+	CatalogList = DropDownList(this);
 	wxButton *CatalogNew = new wxButton(this, -1, _("New"));
 	CatalogDelete = new wxButton(this, -1, _("Delete"));
 	CatalogBox->Add(CatalogList,1,wxEXPAND | wxRIGHT | wxALIGN_RIGHT,5);

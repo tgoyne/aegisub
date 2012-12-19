@@ -68,20 +68,12 @@ VideoBox::VideoBox(wxWindow *parent, bool isDetached, agi::Context *context)
 : wxPanel(parent,-1)
 , context(context)
 {
-	// Seek
 	VideoSlider *videoSlider = new VideoSlider(this, context);
 	videoSlider->SetToolTip(_("Seek video"));
 
-	// Buttons
 	wxToolBar *mainToolbar = toolbar::GetToolbar(this, "video", context, "Video", false);
-
-	// Position
-	VideoPosition = TextCtrl(this, "", wxSize(110, 20), wxTE_READONLY);
-	VideoPosition->SetToolTip(_("Current frame time and number"));
-
-	// Times of sub relative to video
-	VideoSubsPos = TextCtrl(this, "", wxSize(110, 20), wxTE_READONLY);
-	VideoSubsPos->SetToolTip(_("Time of this frame relative to start and end of current subs"));
+	VideoPosition = TextCtrl(this, "", wxSize(110, 20), wxTE_READONLY, _("Current frame time and number"));
+	VideoSubsPos = TextCtrl(this, "", wxSize(110, 20), wxTE_READONLY, _("Time of this frame relative to start and end of current subs"));
 
 	// Zoom box
 	wxArrayString choices;

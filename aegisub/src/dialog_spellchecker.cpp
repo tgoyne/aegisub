@@ -63,22 +63,22 @@ DialogSpellChecker::DialogSpellChecker(agi::Context *context)
 	wxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
 
 	wxFlexGridSizer *current_word_sizer = new wxFlexGridSizer(2, 5, 5);
-	main_sizer->Add(current_word_sizer, wxSizerFlags().Expand().Border(wxALL, 5));
+	main_sizer->Add(current_word_sizer, wxSizerFlags().Expand().Border(wxALL));
 
 	wxSizer *bottom_sizer = new wxBoxSizer(wxHORIZONTAL);
-	main_sizer->Add(bottom_sizer, wxSizerFlags().Expand().Border(~wxTOP & wxALL, 5));
+	main_sizer->Add(bottom_sizer, wxSizerFlags().Expand().Border(~wxTOP & wxALL));
 
 	wxSizer *bottom_left_sizer = new wxBoxSizer(wxVERTICAL);
-	bottom_sizer->Add(bottom_left_sizer, wxSizerFlags().Expand().Border(wxRIGHT, 5));
+	bottom_sizer->Add(bottom_left_sizer, wxSizerFlags().Expand().Border(wxRIGHT));
 
 	wxSizer *actions_sizer = new wxBoxSizer(wxVERTICAL);
 	bottom_sizer->Add(actions_sizer, wxSizerFlags().Expand());
 
 	// Misspelled word and currently selected correction
 	current_word_sizer->AddGrowableCol(1, 1);
-	current_word_sizer->Add(new wxStaticText(this, -1, _("Misspelled word:")), 0, wxALIGN_CENTER_VERTICAL);
+	current_word_sizer->Add(StaticText(this, _("Misspelled word:")), 0, wxALIGN_CENTER_VERTICAL);
 	current_word_sizer->Add(orig_word = TextCtrl(this, "", wxDefaultSize, wxTE_READONLY), wxSizerFlags(1).Expand());
-	current_word_sizer->Add(new wxStaticText(this, -1, _("Replace with:")), 0, wxALIGN_CENTER_VERTICAL);
+	current_word_sizer->Add(StaticText(this, _("Replace with:")), 0, wxALIGN_CENTER_VERTICAL);
 	current_word_sizer->Add(replace_word = TextCtrl(this, ""), wxSizerFlags(1).Expand());
 
 	// List of suggested corrections
@@ -106,13 +106,12 @@ DialogSpellChecker::DialogSpellChecker(agi::Context *context)
 				language_names[i] = info->Description;
 		}
 
-		language = new wxComboBox(this, -1, "", wxDefaultPosition, wxDefaultSize, language_names, wxCB_DROPDOWN | wxCB_READONLY);
-		wxString cur_lang = lagi_wxString(OPT_GET("Tool/Spell Checker/Language")->GetString());
+		wxString cur_lang = to_wx(OPT_GET("Tool/Spell Checker/Language")->GetString());
 		int cur_lang_index = dictionary_lang_codes.Index(cur_lang);
 		if (cur_lang_index == wxNOT_FOUND) cur_lang_index = dictionary_lang_codes.Index("en");
 		if (cur_lang_index == wxNOT_FOUND) cur_lang_index = dictionary_lang_codes.Index("en_US");
 		if (cur_lang_index == wxNOT_FOUND) cur_lang_index = 0;
-		language->SetSelection(cur_lang_index);
+		language = DropDownList(this, cur_lang_index, language_names);
 		language->Bind(wxEVT_COMMAND_COMBOBOX_SELECTED, &DialogSpellChecker::OnChangeLanguage, this);
 
 		bottom_left_sizer->Add(language, wxSizerFlags().Expand().Border(wxTOP, 5));

@@ -119,7 +119,7 @@ OptionPage::OptionPage(wxTreebook *book, Preferences *parent, wxString name, int
 
 template<class T>
 void OptionPage::Add(wxSizer *sizer, wxString const& label, T *control) {
-	sizer->Add(new wxStaticText(this, -1, label), 1, wxALIGN_CENTRE_VERTICAL);
+	sizer->Add(StaticText(this, label), 1, wxALIGN_CENTRE_VERTICAL);
 	sizer->Add(control, wxSizerFlags().Expand());
 }
 
@@ -177,7 +177,7 @@ void OptionPage::OptionChoice(wxFlexGridSizer *flex, const wxString &name, const
 	parent->AddChangeableOption(opt_name);
 	const agi::OptionValue *opt = OPT_GET(opt_name);
 
-	wxComboBox *cb = new wxComboBox(this, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, choices, wxCB_READONLY | wxCB_DROPDOWN);
+	wxComboBox *cb = DropDownList(this, wxEmptyString, choices);
 	Add(flex, name, cb);
 
 	switch (opt->GetType()) {

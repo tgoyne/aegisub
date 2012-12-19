@@ -60,6 +60,7 @@
 #include "main.h"
 #include "selection_controller.h"
 #include "utils.h"
+#include "wx_helpers.h"
 
 #define TEXT_LABEL_SOURCE _("Source: ")
 #define TEXT_LABEL_DEST _("Dest: ")
@@ -639,10 +640,10 @@ DialogKanjiTimer::DialogKanjiTimer(agi::Context *c)
 	Interpolate->SetValue(OPT_GET("Tool/Kanji Timer/Interpolation")->GetBool());
 
 	wxArrayString styles = subs->GetStyles();
-	SourceStyle = new wxComboBox(this, -1, "", wxDefaultPosition, wxSize(160, -1), styles, wxCB_READONLY);
-	DestStyle = new wxComboBox(this, -1, "", wxDefaultPosition, wxSize(160, -1), styles, wxCB_READONLY);
+	SourceStyle = DropDownList(this, "", styles, wxSize(160, -1));
+	DestStyle = DropDownList(this, "", styles, wxSize(160, -1));
 
-	wxStaticText *ShortcutKeys = new wxStaticText(this,-1,_("When the destination textbox has focus, use the following keys:\n\nRight Arrow: Increase dest. selection length\nLeft Arrow: Decrease dest. selection length\nUp Arrow: Increase source selection length\nDown Arrow: Decrease source selection length\nEnter: Link, accept line when done\nBackspace: Unlink last"));
+	wxStaticText *ShortcutKeys = StaticText(this, _("When the destination textbox has focus, use the following keys:\n\nRight Arrow: Increase dest. selection length\nLeft Arrow: Decrease dest. selection length\nUp Arrow: Increase source selection length\nDown Arrow: Decrease source selection length\nEnter: Link, accept line when done\nBackspace: Unlink last"));
 
 	//Buttons
 	wxButton *Start = new wxButton(this,BUTTON_KTSTART,_("S&tart!"));
@@ -658,9 +659,9 @@ DialogKanjiTimer::DialogKanjiTimer(agi::Context *c)
 	DisplayBoxSizer->Add(display, 0, wxEXPAND|wxALL, 6);
 	DisplayBoxSizer->Add(Interpolate, 0, wxEXPAND|wxALL, 6);
 	//Frame: Styles
-	StylesGridSizer->Add(new wxStaticText(this, -1, TEXT_LABEL_SOURCE), 0, wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL);
+	StylesGridSizer->Add(StaticText(this,  TEXT_LABEL_SOURCE), 0, wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL);
 	StylesGridSizer->Add(SourceStyle, 1, wxEXPAND);
-	StylesGridSizer->Add(new wxStaticText(this, -1, TEXT_LABEL_DEST), 0, wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL);
+	StylesGridSizer->Add(StaticText(this,  TEXT_LABEL_DEST), 0, wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL);
 	StylesGridSizer->Add(DestStyle, 1, wxEXPAND);
 	StylesBoxSizer->Add(StylesGridSizer, 1, wxEXPAND|wxALL, 6);
 	//Frame: Shortcut Keys

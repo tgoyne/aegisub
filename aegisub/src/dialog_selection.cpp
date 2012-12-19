@@ -141,8 +141,8 @@ wxDialog (c->parent, -1, _("Select"), wxDefaultPosition, wxDefaultSize, wxCAPTIO
 		{
 			wxSizerFlags radio_flags = wxSizerFlags().Border(wxLEFT | wxRIGHT);
 			wxSizer *match_radio_line = new wxBoxSizer(wxHORIZONTAL);
-			match_radio_line->Add(select_matching_lines = new wxRadioButton(this, -1, _("&Matches"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP), radio_flags);
-			match_radio_line->Add(select_unmatching_lines = new wxRadioButton(this, -1, _("&Doesn't Match")), radio_flags);
+			match_radio_line->Add(select_matching_lines = RadioButton(this, _("&Matches"), wxRB_GROUP), radio_flags);
+			match_radio_line->Add(select_unmatching_lines = RadioButton(this, _("&Doesn't Match")), radio_flags);
 			match_radio_line->Add(case_sensitive = new wxCheckBox(this, -1, _("Match c&ase")), radio_flags);
 			match_sizer->Add(match_radio_line);
 		}

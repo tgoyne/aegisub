@@ -70,7 +70,7 @@ wxSpinCtrl *spin_ctrl(wxWindow *parent, int min, int max, int *value) {
 wxControl *spin_ctrl(wxWindow *parent, double min, double max, double *value) {
 	wxFloatingPointValidator<double> val(4, value);
 	val.SetRange(min, max);
-	return TextCtrl(parent, "", wxSize(50, -1), 0, val);
+	return TextCtrl(parent, "", wxSize(50, -1), 0, "", val);
 }
 
 wxComboBox *resolution_shortcuts(wxWindow *parent, int width, int height) {
@@ -100,7 +100,7 @@ DialogDummyVideo::DialogDummyVideo(wxWindow *parent)
 
 	wxBoxSizer *res_sizer = new wxBoxSizer(wxHORIZONTAL);
 	res_sizer->Add(spin_ctrl(this, 1, 10000, &width), wxSizerFlags(1).Expand());
-	res_sizer->Add(new wxStaticText(this, -1, " x "), wxSizerFlags().Center());
+	res_sizer->Add(StaticText(this, " x "), wxSizerFlags().Center());
 	res_sizer->Add(spin_ctrl(this, 1, 10000, &height), wxSizerFlags(1).Expand());
 
 	wxBoxSizer *color_sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -114,7 +114,7 @@ DialogDummyVideo::DialogDummyVideo(wxWindow *parent)
 	AddCtrl(_("Color:"), color_sizer);
 	AddCtrl(_("Frame rate (fps):"), spin_ctrl(this, .1, 1000.0, &fps));
 	AddCtrl(_("Duration (frames):"), spin_ctrl(this, 2, 36000000, &length)); // Ten hours of 1k FPS
-	AddCtrl("", length_display = new wxStaticText(this, -1, ""));
+	AddCtrl("", length_display = StaticText(this, ""));
 
 	wxStdDialogButtonSizer *btn_sizer = CreateStdDialogButtonSizer(wxOK | wxCANCEL | wxHELP);
 	btn_sizer->GetHelpButton()->Bind(wxEVT_COMMAND_BUTTON_CLICKED, std::bind(&HelpButton::OpenPage, "Dummy Video"));
@@ -145,7 +145,7 @@ void DialogDummyVideo::AddCtrl(wxString const& label, T *ctrl) {
 	if (!label)
 		sizer->AddStretchSpacer();
 	else
-		sizer->Add(new wxStaticText(this, -1, label), wxSizerFlags().Center().Left());
+		sizer->Add(StaticText(this, label), wxSizerFlags().Center().Left());
 	sizer->Add(ctrl, wxSizerFlags().Expand().Center().Left());
 }
 

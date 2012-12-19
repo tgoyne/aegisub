@@ -491,7 +491,7 @@ VersionCheckerResultDialog::VersionCheckerResultDialog(const wxString &main_text
 
 	wxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
 
-	wxStaticText *text = new wxStaticText(this, -1, main_text);
+	wxStaticText *text = StaticText(this, main_text);
 	text->Wrap(controls_width);
 	main_sizer->Add(text, 0, wxBOTTOM|wxEXPAND, 6);
 
@@ -500,7 +500,7 @@ VersionCheckerResultDialog::VersionCheckerResultDialog(const wxString &main_text
 	{
 		main_sizer->Add(new wxStaticLine(this), 0, wxEXPAND|wxALL, 6);
 
-		text = new wxStaticText(this, -1, upd_iterator->friendly_name);
+		text = StaticText(this, upd_iterator->friendly_name);
 		wxFont boldfont = text->GetFont();
 		boldfont.SetWeight(wxFONTWEIGHT_BOLD);
 		text->SetFont(boldfont);

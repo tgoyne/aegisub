@@ -125,8 +125,7 @@ SubsEditBox::SubsEditBox(wxWindow *parent, agi::Context *context)
 	Bind(wxEVT_COMMAND_COMBOBOX_SELECTED, &SubsEditBox::OnEffectChange, this, effect_box->GetId());
 	top_sizer->Add(effect_box, 3, wxALIGN_CENTER, 5);
 
-	char_count = TextCtrl(this, "0", wxSize(30, -1), wxTE_READONLY | wxTE_CENTER);
-	char_count->SetToolTip(_("Number of characters in the longest line of this subtitle."));
+	char_count = TextCtrl(this, "0", wxSize(30, -1), wxTE_READONLY | wxTE_CENTER, _("Number of characters in the longest line of this subtitle."));
 	top_sizer->Add(char_count, 0, wxALIGN_CENTER, 5);
 
 	// Middle controls
@@ -209,9 +208,8 @@ SubsEditBox::~SubsEditBox() {
 }
 
 wxTextCtrl *SubsEditBox::MakeMarginCtrl(wxString const& tooltip, int margin, wxString const& commit_msg) {
-	wxTextCtrl *ctrl = TextCtrl(this, "", wxSize(40,-1), wxTE_CENTRE | wxTE_PROCESS_ENTER, NumValidator());
+	wxTextCtrl *ctrl = TextCtrl(this, "", wxSize(40,-1), wxTE_CENTRE | wxTE_PROCESS_ENTER, tooltip, NumValidator());
 	ctrl->SetMaxLength(4);
-	ctrl->SetToolTip(tooltip);
 	middle_left_sizer->Add(ctrl, wxSizerFlags().Center());
 
 	Bind(wxEVT_COMMAND_TEXT_UPDATED, [=](wxCommandEvent&) {
@@ -224,7 +222,7 @@ wxTextCtrl *SubsEditBox::MakeMarginCtrl(wxString const& tooltip, int margin, wxS
 }
 
 TimeEdit *SubsEditBox::MakeTimeCtrl(wxString const& tooltip, TimeField field) {
-	TimeEdit *ctrl = new TimeEdit(this, -1, c, "", wxSize(75,-1), field == TIME_END);
+	TimeEdit *ctrl = new TimeEdit(this, c, "", wxSize(75,-1), field == TIME_END);
 	ctrl->SetToolTip(tooltip);
 	Bind(wxEVT_COMMAND_TEXT_UPDATED, [=](wxCommandEvent&) { CommitTimes(field); }, ctrl->GetId());
 	ctrl->Bind(wxEVT_CHAR_HOOK, time_edit_char_hook);
@@ -234,7 +232,7 @@ TimeEdit *SubsEditBox::MakeTimeCtrl(wxString const& tooltip, TimeField field) {
 
 void SubsEditBox::MakeButton(const char *cmd_name) {
 	cmd::Command *command = cmd::get(cmd_name);
-	wxBitmapButton *btn = new wxBitmapButton(this, -1, command->Icon(16));
+	wxBitmapButton *btn = BitmapButton(this, command->Icon(16));
 	ToolTipManager::Bind(btn, command->StrHelp(), "Subtitle Edit Box", cmd_name);
 
 	middle_right_sizer->Add(btn, wxSizerFlags().Center().Expand());
@@ -251,8 +249,7 @@ wxComboBox *SubsEditBox::MakeComboBox(wxString const& initial_text, int style, v
 }
 
 wxRadioButton *SubsEditBox::MakeRadio(wxString const& text, bool start, wxString const& tooltip) {
-	wxRadioButton *ctrl = new wxRadioButton(this, -1, text, wxDefaultPosition, wxDefaultSize, start ? wxRB_GROUP : 0);
-	ctrl->SetToolTip(tooltip);
+	wxRadioButton *ctrl = RadioButton(this, text, start ? wxRB_GROUP : 0, tooltip);
 	Bind(wxEVT_COMMAND_RADIOBUTTON_SELECTED, &SubsEditBox::OnFrameTimeRadio, this, ctrl->GetId());
 	middle_right_sizer->Add(ctrl, wxSizerFlags().Center().Expand().Border(wxRIGHT));
 	return ctrl;

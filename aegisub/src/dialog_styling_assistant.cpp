@@ -47,8 +47,8 @@
 #include <wx/textctrl.h>
 
 static void add_hotkey(wxSizer *sizer, wxWindow *parent, const char *command, wxString const& text) {
-	sizer->Add(new wxStaticText(parent, -1, text));
-	sizer->Add(new wxStaticText(parent, -1, hotkey::get_hotkey_str_first("Styling Assistant", command)));
+	sizer->Add(StaticText(parent, text));
+	sizer->Add(StaticText(parent, hotkey::get_hotkey_str_first("Styling Assistant", command)));
 }
 
 DialogStyling::DialogStyling(agi::Context *context)
@@ -94,8 +94,8 @@ DialogStyling::DialogStyling(agi::Context *context)
 		add_hotkey(hotkey_grid, this, "grid/line/next", _("Next line"));
 		add_hotkey(hotkey_grid, this, "video/play/line", _("Play video"));
 		add_hotkey(hotkey_grid, this, "audio/play/selection", _("Play audio"));
-		hotkey_grid->Add(new wxStaticText(this, -1, _("Click on list")));
-		hotkey_grid->Add(new wxStaticText(this, -1, _("Select style")));
+		hotkey_grid->Add(StaticText(this, _("Click on list")));
+		hotkey_grid->Add(StaticText(this, _("Select style")));
 
 		hotkey_box->Add(hotkey_grid, 0, wxEXPAND | wxBOTTOM, 5);
 

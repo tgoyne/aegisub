@@ -73,10 +73,9 @@ void set_ctrl_state(wxCommandEvent &evt, wxCheckBox *cb, wxTextCtrl *tc) {
 wxTextCtrl *make_ctrl(wxWindow *parent, wxSizer *sizer, wxString const& desc, int *value, wxCheckBox *cb, wxString const& tooltip) {
 	wxIntegerValidator<int> validator(value);
 	validator.SetMin(0);
-	wxTextCtrl *ctrl = TextCtrl(parent, "", wxSize(60,-1), 0, validator);
-	ctrl->SetToolTip(tooltip);
+	wxTextCtrl *ctrl = TextCtrl(parent, "", wxSize(60,-1), 0, tooltip, validator);
 	if (!desc.empty())
-		sizer->Add(new wxStaticText(parent, -1, desc), wxSizerFlags().Center().Border(wxRIGHT));
+		sizer->Add(StaticText(parent, desc), wxSizerFlags().Center().Border(wxRIGHT));
 	sizer->Add(ctrl, wxSizerFlags().Expand().Border(wxRIGHT));
 
 	ctrl->Enable(cb->IsChecked());
@@ -164,9 +163,9 @@ DialogTimingProcessor::DialogTimingProcessor(agi::Context *c)
 	adjacentBias->SetToolTip(_("Sets how to set the adjoining of lines. If set totally to left, it will extend or shrink start time of the second line; if totally to right, it will extend or shrink the end time of the first line."));
 
 	wxSizer *adjSliderSizer = new wxBoxSizer(wxHORIZONTAL);
-	adjSliderSizer->Add(new wxStaticText(this, -1, _("Bias: Start <- ")), wxSizerFlags().Center());
+	adjSliderSizer->Add(StaticText(this, _("Bias: Start <- ")), wxSizerFlags().Center());
 	adjSliderSizer->Add(adjacentBias, wxSizerFlags(1).Center());
-	adjSliderSizer->Add(new wxStaticText(this, -1, _(" -> End")), wxSizerFlags().Center());
+	adjSliderSizer->Add(StaticText(this, _(" -> End")), wxSizerFlags().Center());
 
 	wxSizer *adjRightSizer = new wxBoxSizer(wxVERTICAL);
 	adjRightSizer->Add(adjBoxes, wxSizerFlags().Expand());

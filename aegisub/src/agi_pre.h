@@ -46,6 +46,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#define _VARIADIC_MAX 10
+
 #include "config.h"
 
 #include "../libaegisub/lagi_pre.h"

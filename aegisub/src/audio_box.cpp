@@ -66,6 +66,7 @@
 #include "toggle_bitmap.h"
 #include "selection_controller.h"
 #include "utils.h"
+#include "wx_helpers.h"
 
 enum {
 	Audio_Horizontal_Zoom = 1600,
@@ -98,36 +99,27 @@ AudioBox::AudioBox(wxWindow *parent, agi::Context *context)
 		VolumeBar->Enable(false);
 	}
 
-	// VertVol sider
-	wxSizer *VertVol = new wxBoxSizer(wxHORIZONTAL);
-	VertVol->Add(VerticalZoom,1,wxEXPAND,0);
-	VertVol->Add(VolumeBar,1,wxEXPAND,0);
-	wxSizer *VertVolArea = new wxBoxSizer(wxVERTICAL);
-	VertVolArea->Add(VertVol,1,wxEXPAND,0);
-
 	ToggleBitmap *link_btn = new ToggleBitmap(panel, context, "audio/opt/vertical_link", 16, "Audio", wxSize(20, -1));
-	VertVolArea->Add(link_btn, 0, wxRIGHT | wxALIGN_CENTER | wxEXPAND, 0);
 	OPT_SUB("Audio/Link", &AudioBox::OnVerticalLink, this);
-
-	// Top sizer
-	wxSizer *TopSizer = new wxBoxSizer(wxHORIZONTAL);
-	TopSizer->Add(audioDisplay,1,wxEXPAND,0);
-	TopSizer->Add(HorizontalZoom,0,wxEXPAND,0);
-	TopSizer->Add(VertVolArea,0,wxEXPAND,0);
 
 	context->karaoke = new AudioKaraoke(panel, context);
 
 	// Main sizer
-	wxBoxSizer *MainSizer = new wxBoxSizer(wxVERTICAL);
-	MainSizer->Add(TopSizer,1,wxEXPAND|wxALL,3);
-	MainSizer->Add(toolbar::GetToolbar(panel, "audio", context, "Audio"),0,wxEXPAND|wxLEFT|wxRIGHT,3);
-	MainSizer->Add(context->karaoke,0,wxEXPAND|wxALL,3);
+	wxSizerFlags expand = wxSizerFlags().Expand();
+	wxSizerFlags expand1 = wxSizerFlags(1).Expand();
+
+	wxSizer *MainSizer = VERTBOX(
+		expand1.Border(), HORZBOX(
+			expand1, audioDisplay,
+			expand, HorizontalZoom, VERTBOX(
+				expand1, HORZBOX(expand1, VerticalZoom, VolumeBar),
+				expand.Center(), link_btn)),
+		expand.Border(wxALL & ~wxTOP), toolbar::GetToolbar(panel, "audio", context, "Audio"), context->karaoke);
+
 	MainSizer->Show(context->karaoke, false);
 	panel->SetSizer(MainSizer);
 
-	wxSizer *audioSashSizer = new wxBoxSizer(wxHORIZONTAL);
-	audioSashSizer->Add(panel, 1, wxEXPAND);
-	SetSizerAndFit(audioSashSizer);
+	SetSizerAndFit(HORZBOX(expand1, panel));
 	SetMinSize(wxSize(-1, OPT_GET("Audio/Display Height")->GetInt()));
 	SetMinimumSizeY(panel->GetSize().GetHeight());
 

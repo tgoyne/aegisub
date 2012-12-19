@@ -228,7 +228,7 @@ DialogFontsCollector::DialogFontsCollector(agi::Context *c)
 
 	wxStaticBoxSizer *destination_box = new wxStaticBoxSizer(wxVERTICAL, this, _("Destination"));
 
-	dest_label = new wxStaticText(this, -1, " ");
+	dest_label = StaticText(this, " ");
 	dest_ctrl = TextCtrl(this, StandardPaths::DecodePath(to_wx(OPT_GET("Path/Fonts Collector Destination")->GetString())));
 	dest_browse_button = new wxButton(this, -1, _("&Browse..."));
 

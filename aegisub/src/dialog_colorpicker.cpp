@@ -671,7 +671,7 @@ DialogColorPicker::DialogColorPicker(wxWindow *parent, agi::Color initial_color,
 
 	// Arrange the controls in a nice way
 	wxSizer *spectop_sizer = new wxBoxSizer(wxHORIZONTAL);
-	spectop_sizer->Add(new wxStaticText(this, -1, _("Spectrum mode:")), 0, wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxRIGHT, 5);
+	spectop_sizer->Add(StaticText(this, _("Spectrum mode:")), 0, wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxRIGHT, 5);
 	spectop_sizer->Add(colorspace_choice, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT);
 	spectop_sizer->Add(5, 5, 1, wxEXPAND);
 	spectop_sizer->Add(preview_box, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT);
@@ -772,7 +772,7 @@ wxSizer *DialogColorPicker::MakeColorInputSizer(wxString (&labels)[N], Control *
 {
 	wxFlexGridSizer * sizer = new wxFlexGridSizer(2, 5, 5);
 	for (int i = 0; i < N; ++i) {
-		sizer->Add(new wxStaticText(this, -1, labels[i]), wxSizerFlags(1).Center().Left());
+		sizer->Add(StaticText(this, labels[i]), wxSizerFlags(1).Center().Left());
 		sizer->Add(inputs[i]);
 	}
 	sizer->AddGrowableCol(0,1);

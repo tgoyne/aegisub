@@ -99,11 +99,11 @@ wxWindow *AssTransformFramerateFilter::GetConfigDialogWindow(wxWindow *parent, a
 	wxSizer *OutputSizer = new wxBoxSizer(wxVERTICAL);
 
 	// Output top line
-	RadioOutputVFR = new wxRadioButton(base,-1,_("V&ariable"),wxDefaultPosition,wxDefaultSize,wxRB_GROUP);
+	RadioOutputVFR = RadioButton(base, _("V&ariable"), wxRB_GROUP);
 	OutputSizerTop->Add(RadioOutputVFR,0,wxEXPAND,0);
 
 	// Output bottom line
-	RadioOutputCFR = new wxRadioButton(base,-1,_("&Constant: "));
+	RadioOutputCFR = RadioButton(base, _("&Constant: "));
 	wxString initialOutput = initialInput;
 	if (!Output->IsVFR()) {
 		RadioOutputVFR->Enable(false);
@@ -123,9 +123,9 @@ wxWindow *AssTransformFramerateFilter::GetConfigDialogWindow(wxWindow *parent, a
 
 	// Main window
 	wxSizer *MainSizer = new wxFlexGridSizer(3,2,5,10);
-	MainSizer->Add(new wxStaticText(base,-1,_("Input framerate: ")),0,wxEXPAND | wxALIGN_CENTER_VERTICAL,0);
+	MainSizer->Add(StaticText(base, _("Input framerate: ")),0,wxEXPAND | wxALIGN_CENTER_VERTICAL,0);
 	MainSizer->Add(InputSizer,0,wxEXPAND,0);
-	MainSizer->Add(new wxStaticText(base,-1,_("Output: ")),0,wxALIGN_CENTER_VERTICAL,0);
+	MainSizer->Add(StaticText(base, _("Output: ")),0,wxALIGN_CENTER_VERTICAL,0);
 	MainSizer->Add(OutputSizer,0,wxEXPAND,0);
 	MainSizer->Add(Reverse,0,wxTOP|wxEXPAND,5);
 

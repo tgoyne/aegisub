@@ -35,9 +35,11 @@
 class TimeEdit;
 namespace agi { struct Context; }
 
+#include <wx/dialog.h>
+
 class DialogJumpTo : public wxDialog {
 	agi::Context *c;       ///< Project context
-	long jumpframe;        ///< Target frame to jump to
+	size_t jumpframe;      ///< Target frame to jump to
 	TimeEdit *JumpTime;    ///< Target time edit control
 	wxTextCtrl *JumpFrame; ///< Target frame edit control
 

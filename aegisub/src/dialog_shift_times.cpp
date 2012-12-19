@@ -108,25 +108,18 @@ DialogShiftTimes::DialogShiftTimes(agi::Context *context)
 	SetIcon(GETICON(shift_times_toolbutton_16));
 
 	// Create controls
-	shift_by_time = new wxRadioButton(this, -1, _("&Time: "), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
-	shift_by_time->SetToolTip(_("Shift by time"));
+	shift_by_time = RadioButton(this, _("&Time: "), wxRB_GROUP, _("Shift by time"));
 	shift_by_time->Bind(wxEVT_COMMAND_RADIOBUTTON_SELECTED, &DialogShiftTimes::OnByTime, this);
 
-	shift_by_frames = new wxRadioButton(this, -1 , _("&Frames: "));
-	shift_by_frames->SetToolTip(_("Shift by frames"));
+	shift_by_frames = RadioButton(this, _("&Frames: "), 0, _("Shift by frames"));
 	shift_by_frames->Bind(wxEVT_COMMAND_RADIOBUTTON_SELECTED, &DialogShiftTimes::OnByFrames, this);
 
-	shift_time = new TimeEdit(this, -1, context);
+	shift_time = new TimeEdit(this, context);
 	shift_time->SetToolTip(_("Enter time in h:mm:ss.cs notation"));
 
-	shift_frames = TextCtrl(this, -1);
-	shift_frames->SetToolTip(_("Enter number of frames to shift by"));
-
-	shift_forward = new wxRadioButton(this, -1, _("For&ward"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
-	shift_forward->SetToolTip(_("Shifts subs forward, making them appear later. Use if they are appearing too soon."));
-
-	shift_backward = new wxRadioButton(this, -1, _("&Backward"));
-	shift_backward->SetToolTip(_("Shifts subs backward, making them appear earlier. Use if they are appearing too late."));
+	shift_frames = TextCtrl(this, "", wxDefaultSize, 0, _("Enter number of frames to shift by"));
+	shift_forward = RadioButton(this, _("For&ward"), wxRB_GROUP, _("Shifts subs forward, making them appear later. Use if they are appearing too soon."));
+	shift_backward = RadioButton(this, _("&Backward"), 0, _("Shifts subs backward, making them appear earlier. Use if they are appearing too late."));
 
 	wxString selection_mode_vals[] = { _("&All rows"), _("Selected &rows"), _("Selection &onward") };
 	selection_mode = new wxRadioBox(this, -1, _("Affect"), wxDefaultPosition, wxDefaultSize, 3, selection_mode_vals, 1);

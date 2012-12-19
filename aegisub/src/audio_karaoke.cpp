@@ -48,6 +48,7 @@
 #include "main.h"
 #include "selection_controller.h"
 #include "utils.h"
+#include "wx_helpers.h"
 
 template<class Container, class Value>
 static inline size_t last_lt_or_eq(Container const& c, Value const& v) {
@@ -73,21 +74,15 @@ AudioKaraoke::AudioKaraoke(wxWindow *parent, agi::Context *c)
 {
 	using std::bind;
 
-	cancel_button = new wxBitmapButton(this, -1, GETIMAGE(kara_split_cancel_16));
-	cancel_button->SetToolTip(_("Discard all uncommitted splits"));
+	cancel_button = BitmapButton(this, GETIMAGE(kara_split_cancel_16), _("Discard all uncommitted splits"));
 	cancel_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, bind(&AudioKaraoke::CancelSplit, this));
 
-	accept_button = new wxBitmapButton(this, -1, GETIMAGE(kara_split_accept_16));
-	accept_button->SetToolTip(_("Commit splits"));
+	accept_button = BitmapButton(this, GETIMAGE(kara_split_accept_16), _("Commit splits"));
 	accept_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, bind(&AudioKaraoke::AcceptSplit, this));
 
 	split_area = new wxPanel(this);
 
-	wxSizer *main_sizer = new wxBoxSizer(wxHORIZONTAL);
-	main_sizer->Add(cancel_button);
-	main_sizer->Add(accept_button);
-	main_sizer->Add(split_area, wxSizerFlags(1).Expand());
-	SetSizerAndFit(main_sizer);
+	SetSizerAndFit(HORZBOX(cancel_button, accept_button, wxSizerFlags(1).Expand(), split_area));
 
 	/// @todo subscribe
 	split_font.SetFaceName(OPT_GET("Audio/Karaoke/Font Face")->GetString());

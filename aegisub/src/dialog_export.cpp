@@ -111,7 +111,7 @@ DialogExport::DialogExport(agi::Context *c)
 	filter_description = TextCtrl(this, "", wxSize(200, 60), wxTE_MULTILINE | wxTE_READONLY);
 
 	// Charset dropdown list
-	wxStaticText *charset_list_label = new wxStaticText(this, -1, _("Text encoding:"));
+	wxStaticText *charset_list_label = StaticText(this, _("Text encoding:"));
 	charset_list = new wxChoice(this, -1, wxDefaultPosition, wxDefaultSize, agi::charset::GetEncodingsList<wxArrayString>());
 	wxSizer *charset_list_sizer = new wxBoxSizer(wxHORIZONTAL);
 	charset_list_sizer->Add(charset_list_label, wxSizerFlags().Center().Border(wxRIGHT));

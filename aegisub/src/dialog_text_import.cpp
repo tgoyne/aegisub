@@ -54,9 +54,9 @@ DialogTextImport::DialogTextImport()
 	edit_comment = TextCtrl(this, to_wx(OPT_GET("Tool/Import/Text/Comment Starter")->GetString()));
 
 	// Dialog layout
-	fg->Add(new wxStaticText(this, -1, _("Actor separator:")), 0, wxALIGN_CENTRE_VERTICAL);
+	fg->Add(StaticText(this, _("Actor separator:")), 0, wxALIGN_CENTRE_VERTICAL);
 	fg->Add(edit_separator, 0, wxEXPAND);
-	fg->Add(new wxStaticText(this, -1, _("Comment starter:")), 0, wxALIGN_CENTRE_VERTICAL);
+	fg->Add(StaticText(this, _("Comment starter:")), 0, wxALIGN_CENTRE_VERTICAL);
 	fg->Add(edit_comment, 0, wxEXPAND);
 
 	main_sizer->Add(fg, 1, wxALL|wxEXPAND, 5);

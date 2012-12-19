@@ -75,9 +75,9 @@ DialogProperties::DialogProperties(agi::Context *c)
 
 	// Resolution box
 	wxSizer *ResSizer = new wxStaticBoxSizer(wxHORIZONTAL,this,_("Resolution"));
-	ResX = TextCtrl(this,"",wxSize(50,20),0,NumValidator(c->ass->GetScriptInfo("PlayResX")));
-	ResY = TextCtrl(this,"",wxSize(50,20),0,NumValidator(c->ass->GetScriptInfo("PlayResY")));
-	wxStaticText *ResText = new wxStaticText(this,-1,"x");
+	ResX = TextCtrl(this,"",wxSize(50,20),0,"",NumValidator(c->ass->GetScriptInfo("PlayResX")));
+	ResY = TextCtrl(this,"",wxSize(50,20),0,"",NumValidator(c->ass->GetScriptInfo("PlayResY")));
+	wxStaticText *ResText = StaticText(this, "x");
 
 	wxButton *FromVideo = new wxButton(this,-1,_("From &video"));
 	if (!c->videoController->IsLoaded())
@@ -99,15 +99,15 @@ DialogProperties::DialogProperties(agi::Context *c)
 		_("2: No word wrapping, both \\n and \\N break"),
 		_("3: Smart wrapping, bottom line is wider")
 	};
-	WrapStyle = new wxComboBox(this, -1, "", wxDefaultPosition, wxDefaultSize, 4, wrap_opts, wxCB_READONLY);
+	WrapStyle = DropDownList(this, "", wrap_opts);
 	WrapStyle->SetSelection(c->ass->GetScriptInfoAsInt("WrapStyle"));
-	optionsGrid->Add(new wxStaticText(this,-1,_("Wrap Style: ")),0,wxALIGN_CENTER_VERTICAL,0);
+	optionsGrid->Add(StaticText(this, _("Wrap Style: ")),0,wxALIGN_CENTER_VERTICAL,0);
 	optionsGrid->Add(WrapStyle,1,wxEXPAND,0);
 
 	wxString coll_opts[] = { _("Normal"), _("Reverse") };
-	collision = new wxComboBox(this, -1, "", wxDefaultPosition, wxDefaultSize, 2, coll_opts, wxCB_READONLY);
+	collision = DropDownList(this, "", coll_opts);
 	collision->SetSelection(c->ass->GetScriptInfo("Collisions").Lower() == "reverse");
-	optionsGrid->Add(new wxStaticText(this,-1,_("Collision: ")),0,wxALIGN_CENTER_VERTICAL,0);
+	optionsGrid->Add(StaticText(this, _("Collision: ")),0,wxALIGN_CENTER_VERTICAL,0);
 	optionsGrid->Add(collision,1,wxEXPAND,0);
 
 	ScaleBorder = new wxCheckBox(this,-1,_("Scale Border and Shadow"));
@@ -136,7 +136,7 @@ DialogProperties::DialogProperties(agi::Context *c)
 
 void DialogProperties::AddProperty(wxSizer *sizer, wxString const& label, wxString const& property) {
 	wxTextCtrl *ctrl = TextCtrl(this, c->ass->GetScriptInfo(property), wxSize(200, 20));
-	sizer->Add(new wxStaticText(this, -1, label), wxSizerFlags().Center().Left());
+	sizer->Add(StaticText(this, label), wxSizerFlags().Center().Left());
 	sizer->Add(ctrl, wxSizerFlags(1).Expand());
 	properties.push_back(std::make_pair(property, ctrl));
 }

@@ -152,7 +152,7 @@ namespace Automation4 {
 
 			wxControl *Create(wxWindow *parent)
 			{
-				return new wxStaticText(parent, -1, label);
+				return StaticText(parent, label);
 			}
 
 			int GetSizerFlags() const { return wxALIGN_CENTRE_VERTICAL | wxALIGN_LEFT; }
@@ -196,9 +196,7 @@ namespace Automation4 {
 
 			wxControl *Create(wxWindow *parent)
 			{
-				cw = TextCtrl(parent, text, wxDefaultSize, 0, wxGenericValidator(&text));
-				cw->SetToolTip(hint);
-				return cw;
+				return cw = TextCtrl(parent, text, wxDefaultSize, 0, hint, wxGenericValidator(&text));
 			}
 
 			void LuaReadBack(lua_State *L)
@@ -269,9 +267,8 @@ namespace Automation4 {
 			// Same serialisation interface as single-line edit
 			wxControl *Create(wxWindow *parent)
 			{
-				cw = TextCtrl(parent, text, wxDefaultSize, wxTE_MULTILINE, wxGenericValidator(&text));
+				cw = TextCtrl(parent, text, wxDefaultSize, wxTE_MULTILINE, hint, wxGenericValidator(&text));
 				cw->SetMinSize(wxSize(0, 30));
-				cw->SetToolTip(hint);
 				return cw;
 			}
 		};
@@ -391,9 +388,7 @@ namespace Automation4 {
 				wxFloatingPointValidator<double> val(4, &value, wxNUM_VAL_NO_TRAILING_ZEROES);
 				val.SetRange(min, max);
 
-				cw = TextCtrl(parent, SerialiseValue(), wxDefaultSize, 0, val);
-				cw->SetToolTip(hint);
-				return cw;
+				return cw = TextCtrl(parent, SerialiseValue(), wxDefaultSize, 0, hint, val);
 			}
 
 			void LuaReadBack(lua_State *L)
@@ -432,8 +427,7 @@ namespace Automation4 {
 
 			wxControl *Create(wxWindow *parent)
 			{
-				cw = new wxComboBox(parent, -1, value, wxDefaultPosition, wxDefaultSize, items, wxCB_READONLY, wxGenericValidator(&value));
-				cw->SetToolTip(hint);
+				cw = DropDownList(parent, value, items, wxDefaultSize, hint, wxGenericValidator(&value));
 				return cw;
 			}
 
@@ -472,8 +466,7 @@ namespace Automation4 {
 
 			wxControl *Create(wxWindow *parent)
 			{
-				cw = new wxCheckBox(parent, -1, label);
-				cw->SetValidator(wxGenericValidator(&value));
+				cw = new wxCheckBox(parent, -1, label, wxDefaultPosition, wxDefaultSize, 0, wxGenericValidator(&value));
 				cw->SetToolTip(hint);
 				cw->SetValue(value);
 				return cw;
@@ -579,10 +572,7 @@ namespace Automation4 {
 
 			window->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &LuaDialog::OnButtonPush, this);
 
-			wxBoxSizer *ms = new wxBoxSizer(wxVERTICAL);
-			ms->Add(s, 0, wxBOTTOM, 5);
-			ms->Add(bs);
-			window->SetSizerAndFit(ms);
+			window->SetSizerAndFit(VERTBOX(wxSizerFlags().Border(wxBOTTOM), s, wxSizerFlags(), bs));
 		} else {
 			window->SetSizerAndFit(s);
 		}

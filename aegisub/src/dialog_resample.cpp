@@ -38,6 +38,7 @@
 #include "help_button.h"
 #include "libresrc/libresrc.h"
 #include "video_context.h"
+#include "wx_helpers.h"
 
 #include <libaegisub/of_type_adaptor.h>
 
@@ -98,7 +99,7 @@ DialogResample::DialogResample(agi::Context *c, ResampleSettings &settings)
 
 	wxSizer *res_sizer = new wxBoxSizer(wxHORIZONTAL);
 	res_sizer->Add(res_x, wxSizerFlags(1).Border(wxRIGHT).Align(wxALIGN_CENTER_VERTICAL));
-	res_sizer->Add(new wxStaticText(this, -1, _("x")), wxSizerFlags().Center().Border(wxRIGHT));
+	res_sizer->Add(StaticText(this,  _("x")), wxSizerFlags().Center().Border(wxRIGHT));
 	res_sizer->Add(res_y, wxSizerFlags(1).Border(wxRIGHT).Align(wxALIGN_CENTER_VERTICAL));
 	res_sizer->Add(from_video, wxSizerFlags(1));
 
