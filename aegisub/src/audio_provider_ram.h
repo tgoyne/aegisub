@@ -34,6 +34,7 @@
 
 #include "include/aegisub/audio_provider.h"
 
+#include <array>
 #include <boost/container/stable_vector.hpp>
 
 namespace agi {
@@ -42,7 +43,7 @@ namespace agi {
 }
 
 class RAMAudioProvider : public AudioProvider {
-	boost::container::stable_vector<char[1 << 22]> blockcache;
+	boost::container::stable_vector<std::array<char, 1 << 22>> blockcache;
 	bool samples_native_endian;
 
 	void FillCache(AudioProvider *source, agi::ProgressSink *ps);
