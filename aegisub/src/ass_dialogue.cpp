@@ -186,13 +186,13 @@ wxString AssDialogue::GetSSAText() const {
 	return GetData(true);
 }
 
-std::auto_ptr<boost::ptr_vector<AssDialogueBlock>> AssDialogue::ParseTags() const {
-	boost::ptr_vector<AssDialogueBlock> Blocks;
+std::vector<AssDialogueBlock> AssDialogue::ParseTags() const {
+	std::vector<AssDialogueBlock> Blocks;
 
 	// Empty line, make an empty block
 	if (Text.get().empty()) {
-		Blocks.push_back(new AssDialogueBlockPlain);
-		return Blocks.release();
+		Blocks.emplace_back(BLOCK_PLAIN, "");
+		return Blocks;
 	}
 
 	int drawingLevel = 0;
@@ -216,19 +216,18 @@ std::auto_ptr<boost::ptr_vector<AssDialogueBlock>> AssDialogue::ParseTags() cons
 			if (work.size() && work.find('\\') == std::string::npos) {
 				//We've found an override block with no backslashes
 				//We're going to assume it's a comment and not consider it an override block
-				Blocks.push_back(new AssDialogueBlockComment(work));
+				Blocks.emplace_back(AssDialogueBlockComment(work));
 			}
 			else {
-				// Create block
-				AssDialogueBlockOverride *block = new AssDialogueBlockOverride(work);
-				block->ParseTags();
-				Blocks.push_back(block);
+				AssDialogueBlockOverride ovr(work);
 
 				// Look for \p in block
-				for (auto const& tag : block->Tags) {
+				for (auto const& tag : ovr.Tags) {
 					if (tag.Name == "\\p")
 						drawingLevel = tag.Params[0].Get<int>(0);
 				}
+
+				Blocks.emplace_back(std::move(ovr));
 			}
 
 			continue;
@@ -248,12 +247,12 @@ plain:
 		}
 
 		if (drawingLevel == 0)
-			Blocks.push_back(new AssDialogueBlockPlain(work));
+			Blocks.emplace_back(AssDialogueBlockPlain(work));
 		else
-			Blocks.push_back(new AssDialogueBlockDrawing(work, drawingLevel));
+			Blocks.emplace_back(AssDialogueBlockDrawing(work, drawingLevel));
 	}
 
-	return Blocks.release();
+	return Blocks;
 }
 
 void AssDialogue::StripTags() {
@@ -261,7 +260,7 @@ void AssDialogue::StripTags() {
 }
 
 static std::string get_text(AssDialogueBlock &d) { return d.GetText(); }
-void AssDialogue::UpdateText(boost::ptr_vector<AssDialogueBlock>& blocks) {
+void AssDialogue::UpdateText(std::vector<AssDialogueBlock>& blocks) {
 	if (blocks.empty()) return;
 	Text = to_wx(join(blocks | transformed(get_text), ""));
 }
@@ -296,11 +295,10 @@ bool AssDialogue::CollidesWith(const AssDialogue *target) const {
 	return ((Start < target->Start) ? (target->Start < End) : (Start < target->End));
 }
 
-static std::string get_text_p(AssDialogueBlock *d) { return d->GetText(); }
 wxString AssDialogue::GetStrippedText() const {
 	wxString ret;
-	boost::ptr_vector<AssDialogueBlock> blocks(ParseTags());
-	return to_wx(join(blocks | agi::of_type<AssDialogueBlockPlain>() | transformed(get_text_p), ""));
+	std::vector<AssDialogueBlock> blocks(ParseTags());
+	return to_wx(join(blocks | agi::of_type<AssDialogueBlockPlain>() | transformed(GetText), ""));
 }
 
 AssEntry *AssDialogue::Clone() const {
