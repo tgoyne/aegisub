@@ -39,10 +39,11 @@
 #include <libaegisub/exception.h>
 
 #include <boost/flyweight.hpp>
-#include <boost/variant.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <vector>
 
 enum AssBlockType {
+	BLOCK_BASE,
 	BLOCK_PLAIN,
 	BLOCK_COMMENT,
 	BLOCK_OVERRIDE,
@@ -71,38 +72,48 @@ std::size_t hash_value(wxString const& s);
 /// The GetText() method generates a new value for the "text" field from
 /// the other fields in the specific class, and returns the new value.
 /// @endverbatim
-class AssDialogueBlockPlain {
+class AssDialogueBlock {
+protected:
+	/// Text of this block
 	std::string text;
 public:
-	AssDialogueBlockPlain(std::string const& text) : text(text) { }
-	std::string GetText() const { return text; }
+	AssDialogueBlock(std::string const& text) : text(text) { }
+	virtual ~AssDialogueBlock() { }
+
+	virtual AssBlockType GetType() const = 0;
+	virtual std::string GetText() { return text; }
 };
 
-class AssDialogueBlockComment {
-	std::string text;
+class AssDialogueBlockPlain : public AssDialogueBlock {
 public:
-	AssDialogueBlockComment(std::string const& text) : text("{" + text + "}") { }
-	std::string GetText() const { return text; }
+	AssBlockType GetType() const override { return BLOCK_PLAIN; }
+	AssDialogueBlockPlain(std::string const& text = std::string()) : AssDialogueBlock(text) { }
 };
 
-class AssDialogueBlockDrawing {
-	std::string text;
+class AssDialogueBlockComment : public AssDialogueBlock {
 public:
-	const int Scale;
-
-	AssDialogueBlockDrawing(std::string const& text, int scale) : text(text), Scale(scale) { }
-	std::string GetText() const { return text; }
-	void TransformCoords(int trans_x, int trans_y, double mult_x, double mult_y);
+	AssBlockType GetType() const override { return BLOCK_COMMENT; }
+	AssDialogueBlockComment(std::string const& text = std::string()) : AssDialogueBlock("{" + text + "}") { }
 };
 
-class AssDialogueBlockOverride {
-	void ParseTags();
+class AssDialogueBlockDrawing : public AssDialogueBlock {
 public:
-	AssDialogueBlockOverride(std::string const& text);
+	int Scale;
+
+	AssBlockType GetType() const override { return BLOCK_DRAWING; }
+	AssDialogueBlockDrawing(std::string const& text, int scale) : AssDialogueBlock(text), Scale(scale) { }
+	void TransformCoords(int trans_x,int trans_y,double mult_x,double mult_y);
+};
+
+class AssDialogueBlockOverride : public AssDialogueBlock {
+public:
+	AssDialogueBlockOverride(std::string const& text = std::string()) : AssDialogueBlock(text) { }
 
 	std::vector<AssOverrideTag> Tags;
 
-	std::string GetText();
+	AssBlockType GetType() const override { return BLOCK_OVERRIDE; }
+	std::string GetText() override;
+	void ParseTags();
 	void AddTag(std::string const& tag);
 
 	/// Type of callback function passed to ProcessParameters
@@ -112,9 +123,6 @@ public:
 	/// @param userData User data to pass to callback function
 	void ProcessParameters(ProcessParametersCallback callback, void *userData);
 };
-
-typedef boost::variant<AssDialogueBlockPlain, AssDialogueBlockComment, AssDialogueBlockDrawing, AssDialogueBlockOverride> AssDialogueBlock;
-std::string GetText(AssDialogueBlock const& block);
 
 class AssDialogue : public AssEntry {
 	wxString GetData(bool ssa) const;
@@ -146,7 +154,7 @@ public:
 	bool Parse(wxString const& data);
 
 	/// Parse text as ASS and return block information
-	std::vector<AssDialogueBlock> ParseTags() const;
+	std::auto_ptr<boost::ptr_vector<AssDialogueBlock>> ParseTags() const;
 
 	/// Strip all ASS tags from the text
 	void StripTags();
@@ -155,7 +163,7 @@ public:
 	wxString GetStrippedText() const;
 
 	/// Update the text of the line from parsed blocks
-	void UpdateText(std::vector<AssDialogueBlock>& blocks);
+	void UpdateText(boost::ptr_vector<AssDialogueBlock>& blocks);
 	const wxString GetEntryData() const override;
 
 	template<int which>
