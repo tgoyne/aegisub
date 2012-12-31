@@ -104,10 +104,10 @@ void DialogAttachments::UpdateList() {
 	// Fill list
 	for (auto attach : ass->Line | agi::of_type<AssAttachment>()) {
 		int row = listView->GetItemCount();
-		listView->InsertItem(row,attach->GetFileName(true));
-		listView->SetItem(row,1,PrettySize(attach->GetSize()));
-		listView->SetItem(row,2,attach->GroupHeader());
-		listView->SetItemPtrData(row,wxPtrToUInt(attach));
+		listView->InsertItem(row, to_wx(attach->GetFileName(true)));
+		listView->SetItem(row, 1, PrettySize(attach->GetSize()));
+		listView->SetItem(row, 2, to_wx(attach->GroupHeader()));
+		listView->SetItemPtrData(row, wxPtrToUInt(attach));
 	}
 }
 
@@ -132,9 +132,9 @@ void DialogAttachments::AttachFile(wxFileDialog &diag, AssEntryGroup group, wxSt
 
 	// Create attachments
 	for (size_t i = 0; i < filenames.size(); ++i) {
-		AssAttachment *newAttach = new AssAttachment(filenames[i], group);
+		AssAttachment *newAttach = new AssAttachment(from_wx(filenames[i]), group);
 		try {
-			newAttach->Import(paths[i]);
+			newAttach->Import(from_wx(paths[i]));
 		}
 		catch (...) {
 			delete newAttach;
@@ -171,26 +171,24 @@ void DialogAttachments::OnExtract(wxCommandEvent &) {
 	int i = listView->GetFirstSelected();
 	if (i == -1) return;
 
-	wxString path;
+	std::string path;
 	bool fullPath = false;
 
 	// Multiple or single?
 	if (listView->GetNextSelected(i) != -1)
-		path = wxDirSelector(_("Select the path to save the files to:"),to_wx(OPT_GET("Path/Fonts Collector Destination")->GetString())) + "/";
+		path = from_wx(wxDirSelector(_("Select the path to save the files to:"), to_wx(OPT_GET("Path/Fonts Collector Destination")->GetString()))) + "/";
 	else {
-		// Default path
-		wxString defPath = ((AssAttachment*)wxUIntToPtr(listView->GetItemData(i)))->GetFileName();
-		path = wxFileSelector(
+		path = from_wx(wxFileSelector(
 			_("Select the path to save the file to:"),
 			to_wx(OPT_GET("Path/Fonts Collector Destination")->GetString()),
-			defPath,
+			to_wx(((AssAttachment*)wxUIntToPtr(listView->GetItemData(i)))->GetFileName()),
 			".ttf",
 			"Font Files (*.ttf)|*.ttf",
 			wxFD_SAVE | wxFD_OVERWRITE_PROMPT,
-			this);
+			this));
 		fullPath = true;
 	}
-	if (!path) return;
+	if (path.empty()) return;
 
 	// Loop through items in list
 	while (i != -1) {

@@ -28,7 +28,6 @@
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
 #include <wx/stattext.h>
-#include <wx/stdpaths.h>
 #include <wx/treebook.h>
 #include <wx/treebook.h>
 
@@ -75,7 +74,7 @@ public:
 };
 
 static void browse_button(wxTextCtrl *ctrl) {
-	wxString def = StandardPaths::DecodePath(ctrl->GetValue());
+	wxString def = to_wx(StandardPaths::DecodePath(from_wx(ctrl->GetValue())));
 	wxDirDialog dlg(0, _("Please choose the folder:"), def);
 	if (dlg.ShowModal() == wxID_OK) {
 		wxString dir = dlg.GetPath();

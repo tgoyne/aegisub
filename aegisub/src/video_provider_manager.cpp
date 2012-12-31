@@ -34,30 +34,22 @@
 
 #include "config.h"
 
-#include <libaegisub/log.h>
-
-#include "compat.h"
 #include "options.h"
 
-#ifdef WITH_AVISYNTH
 #include "video_provider_avs.h"
-#endif
 #include "video_provider_cache.h"
 #include "video_provider_dummy.h"
-#ifdef WITH_FFMS2
 #include "video_provider_ffmpegsource.h"
-#endif
 #include "video_provider_manager.h"
 #include "video_provider_yuv4mpeg.h"
 
+#include <libaegisub/log.h>
 
-/// @brief Get provider
-/// @param video
-/// @return
-///
-VideoProvider *VideoProviderFactory::GetProvider(wxString video) {
+#include <boost/algorithm/string/predicate.hpp>
+
+VideoProvider *VideoProviderFactory::GetProvider(std::string video) {
 	std::vector<std::string> list = GetClasses(OPT_GET("Video/Provider")->GetString());
-	if (video.StartsWith("?dummy")) list.insert(list.begin(), "Dummy");
+	if (boost::starts_with(video, "?dummy")) list.insert(list.begin(), "Dummy");
 	list.insert(list.begin(), "YUV4MPEG");
 
 	bool fileFound = false;
@@ -68,10 +60,9 @@ VideoProvider *VideoProviderFactory::GetProvider(wxString video) {
 		std::string err;
 		try {
 			VideoProvider *provider = Create(factory, video);
-			LOG_I("manager/video/provider") << factory << ": opened " << from_wx(video);
-			if (provider->WantsCaching()) {
+			LOG_I("manager/video/provider") << factory << ": opened " << video;
+			if (provider->WantsCaching())
 				return new VideoProviderCache(provider);
-			}
 			return provider;
 		}
 		catch (agi::FileNotFoundError const&) {
@@ -97,16 +88,14 @@ VideoProvider *VideoProviderFactory::GetProvider(wxString video) {
 	}
 
 	// No provider could open the file
-	LOG_E("manager/video/provider") << "Could not open " << from_wx(video);
-	std::string msg = "Could not open " + from_wx(video) + ":\n" + errors;
+	LOG_E("manager/video/provider") << "Could not open " << video;
+	std::string msg = "Could not open " + video + ":\n" + errors;
 
-	if (!fileFound) throw agi::FileNotFoundError(from_wx(video));
+	if (!fileFound) throw agi::FileNotFoundError(video);
 	if (!fileSupported) throw VideoNotSupported(msg);
 	throw VideoOpenError(msg);
 }
 
-/// @brief Register all providers
-///
 void VideoProviderFactory::RegisterProviders() {
 #ifdef WITH_AVISYNTH
 	Register<AvisynthVideoProvider>("Avisynth");
@@ -118,4 +107,4 @@ void VideoProviderFactory::RegisterProviders() {
 	Register<YUV4MPEGVideoProvider>("YUV4MPEG", true);
 }
 
-template<> VideoProviderFactory::map *FactoryBase<VideoProvider *(*)(wxString)>::classes = nullptr;
+template<> VideoProviderFactory::map *FactoryBase<VideoProvider *(*)(std::string)>::classes = nullptr;

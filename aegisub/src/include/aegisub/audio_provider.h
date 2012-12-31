@@ -34,10 +34,11 @@
 
 #pragma once
 
-#include <wx/string.h>
-
 #include <libaegisub/exception.h>
+
 #include "factory_manager.h"
+
+#include <string>
 
 class AudioProvider {
 protected:
@@ -48,7 +49,7 @@ protected:
 	int sample_rate;
 	int bytes_per_sample;
 	bool float_samples;
-	wxString filename;
+	std::string filename;
 
 	virtual void FillBuffer(void *buf, int64_t start, int64_t count) const = 0;
 
@@ -60,27 +61,25 @@ public:
 	void GetAudio(void *buf, int64_t start, int64_t count) const;
 	void GetAudioWithVolume(void *buf, int64_t start, int64_t count, double volume) const;
 
-	wxString GetFilename() const  { return filename; };
-	int64_t GetNumSamples() const { return num_samples; }
-	int GetSampleRate() const     { return sample_rate; }
-	int GetBytesPerSample() const { return bytes_per_sample; }
-	int GetChannels() const       { return channels; }
-	bool AreSamplesFloat() const  { return float_samples; }
-	virtual bool AreSamplesNativeEndian() const = 0;
-
-	virtual int64_t GetSamplesLoaded() const { return num_samples; }
+	std::string GetFilename()       const { return filename; }
+	int64_t     GetNumSamples()     const { return num_samples; }
+	int         GetSampleRate()     const { return sample_rate; }
+	int         GetBytesPerSample() const { return bytes_per_sample; }
+	int         GetChannels()       const { return channels; }
+	bool        AreSamplesFloat()   const { return float_samples; }
 
 	/// @brief Does this provider benefit from external caching?
 	virtual bool NeedsCache() const { return false; }
+	virtual bool AreSamplesNativeEndian() const = 0;
 };
 
-class AudioProviderFactory : public Factory1<AudioProvider, wxString> {
+class AudioProviderFactory : public Factory1<AudioProvider, std::string> {
 public:
 	static void RegisterProviders();
 
 	/// Get a provider for the file
 	/// @param filename URI to open
-	static AudioProvider *GetProvider(wxString const& filename);
+	static AudioProvider *GetProvider(std::string const& filename);
 };
 
 DEFINE_BASE_EXCEPTION_NOINNER(AudioProviderError, agi::Exception)

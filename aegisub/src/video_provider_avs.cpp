@@ -38,43 +38,44 @@
 
 #include "video_provider_avs.h"
 
-#include <wx/filename.h>
-#include <wx/msw/registry.h>
-
-#ifdef _WIN32
-#include <vfw.h>
-#endif
-
-#include <libaegisub/log.h>
-
 #include "charset_conv.h"
 #include "compat.h"
 #include "options.h"
 #include "standard_paths.h"
 
-AvisynthVideoProvider::AvisynthVideoProvider(wxString filename)
+#include <libaegisub/access.h>
+#include <libaegisub/fs.h>
+#include <libaegisub/log.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+
+#include <wx/filename.h>
+#include <wx/msw/registry.h>
+
+#ifdef _WIN32
+#include <libaegisub/charset_conv_win.h>
+#include <vfw.h>
+#endif
+
+AvisynthVideoProvider::AvisynthVideoProvider(std::string const& filename)
 : last_fnum(-1)
 {
+	agi::acs::CheckFileRead(filename);
+
 	iframe.flipped = true;
 	iframe.invertChannels = true;
 
 	wxMutexLocker lock(avs.GetMutex());
 
-	wxFileName fname(filename);
-	if (!fname.FileExists())
-		throw agi::FileNotFoundError(from_wx(filename));
-
-	wxString extension = filename.Right(4).Lower();
-
 #ifdef _WIN32
-	if (extension == ".avi") {
+	if (boost::iends_with(filename, ".avi")) {
 		// Try to read the keyframes before actually opening the file as trying
 		// to open the file while it's already open can cause problems with
 		// badly written VFW decoders
 		AVIFileInit();
 
 		PAVIFILE pfile;
-		long hr = AVIFileOpen(&pfile, filename.wc_str(), OF_SHARE_DENY_WRITE, 0);
+		long hr = AVIFileOpen(&pfile, agi::charset::ConvertW(filename).c_str(), OF_SHARE_DENY_WRITE, 0);
 		if (hr) {
 			warning = "Unable to open AVI file for reading keyframes:\n";
 			switch (hr) {
@@ -145,7 +146,7 @@ file_exit:
 #endif
 
 	try {
-		AVSValue script = Open(fname, extension);
+		AVSValue script = Open(filename);
 
 		// Check if video was loaded properly
 		if (!script.IsClip() || !script.AsClip()->GetVideoInfo().HasVideo())
@@ -181,19 +182,19 @@ AvisynthVideoProvider::~AvisynthVideoProvider() {
 	iframe.Clear();
 }
 
-AVSValue AvisynthVideoProvider::Open(wxFileName const& fname, wxString const& extension) {
+AVSValue AvisynthVideoProvider::Open(std::string const& filename) {
 	IScriptEnvironment *env = avs.GetEnv();
-	char *videoFilename = env->SaveString(fname.GetShortPath().mb_str(csConvLocal));
+	char *videoFilename = env->SaveString(wxFileName(to_wx(filename)).GetShortPath().mb_str(csConvLocal));
 
 	// Avisynth file, just import it
-	if (extension == ".avs") {
+	if (boost::iends_with(filename, ".avs")) {
 		LOG_I("avisynth/video") << "Opening .avs file with Import";
 		decoderName = "Avisynth/Import";
 		return env->Invoke("Import", videoFilename);
 	}
 
 	// Open avi file with AviSource
-	if (extension == ".avi") {
+	if (boost::iends_with(filename, ".avi")) {
 		LOG_I("avisynth/video") << "Opening .avi file with AviSource";
 		try {
 			const char *argnames[2] = { 0, "audio" };
@@ -209,7 +210,7 @@ AVSValue AvisynthVideoProvider::Open(wxFileName const& fname, wxString const& ex
 	}
 
 	// Open d2v with mpeg2dec3
-	if (extension == ".d2v" && env->FunctionExists("Mpeg2Dec3_Mpeg2Source")) {
+	if (boost::iends_with(filename, ".d2v") && env->FunctionExists("Mpeg2Dec3_Mpeg2Source")) {
 		LOG_I("avisynth/video") << "Opening .d2v file with Mpeg2Dec3_Mpeg2Source";
 		AVSValue script = env->Invoke("Mpeg2Dec3_Mpeg2Source", videoFilename);
 		decoderName = "Avisynth/Mpeg2Dec3_Mpeg2Source";
@@ -223,7 +224,7 @@ AVSValue AvisynthVideoProvider::Open(wxFileName const& fname, wxString const& ex
 	}
 
 	// If that fails, try opening it with DGDecode
-	if (extension == ".d2v" && env->FunctionExists("DGDecode_Mpeg2Source")) {
+	if (boost::iends_with(filename, ".d2v") && env->FunctionExists("DGDecode_Mpeg2Source")) {
 		LOG_I("avisynth/video") << "Opening .d2v file with DGDecode_Mpeg2Source";
 		decoderName = "DGDecode_Mpeg2Source";
 		return env->Invoke("Avisynth/Mpeg2Source", videoFilename);
@@ -232,7 +233,7 @@ AVSValue AvisynthVideoProvider::Open(wxFileName const& fname, wxString const& ex
 		// ancient but no sane person would use that anyway
 	}
 
-	if (extension == ".d2v" && env->FunctionExists("Mpeg2Source")) {
+	if (boost::iends_with(filename, ".d2v") && env->FunctionExists("Mpeg2Source")) {
 		LOG_I("avisynth/video") << "Opening .d2v file with other Mpeg2Source";
 		AVSValue script = env->Invoke("Mpeg2Source", videoFilename);
 		decoderName = "Avisynth/Mpeg2Source";
@@ -246,10 +247,9 @@ AVSValue AvisynthVideoProvider::Open(wxFileName const& fname, wxString const& ex
 
 	// Try loading DirectShowSource2
 	if (!env->FunctionExists("dss2")) {
-		wxFileName dss2path(StandardPaths::DecodePath("?data/avss.dll"));
-		if (dss2path.FileExists()) {
-			env->Invoke("LoadPlugin", env->SaveString(dss2path.GetFullPath().mb_str(csConvLocal)));
-		}
+		std::string dss2path(StandardPaths::DecodePath("?data/avss.dll"));
+		if (agi::fs::FileExists(dss2path))
+			env->Invoke("LoadPlugin", env->SaveString(agi::fs::ShortName(dss2path).c_str()));
 	}
 
 	// If DSS2 loaded properly, try using it
@@ -261,10 +261,9 @@ AVSValue AvisynthVideoProvider::Open(wxFileName const& fname, wxString const& ex
 
 	// Try DirectShowSource
 	// Load DirectShowSource.dll from app dir if it exists
-	wxFileName dsspath(StandardPaths::DecodePath("?data/DirectShowSource.dll"));
-	if (dsspath.FileExists()) {
-		env->Invoke("LoadPlugin",env->SaveString(dsspath.GetFullPath().mb_str(csConvLocal)));
-	}
+	std::string dsspath(StandardPaths::DecodePath("?data/DirectShowSource.dll"));
+	if (agi::fs::FileExists(dsspath))
+		env->Invoke("LoadPlugin", env->SaveString(agi::fs::ShortName(dsspath).c_str()));
 
 	// Then try using DSS
 	if (env->FunctionExists("DirectShowSource")) {

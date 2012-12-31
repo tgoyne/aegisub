@@ -48,10 +48,10 @@
 
 SubtitlesProvider* SubtitlesProviderFactory::GetProvider() {
 	std::vector<std::string> list = GetClasses(OPT_GET("Subtitle/Provider")->GetString());
-	if (list.empty()) throw wxString("No subtitle providers are available.");
+	if (list.empty()) throw std::string("No subtitle providers are available.");
 
 	// Get provider
-	wxString error;
+	std::string error;
 	for (auto const& factory : list) {
 		try {
 			size_t pos = factory.find('/');
@@ -60,8 +60,8 @@ SubtitlesProvider* SubtitlesProviderFactory::GetProvider() {
 			if (provider) return provider;
 		}
 		catch (agi::UserCancelException const&) { throw; }
-		catch (wxString const& err) { error += factory + " factory: " + err + "\n"; }
-		catch (const char *err) { error += factory + " factory: " + wxString(err) + "\n"; }
+		catch (std::string const& err) { error += factory + " factory: " + err + "\n"; }
+		catch (const char *err) { error += factory + " factory: " + std::string(err) + "\n"; }
 		catch (...) { error += factory + " factory: Unknown error\n"; }
 	}
 

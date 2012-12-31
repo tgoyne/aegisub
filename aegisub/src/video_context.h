@@ -84,13 +84,13 @@ class VideoContext : public wxEvtHandler {
 	agi::scoped_ptr<ThreadedFrameSource> provider;
 
 	/// Filename of currently open video
-	wxString videoFile;
+	std::string videoFile;
 
 	/// List of frame numbers which are keyframes
 	std::vector<int> keyFrames;
 
 	/// File name of the currently open keyframes or empty if keyframes are not overridden
-	wxString keyFramesFilename;
+	std::string keyFramesFilename;
 
 	/// Playback timer used to periodically check if we should go to the next
 	/// frame while playing video
@@ -125,7 +125,7 @@ class VideoContext : public wxEvtHandler {
 
 	/// Filename of the currently loaded timecodes file, or empty if timecodes
 	/// have not been overridden
-	wxString ovrTimecodeFile;
+	std::string ovrTimecodeFile;
 
 	/// Cached option for audio playing when frame stepping
 	const agi::OptionValue* playAudioOnStep;
@@ -174,7 +174,7 @@ public:
 	bool IsLoaded() const { return !!videoProvider; }
 
 	/// Get the file name of the currently open video, if any
-	wxString GetVideoName() const { return videoFile; }
+	std::string GetVideoName() const { return videoFile; }
 
 	/// Is the video currently playing?
 	bool IsPlaying() const { return playback.IsRunning(); }
@@ -210,7 +210,7 @@ public:
 
 	/// @brief Open a new video
 	/// @param filename Video to open, or empty to close the current video
-	void SetVideo(const wxString &filename);
+	void SetVideo(const std::string &filename);
 	/// @brief Close and reopen the current video
 	void Reload();
 
@@ -240,16 +240,16 @@ public:
 	DEFINE_SIGNAL_ADDERS(ARChange, AddARChangeListener)
 
 	const std::vector<int>& GetKeyFrames() const { return keyFrames; };
-	wxString GetKeyFramesName() const { return keyFramesFilename; }
-	void LoadKeyframes(wxString filename);
-	void SaveKeyframes(wxString filename);
+	std::string GetKeyFramesName() const { return keyFramesFilename; }
+	void LoadKeyframes(std::string const& filename);
+	void SaveKeyframes(std::string const& filename);
 	void CloseKeyframes();
 	bool OverKeyFramesLoaded() const { return !keyFramesFilename.empty(); }
 	bool KeyFramesLoaded() const { return !keyFrames.empty(); }
 
-	wxString GetTimecodesName() const { return ovrTimecodeFile; }
-	void LoadTimecodes(wxString filename);
-	void SaveTimecodes(wxString filename);
+	std::string GetTimecodesName() const { return ovrTimecodeFile; }
+	void LoadTimecodes(std::string const& filename);
+	void SaveTimecodes(std::string const& filename);
 	void CloseTimecodes();
 	bool OverTimecodesLoaded() const { return ovrFPS.IsLoaded(); }
 	bool TimecodesLoaded() const { return videoFPS.IsLoaded() || ovrFPS.IsLoaded(); };

@@ -34,15 +34,6 @@
 
 #include "config.h"
 
-#include <functional>
-
-#include <wx/button.h>
-#include <wx/msgdlg.h>
-#include <wx/regex.h>
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-#include <wx/string.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "command/command.h"
@@ -57,6 +48,15 @@
 #include "video_context.h"
 
 #include <libaegisub/of_type_adaptor.h>
+
+#include <functional>
+
+#include <wx/button.h>
+#include <wx/msgdlg.h>
+#include <wx/regex.h>
+#include <wx/sizer.h>
+#include <wx/stattext.h>
+#include <wx/string.h>
 
 enum {
 	BUTTON_FIND_NEXT,
@@ -167,7 +167,7 @@ void DialogSearchReplace::FindReplace(int mode) {
 
 	// Variables
 	wxString LookFor = FindEdit->GetValue();
-	if (!LookFor) return;
+	if (LookFor.empty()) return;
 
 	// Setup
 	Search.isReg = CheckRegExp->IsChecked() && CheckRegExp->IsEnabled();
@@ -182,19 +182,18 @@ void DialogSearchReplace::FindReplace(int mode) {
 	if (mode == 0) {
 		Search.FindNext();
 		if (hasReplace) {
-			wxString ReplaceWith = ReplaceEdit->GetValue();
-			Search.ReplaceWith = ReplaceWith;
-			config::mru->Add("Replace", from_wx(ReplaceWith));
+			Search.ReplaceWith = ReplaceEdit->GetValue();
+			config::mru->Add("Replace", from_wx(Search.ReplaceWith));
 		}
 	}
-
 	// Replace
 	else {
-		wxString ReplaceWith = ReplaceEdit->GetValue();
-		Search.ReplaceWith = ReplaceWith;
-		if (mode == 1) Search.ReplaceNext();
-		else Search.ReplaceAll();
-		config::mru->Add("Replace", from_wx(ReplaceWith));
+		Search.ReplaceWith = ReplaceEdit->GetValue();
+		if (mode == 1)
+			Search.ReplaceNext();
+		else
+			Search.ReplaceAll();
+		config::mru->Add("Replace", from_wx(Search.ReplaceWith));
 	}
 
 	// Add to history
@@ -243,7 +242,7 @@ void SearchReplaceEngine::FindNext() {
 	ReplaceNext(false);
 }
 
-static boost::flyweight<wxString> *get_text(AssDialogue *cur, int field) {
+static boost::flyweight<std::string> *get_text(AssDialogue *cur, int field) {
 	if (field == 0) return &cur->Text;
 	else if (field == 1) return &cur->Style;
 	else if (field == 2) return &cur->Actor;
@@ -274,39 +273,48 @@ void SearchReplaceEngine::ReplaceNext(bool DoReplace) {
 	int start = curLine;
 	int nrows = context->subsGrid->GetRows();
 	bool found = false;
-	size_t tempPos;
 	int regFlags = wxRE_ADVANCED;
 	if (!matchCase) {
-		if (isReg) regFlags |= wxRE_ICASE;
-		else LookFor.MakeLower();
+		if (isReg)
+			regFlags |= wxRE_ICASE;
+		else
+			LookFor.MakeLower();
+	}
+
+	wxRegEx regex;
+	if (isReg) {
+		regex.Compile(LookFor, regFlags);
+		if (!regex.IsValid()) {
+			LastWasFind = !DoReplace;
+			return;
+		}
 	}
 
 	// Search for it
-	boost::flyweight<wxString> *Text = nullptr;
+	boost::flyweight<std::string> *Text = nullptr;
+	wxString text;
 	while (!found) {
 		Text = get_text(context->subsGrid->GetDialogue(curLine), field);
-		if (DoReplace && LastWasFind)
-			tempPos = pos;
-		else
+		text = to_wx(*Text);
+		size_t tempPos = pos;
+		if (!DoReplace || !LastWasFind)
 			tempPos = pos+replaceLen;
 
 		// RegExp
 		if (isReg) {
-			wxRegEx regex (LookFor,regFlags);
-			if (regex.IsValid()) {
-				if (regex.Matches(Text->get().Mid(tempPos))) {
-					size_t match_start;
-					regex.GetMatch(&match_start,&matchLen,0);
-					pos = match_start + tempPos;
-					found = true;
-				}
+			if (regex.Matches(text.Mid(tempPos))) {
+				size_t match_start;
+				regex.GetMatch(&match_start, &matchLen, 0);
+				pos = match_start + tempPos;
+				found = true;
 			}
 		}
 
 		// Normal
 		else {
-			wxString src = Text->get().Mid(tempPos);
-			if (!matchCase) src.MakeLower();
+			wxString src = text.Mid(tempPos);
+			if (!matchCase)
+				src.MakeLower();
 			int textPos = src.Find(LookFor);
 			if (textPos != -1) {
 				pos = tempPos+textPos;
@@ -317,55 +325,35 @@ void SearchReplaceEngine::ReplaceNext(bool DoReplace) {
 
 		// Didn't find, go to next line
 		if (!found) {
-			curLine++;
+			curLine = (curLine + 1) % nrows;
 			pos = 0;
 			matchLen = 0;
 			replaceLen = 0;
-			if (curLine == nrows) curLine = 0;
 			if (curLine == start) break;
 		}
 	}
 
-	// Found
 	if (found) {
-		// If replacing
 		if (DoReplace) {
-			// Replace with regular expressions
+			wxString subst = ReplaceWith;
 			if (isReg) {
-				wxString toReplace = Text->get().Mid(pos,matchLen);
-				wxRegEx regex(LookFor,regFlags);
-				regex.ReplaceFirst(&toReplace,ReplaceWith);
-				*Text = Text->get().Left(pos) + toReplace + Text->get().Mid(pos+matchLen);
-				replaceLen = toReplace.Length();
+				subst = text.Mid(pos, matchLen);
+				regex.ReplaceFirst(&subst, ReplaceWith);
 			}
+			*Text = from_wx(text.Left(pos) + ReplaceWith + text.Mid(pos+matchLen));
+			replaceLen = ReplaceWith.size();
 
-			// Normal replace
-			else {
-				*Text = Text->get().Left(pos) + ReplaceWith + Text->get().Mid(pos+matchLen);
-				replaceLen = ReplaceWith.Length();
-			}
-
-			// Commit
 			context->ass->Commit(_("replace"), AssFile::COMMIT_DIAG_TEXT);
 		}
-
-		else {
+		else
 			replaceLen = matchLen;
-		}
 
-		// Select
-		context->subsGrid->SelectRow(curLine,false);
-		context->subsGrid->MakeCellVisible(curLine,0);
-		if (field == 0) {
-			context->selectionController->SetActiveLine(context->subsGrid->GetDialogue(curLine));
+		context->selectionController->SetActiveLine(context->subsGrid->GetDialogue(curLine));
+		if (field == 0)
 			context->textSelectionController->SetSelection(pos, pos + replaceLen);
-		}
 
-		// Update video
-		if (updateVideo) {
-			cmd::call("video/jump/start", context);
-		}
-		else if (DoReplace) Modified = true;
+		if (DoReplace)
+			Modified = true;
 
 		// hAx to prevent double match on style/actor
 		if (field != 0) replaceLen = 99999;
@@ -373,7 +361,6 @@ void SearchReplaceEngine::ReplaceNext(bool DoReplace) {
 	LastWasFind = !DoReplace;
 }
 
-/// @brief Replace all instances
 void SearchReplaceEngine::ReplaceAll() {
 	size_t count = 0;
 
@@ -384,37 +371,35 @@ void SearchReplaceEngine::ReplaceAll() {
 	if (isReg)
 		reg.Compile(LookFor, regFlags);
 
-	// Selection
 	SubtitleSelection const& sel = context->selectionController->GetSelectedSet();
 	bool hasSelection = !sel.empty();
 	bool inSel = affect == 1;
 
 	for (auto diag : context->ass->Line | agi::of_type<AssDialogue>()) {
-		// Check if row is selected
 		if (inSel && hasSelection && !sel.count(diag))
 			continue;
 
-		boost::flyweight<wxString> *Text = get_text(diag, field);
+		boost::flyweight<std::string> *Text = get_text(diag, field);
+		wxString repl(to_wx(*Text));
 
 		// Regular expressions
 		if (isReg) {
-			if (reg.Matches(*Text)) {
+			if (reg.Matches(repl)) {
 				size_t start, len;
 				reg.GetMatch(&start, &len);
 
 				// A zero length match (such as '$') will always be replaced
 				// maxMatches times, which is almost certainly not what the user
 				// wanted, so limit it to one replacement in that situation
-				wxString repl(*Text);
 				count += reg.Replace(&repl, ReplaceWith, len > 0 ? 1000 : 1);
-				*Text = repl;
+				*Text = from_wx(repl);
 			}
 		}
 		// Normal replace
 		else {
 			if (!Search.matchCase) {
 				bool replaced = false;
-				wxString Left, Right = *Text;
+				wxString Left, Right = repl;
 				size_t pos = 0;
 				Left.reserve(Right.size());
 				while (pos + LookFor.size() <= Right.size()) {
@@ -429,14 +414,12 @@ void SearchReplaceEngine::ReplaceAll() {
 						pos++;
 					}
 				}
-				if (replaced) {
-					*Text = Left + Right;
-				}
+				if (replaced)
+					*Text = from_wx(Left + Right);
 			}
-			else if(Text->get().Contains(LookFor)) {
-				wxString repl(*Text);
+			else if(repl.Contains(LookFor)) {
 				count += repl.Replace(LookFor, ReplaceWith);
-				*Text = repl;
+				*Text = from_wx(repl);
 			}
 		}
 	}

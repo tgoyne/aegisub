@@ -40,7 +40,6 @@ protected:
 private:
 	AegisubCSConv(const AegisubCSConv&);
 	AegisubCSConv& operator=(const AegisubCSConv&);
-	wxString localCharset;
 
 	mutable wxMutex iconvMutex;
 

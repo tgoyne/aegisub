@@ -36,15 +36,16 @@
 
 #include "../config.h"
 
-#include <wx/filedlg.h>
-#include <wx/filename.h>
-
 #include "command.h"
 
 #include "../compat.h"
 #include "../include/aegisub/context.h"
 #include "../options.h"
 #include "../video_context.h"
+
+#include <libaegisub/path.h>
+
+#include <wx/filedlg.h>
 
 namespace {
 	using cmd::Command;
@@ -79,14 +80,13 @@ struct timecode_open : public Command {
 	void operator()(agi::Context *c) {
 		wxString path = to_wx(OPT_GET("Path/Last/Timecodes")->GetString());
 		wxString str = _("All Supported Formats") + " (*.txt)|*.txt|" + _("All Files") + " (*.*)|*.*";
-		wxString filename = wxFileSelector(_("Open Timecodes File"),path,"","",str,wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+		std::string filename = from_wx(wxFileSelector(_("Open Timecodes File"),path,"","",str,wxFD_OPEN | wxFD_FILE_MUST_EXIST));
 		if (!filename.empty()) {
 			c->videoController->LoadTimecodes(filename);
-			OPT_SET("Path/Last/Timecodes")->SetString(from_wx(wxFileName(filename).GetPath()));
+			OPT_SET("Path/Last/Timecodes")->SetString(agi::Path::DirName(filename));
 		}
 	}
 };
-
 
 /// Saves a VFR timecodes v2 file.
 struct timecode_save : public Command {
@@ -103,10 +103,10 @@ struct timecode_save : public Command {
 	void operator()(agi::Context *c) {
 		wxString path = to_wx(OPT_GET("Path/Last/Timecodes")->GetString());
 		wxString str = _("All Supported Formats") + " (*.txt)|*.txt|" + _("All Files") + " (*.*)|*.*";
-		wxString filename = wxFileSelector(_("Save Timecodes File"),path,"","",str,wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+		std::string filename = from_wx(wxFileSelector(_("Save Timecodes File"),path,"","",str,wxFD_SAVE | wxFD_OVERWRITE_PROMPT));
 		if (!filename.empty()) {
 			c->videoController->SaveTimecodes(filename);
-			OPT_SET("Path/Last/Timecodes")->SetString(from_wx(wxFileName(filename).GetPath()));
+			OPT_SET("Path/Last/Timecodes")->SetString(agi::Path::DirName(filename));
 		}
 	}
 };

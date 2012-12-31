@@ -33,14 +33,11 @@
 
 #pragma once
 
-#include <cassert>
 #include <cstdint>
 #include <memory>
-#include <set>
-#include <vector>
+#include <string>
 
 #include <wx/event.h>
-#include <wx/string.h>
 #include <wx/timer.h>
 #include <wx/pen.h>
 #include <wx/power.h>
@@ -99,7 +96,7 @@ class AudioController : public wxEvtHandler {
 	agi::scoped_ptr<AudioTimingController> timing_controller;
 
 	/// The URL of the currently open audio, if any
-	wxString audio_url;
+	std::string audio_url;
 
 
 	enum PlaybackMode {
@@ -163,7 +160,7 @@ public:
 	///
 	/// The URL can either be a plain filename (with no qualifiers) or one
 	/// recognised by various providers.
-	void OpenAudio(const wxString &url);
+	void OpenAudio(const std::string &url);
 
 	/// @brief Closes the current audio stream
 	void CloseAudio();
@@ -177,7 +174,7 @@ public:
 	///
 	/// The returned URL can be passed into OpenAudio() later to open the same
 	/// stream again.
-	wxString GetAudioURL() const;
+	std::string GetAudioURL() const { return audio_url; }
 
 
 	/// @brief Start or restart audio playback, playing a range
@@ -263,7 +260,7 @@ public:
 	/// @brief Save a portion of the decoded loaded audio to a wav file
 	/// @param filename File to save to
 	/// @param range Time range to save
-	void SaveClip(wxString const& filename, TimeRange const& range) const;
+	void SaveClip(std::string const& filename, TimeRange const& range) const;
 
 	DEFINE_SIGNAL_ADDERS(AnnounceAudioOpen,               AddAudioOpenListener)
 	DEFINE_SIGNAL_ADDERS(AnnounceAudioClose,              AddAudioCloseListener)

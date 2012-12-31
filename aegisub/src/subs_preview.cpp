@@ -82,8 +82,8 @@ void SubtitlesPreview::SetStyle(AssStyle const& newStyle) {
 	UpdateBitmap();
 }
 
-void SubtitlesPreview::SetText(wxString text) {
-	wxString newText = "{\\q2}" + text;
+void SubtitlesPreview::SetText(std::string const& text) {
+	std::string newText = "{\\q2}" + text;
 	if (newText != line->Text) {
 		line->Text = newText;
 		UpdateBitmap();
@@ -141,8 +141,8 @@ void SubtitlesPreview::OnSize(wxSizeEvent &evt) {
 			"No subtitles provider", wxOK | wxICON_ERROR | wxCENTER);
 	}
 
-	subFile->SetScriptInfo("PlayResX", wxString::Format("%d", w));
-	subFile->SetScriptInfo("PlayResY", wxString::Format("%d", h));
+	subFile->SetScriptInfo("PlayResX", std::to_string(w));
+	subFile->SetScriptInfo("PlayResY", std::to_string(h));
 
 	UpdateBitmap();
 }

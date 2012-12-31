@@ -42,6 +42,8 @@
 #include "text_file_writer.h"
 #include "utils.h"
 
+#include <libaegisub/fs.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 #include <functional>
 
@@ -52,25 +54,23 @@ AssStyleStorage::~AssStyleStorage() {
 void AssStyleStorage::Save() const {
 	if (storage_name.empty()) return;
 
-	wxString dirname = StandardPaths::DecodePath("?user/catalog/");
-	if (!wxDirExists(dirname) && !wxMkdir(dirname))
-		throw "Failed creating directory for style catalogs";
+	agi::fs::CreateDirectory(StandardPaths::DecodePath("?user/catalog/"));
 
-	TextFileWriter file(StandardPaths::DecodePath("?user/catalog/" + storage_name + ".sty"), "UTF-8");
+	TextFileWriter file(storage_name, "UTF-8");
 	for (const AssStyle *cur : style)
 		file.WriteLineToFile(cur->GetEntryData());
 }
 
-void AssStyleStorage::Load(wxString const& name) {
-	storage_name = name;
+void AssStyleStorage::Load(std::string const& name) {
+	storage_name = StandardPaths::DecodePath("?user/catalog/" + name + ".sty");
 	Clear();
 
 	try {
-		TextFileReader file(StandardPaths::DecodePath("?user/catalog/" + name + ".sty"), "UTF-8");
+		TextFileReader file(storage_name, "UTF-8");
 
 		while (file.HasMoreLines()) {
-			wxString data = file.ReadLineFromFile();
-			if (data.StartsWith("Style:")) {
+			std::string data = file.ReadLineFromFile();
+			if (boost::starts_with(data, "Style:")) {
 				try {
 					style.push_back(new AssStyle(data));
 				} catch(...) {

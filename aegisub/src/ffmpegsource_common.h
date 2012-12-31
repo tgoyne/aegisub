@@ -33,11 +33,7 @@
 ///
 
 #ifdef WITH_FFMS2
-
 #include <map>
-
-#include <wx/filename.h>
-#include <wx/thread.h>
 
 #include <ffms.h>
 
@@ -72,10 +68,10 @@ public:
 
 	void CleanCache();
 
-	FFMS_Index *DoIndexing(FFMS_Indexer *Indexer, const wxString& Cachename, int Trackmask, FFMS_IndexErrorHandling IndexEH);
-	std::map<int,wxString> GetTracksOfType(FFMS_Indexer *Indexer, FFMS_TrackType Type);
-	int AskForTrackSelection(const std::map<int,wxString>& TrackList, FFMS_TrackType Type);
-	wxString GetCacheFilename(const wxString& filename);
+	FFMS_Index *DoIndexing(FFMS_Indexer *Indexer, const std::string& Cachename, int Trackmask, FFMS_IndexErrorHandling IndexEH);
+	std::map<int,std::string> GetTracksOfType(FFMS_Indexer *Indexer, FFMS_TrackType Type);
+	int AskForTrackSelection(const std::map<int,std::string>& TrackList, FFMS_TrackType Type);
+	std::string GetCacheFilename(const std::string& filename);
 	void SetLogLevel();
 	FFMS_IndexErrorHandling GetErrorHandlingMode();
 

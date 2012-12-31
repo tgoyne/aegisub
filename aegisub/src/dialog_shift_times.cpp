@@ -99,7 +99,7 @@ static wxString get_history_string(json::Object &obj) {
 DialogShiftTimes::DialogShiftTimes(agi::Context *context)
 : wxDialog(context->parent, -1, _("Shift Times"))
 , context(context)
-, history_filename(from_wx(StandardPaths::DecodePath("?user/shift_history.json")))
+, history_filename(StandardPaths::DecodePath("?user/shift_history.json"))
 , history(new json::Array)
 , timecodes_loaded_slot(context->videoController->AddTimecodesListener(&DialogShiftTimes::OnTimecodesLoaded, this))
 , selected_set_changed_slot(context->selectionController->AddSelectionListener(&DialogShiftTimes::OnSelectedSetChanged, this))
@@ -256,7 +256,7 @@ void DialogShiftTimes::OnHistoryClick(wxCommandEvent &evt) {
 
 	json::Object& obj = (*history)[entry];
 	if (obj["is by time"]) {
-		shift_time->SetTime(AssTime(to_wx(obj["amount"])));
+		shift_time->SetTime(AssTime(obj["amount"]));
 		shift_by_time->SetValue(true);
 		OnByTime(evt);
 	}
@@ -279,7 +279,7 @@ void DialogShiftTimes::OnHistoryClick(wxCommandEvent &evt) {
 
 void DialogShiftTimes::SaveHistory(json::Array const& shifted_blocks) {
 	json::Object new_entry;
-	new_entry["filename"] = from_wx(wxFileName(context->ass->filename).GetFullName());
+	new_entry["filename"] = from_wx(wxFileName(to_wx(context->ass->filename)).GetFullName());
 	new_entry["is by time"] = shift_by_time->GetValue();
 	new_entry["is backward"] = shift_backward->GetValue();
 	new_entry["amount"] = from_wx(shift_by_time->GetValue() ? shift_time->GetValue() : shift_frames->GetValue());

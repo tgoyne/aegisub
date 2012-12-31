@@ -34,34 +34,34 @@
 
 #include "config.h"
 
-#include <algorithm>
-#include <utility>
-
-#include <wx/clipbrd.h>
-#include <wx/filename.h>
-#include <wx/regex.h>
-#include <wx/tokenzr.h>
-
 #include "subs_grid.h"
-
-#include "include/aegisub/context.h"
 
 #include "ass_dialogue.h"
 #include "ass_file.h"
+#include "compat.h"
+#include "include/aegisub/context.h"
 #include "options.h"
 #include "utils.h"
-#include "video_context.h"
+
+#include <algorithm>
+#include <boost/algorithm/string/predicate.hpp>
+#include <utility>
+
+#include <wx/regex.h>
 
 SubtitlesGrid::SubtitlesGrid(wxWindow *parent, agi::Context *context)
 : BaseGrid(parent, context, wxDefaultSize, wxWANTS_CHARS | wxSUNKEN_BORDER)
 {
 }
 
-static void trim_text(wxString *text) {
+static std::string trim_text(std::string const& text) {
 	static wxRegEx start("^( |\t|\\\\[nNh])+");
 	static wxRegEx end("( |\t|\\\\[nNh])+$");
-	start.ReplaceFirst(text, "");
-	end.ReplaceFirst(text, "");
+
+	wxString str(to_wx(text));
+	start.ReplaceFirst(&str, wxEmptyString);
+	end.ReplaceFirst(&str, wxEmptyString);
+	return from_wx(str);
 }
 
 static void expand_times(AssDialogue *src, AssDialogue *dst) {
@@ -69,11 +69,9 @@ static void expand_times(AssDialogue *src, AssDialogue *dst) {
 	dst->End = std::max(dst->End, src->End);
 }
 
-static bool check_lines(AssDialogue *d1, AssDialogue *d2, bool (wxString::*pred)(wxString const&, wxString *) const) {
-	wxString rest;
-	if ((d1->Text.get().*pred)(d2->Text.get(), &rest)) {
-		trim_text(&rest);
-		d1->Text = rest;
+static bool check_lines(AssDialogue *d1, AssDialogue *d2, bool (*pred)(std::string const&, std::string const&)) {
+	if (pred(d1->Text.get(), d2->Text.get())) {
+		d1->Text = trim_text(d1->Text.get().substr(d2->Text.get().size()));
 		expand_times(d1, d2);
 		return true;
 	}
@@ -81,14 +79,13 @@ static bool check_lines(AssDialogue *d1, AssDialogue *d2, bool (wxString::*pred)
 }
 
 static bool check_start(AssDialogue *d1, AssDialogue *d2) {
-	return check_lines(d1, d2, &wxString::StartsWith);
+	return check_lines(d1, d2, &boost::starts_with<std::string, std::string>);
 }
 
 static bool check_end(AssDialogue *d1, AssDialogue *d2) {
-	return check_lines(d1, d2, &wxString::EndsWith);
+	return check_lines(d1, d2, &boost::ends_with<std::string, std::string>);
 }
 
-/// @brief Recombine
 void SubtitlesGrid::RecombineLines() {
 	Selection selectedSet = GetSelectedSet();
 	if (selectedSet.size() < 2) return;
@@ -97,11 +94,8 @@ void SubtitlesGrid::RecombineLines() {
 
 	std::vector<AssDialogue*> sel(selectedSet.begin(), selectedSet.end());
 	sort(sel.begin(), sel.end(), &AssFile::CompStart);
-	for (auto &diag : sel) {
-		wxString text = diag->Text;
-		trim_text(&text);
-		diag->Text = text;
-	}
+	for (auto &diag : sel)
+		diag->Text = trim_text(diag->Text);
 
 	auto end = sel.end() - 1;
 	for (auto cur = sel.begin(); cur != end; ++cur) {

@@ -38,24 +38,6 @@
 
 #include "auto4_lua.h"
 
-#include <cassert>
-#include <cstdint>
-
-#include <algorithm>
-
-#include <wx/clipbrd.h>
-#include <wx/filefn.h>
-#include <wx/filename.h>
-#include <wx/log.h>
-#include <wx/msgdlg.h>
-#include <wx/regex.h>
-#include <wx/tokenzr.h>
-#include <wx/window.h>
-
-#include <libaegisub/access.h>
-#include <libaegisub/log.h>
-#include <libaegisub/scoped_ptr.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_style.h"
@@ -68,6 +50,27 @@
 #include "standard_paths.h"
 #include "video_context.h"
 #include "utils.h"
+
+#include <libaegisub/access.h>
+#include <libaegisub/log.h>
+#include <libaegisub/path.h>
+#include <libaegisub/scoped_ptr.h>
+
+#include <algorithm>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/format.hpp>
+#include <boost/tokenizer.hpp>
+#include <cassert>
+#include <cstdint>
+
+#include <wx/clipbrd.h>
+#include <wx/filefn.h>
+#include <wx/filename.h>
+#include <wx/log.h>
+#include <wx/msgdlg.h>
+#include <wx/regex.h>
+#include <wx/window.h>
 
 // This must be below the headers above.
 #ifdef __WINDOWS__
@@ -110,12 +113,12 @@ namespace {
 		return wxString(luaL_checkstring(L, idx), wxConvUTF8);
 	}
 
-	wxString get_global_string(lua_State *L, const char *name)
+	std::string get_global_string(lua_State *L, const char *name)
 	{
 		lua_getglobal(L, name);
-		wxString ret;
+		std::string ret;
 		if (lua_isstring(L, -1))
-			ret = get_wxstring(L, -1);
+			ret = lua_tostring(L, -1);
 		lua_pop(L, 1);
 		return ret;
 	}
@@ -143,7 +146,7 @@ namespace {
 	{
 		const agi::Context *c = get_context(L);
 		if (c && c->ass->filename.size())
-			lua_pushstring(L, wxFileName(c->ass->filename).GetFullName().utf8_str());
+			lua_pushstring(L, agi::Path::FileName(c->ass->filename).c_str());
 		else
 			lua_pushnil(L);
 		return 1;
@@ -277,17 +280,17 @@ namespace {
 
 	int clipboard_get(lua_State *L)
 	{
-		wxString data = GetClipboard();
-		if (!data)
+		std::string data = GetClipboard();
+		if (data.empty())
 			lua_pushnil(L);
 		else
-			lua_pushstring(L, data.utf8_str());
+			lua_pushstring(L, data.c_str());
 		return 1;
 	}
 
 	int clipboard_set(lua_State *L)
 	{
-		wxString str(check_wxstring(L, 1));
+		std::string str(luaL_checkstring(L, 1));
 
 		bool succeeded = false;
 
@@ -300,7 +303,7 @@ namespace {
 		wxClipboard *theCB = wxTheClipboard;
 #endif
 		if (theCB->Open()) {
-			succeeded = theCB->SetData(new wxTextDataObject(str));
+			succeeded = theCB->SetData(new wxTextDataObject(to_wx(str)));
 			theCB->Close();
 			theCB->Flush();
 		}
@@ -338,7 +341,7 @@ namespace {
 			LOG_D("automation/lua/stackdump") << "--- dumping lua stack...";
 			for (int i = top; i > 0; i--) {
 				lua_pushvalue(L, i);
-				wxString type(lua_typename(L, lua_type(L, -1)), wxConvUTF8);
+				std::string type(lua_typename(L, lua_type(L, -1)));
 				if (lua_isstring(L, i)) {
 					LOG_D("automation/lua/stackdump") << type << ": " << lua_tostring(L, -1);
 				} else {
@@ -361,7 +364,7 @@ namespace {
 
 namespace Automation4 {
 	// LuaScript
-	LuaScript::LuaScript(wxString const& filename)
+	LuaScript::LuaScript(std::string const& filename)
 	: Script(filename)
 	, L(0)
 	{
@@ -424,7 +427,7 @@ namespace Automation4 {
 			// prepare stuff in the registry
 
 			// store the script's filename
-			lua_pushstring(L, wxFileName(GetFilename()).GetName().utf8_str().data());
+			lua_pushstring(L, agi::Path::StripExtension(GetFilename()).c_str());
 			lua_setfield(L, LUA_REGISTRYINDEX, "filename");
 			_stackcheck.check_stack(0);
 
@@ -458,10 +461,10 @@ namespace Automation4 {
 
 			// load user script
 			LuaScriptReader script_reader(GetFilename());
-			if (lua_load(L, script_reader.reader_func, &script_reader, GetPrettyFilename().utf8_str())) {
-				wxString err = wxString::Format("Error loading Lua script \"%s\":\n\n%s", GetPrettyFilename(), get_wxstring(L, -1));
+			if (lua_load(L, script_reader.reader_func, &script_reader, GetPrettyFilename().c_str())) {
+				std::string err = str(boost::format("Error loading Lua script \"%s\":\n\n%s") % GetPrettyFilename() % lua_tostring(L, -1));
 				lua_pop(L, 1);
-				throw ScriptLoadError(from_wx(err));
+				throw ScriptLoadError(err);
 			}
 			_stackcheck.check_stack(1);
 
@@ -470,9 +473,9 @@ namespace Automation4 {
 			// don't thread this, as there's no point in it and it seems to break on wx 2.8.3, for some reason
 			if (lua_pcall(L, 0, 0, 0)) {
 				// error occurred, assumed to be on top of Lua stack
-				wxString err = wxString::Format("Error initialising Lua script \"%s\":\n\n%s", GetPrettyFilename(), get_wxstring(L, -1));
+				std::string err = str(boost::format("Error initialising Lua script \"%s\":\n\n%s") % GetPrettyFilename() % lua_tostring(L, -1));
 				lua_pop(L, 1);
-				throw ScriptLoadError(from_wx(err));
+				throw ScriptLoadError(err);
 			}
 			_stackcheck.check_stack(0);
 
@@ -529,7 +532,7 @@ namespace Automation4 {
 			if (macro->name() == command->name()) {
 				luaL_error(L,
 					"A macro named '%s' is already defined in script '%s'",
-					command->StrDisplay(0).utf8_str().data(), name.utf8_str().data());
+					command->StrDisplay(0).utf8_str().data(), name.c_str());
 			}
 		}
 		macros.push_back(command);
@@ -566,7 +569,7 @@ namespace Automation4 {
 			return luaL_error(L, "Not a style entry");
 
 		double width, height, descent, extlead;
-		if (!CalculateTextExtents(st, check_wxstring(L, 2), width, height, descent, extlead))
+		if (!CalculateTextExtents(st, luaL_checkstring(L, 2), width, height, descent, extlead))
 			return luaL_error(L, "Some internal error occurred calculating text_extents");
 
 		lua_pushnumber(L, width);
@@ -582,25 +585,23 @@ namespace Automation4 {
 	int LuaScript::LuaModuleLoader(lua_State *L)
 	{
 		int pretop = lua_gettop(L);
-		wxString module(get_wxstring(L, -1));
-		module.Replace(".", LUA_DIRSEP);
+		std::string module(lua_tostring(L, -1));
+		boost::replace_all(module, ".", LUA_DIRSEP);
 
 		// Get the lua package include path (which the user may have modified)
 		lua_getglobal(L, "package");
 		lua_pushstring(L, "path");
 		lua_gettable(L, -2);
-		wxString package_paths(get_wxstring(L, -1));
+		std::string package_paths(lua_tostring(L, -1));
 		lua_pop(L, 2);
 
-		wxStringTokenizer toker(package_paths, ";", wxTOKEN_STRTOK);
-		while (toker.HasMoreTokens()) {
-			wxString filename = toker.GetNextToken();
-			filename.Replace("?", module);
+		boost::char_separator<char> sep(";");
+		for (auto filename : boost::tokenizer<boost::char_separator<char>>(package_paths, sep)) {
+			boost::replace_all(filename, "?", module);
 			try {
 				LuaScriptReader script_reader(filename);
-				if (lua_load(L, script_reader.reader_func, &script_reader, filename.utf8_str())) {
-					return luaL_error(L, "Error loading Lua module \"%s\":\n\n%s", filename.utf8_str().data(), lua_tostring(L, -1));
-				}
+				if (lua_load(L, script_reader.reader_func, &script_reader, filename.c_str()))
+					return luaL_error(L, "Error loading Lua module \"%s\":\n\n%s", filename.c_str(), lua_tostring(L, -1));
 				break;
 			}
 			catch (agi::FileNotFoundError const&) {
@@ -610,7 +611,7 @@ namespace Automation4 {
 				// Not an error so swallow and continue on
 			}
 			catch (agi::Exception const& e) {
-				return luaL_error(L, "Error loading Lua module \"%s\":\n\n%s", filename.utf8_str().data(), e.GetChainedMessage().c_str());
+				return luaL_error(L, "Error loading Lua module \"%s\":\n\n%s", filename.c_str(), e.GetChainedMessage().c_str());
 			}
 		}
 
@@ -621,25 +622,22 @@ namespace Automation4 {
 	{
 		LuaScript *s = GetScriptObject(L);
 
-		wxString fnames(check_wxstring(L, 1));
+		std::string fnames(luaL_checkstring(L, 1));
 
-		wxFileName fname(fnames);
-		if (fname.GetDirCount() == 0) {
-			// filename only
-			fname = s->include_path.FindAbsoluteValidPath(fnames);
-		} else if (fname.IsRelative()) {
-			// relative path
-			wxFileName sfname(s->GetFilename());
-			fname.MakeAbsolute(sfname.GetPath(true));
-		} else {
-			// absolute path, do nothing
-		}
+		wxFileName fname(to_wx(fnames));
+		if (fname.GetDirCount() == 0) // filename only
+			fname = s->include_path.FindAbsoluteValidPath(to_wx(fnames));
+		else if (fname.IsRelative()) // relative path
+			fname.MakeAbsolute(wxFileName(to_wx(s->GetFilename())).GetPath(true));
+
 		if (!fname.IsOk() || !fname.FileExists())
-			return luaL_error(L, "Lua include not found: %s", fnames.utf8_str().data());
+			return luaL_error(L, "Lua include not found: %s", fnames.c_str());
 
-		LuaScriptReader script_reader(fname.GetFullPath());
-		if (lua_load(L, script_reader.reader_func, &script_reader, fname.GetFullName().utf8_str()))
-			return luaL_error(L, "Error loading Lua include \"%s\":\n\n%s", fname.GetFullPath().utf8_str().data(), lua_tostring(L, -1));
+		fnames = from_wx(fname.GetFullPath());
+
+		LuaScriptReader script_reader(fnames);
+		if (lua_load(L, script_reader.reader_func, &script_reader, fnames.c_str()))
+			return luaL_error(L, "Error loading Lua include \"%s\":\n\n%s", fnames.c_str(), lua_tostring(L, -1));
 
 		int pretop = lua_gettop(L) - 1; // don't count the function value itself
 		lua_call(L, 0, LUA_MULTRET);
@@ -708,9 +706,9 @@ namespace Automation4 {
 
 	int LuaScript::LuaDecodePath(lua_State *L)
 	{
-		wxString path = check_wxstring(L, 1);
+		std::string path = luaL_checkstring(L, 1);
 		lua_pop(L, 1);
-		lua_pushstring(L, StandardPaths::DecodePath(path).utf8_str());
+		lua_pushstring(L, StandardPaths::DecodePath(path).c_str());
 		return 1;
 	}
 
@@ -720,7 +718,7 @@ namespace Automation4 {
 		return lua_error(L);
 	}
 
-	void LuaThreadedCall(lua_State *L, int nargs, int nresults, wxString const& title, wxWindow *parent, bool can_open_config)
+	void LuaThreadedCall(lua_State *L, int nargs, int nresults, std::string const& title, wxWindow *parent, bool can_open_config)
 	{
 		bool failed = false;
 		BackgroundScriptRunner bsr(parent, title);
@@ -786,7 +784,7 @@ namespace Automation4 {
 	, cmd_type(cmd::COMMAND_NORMAL)
 	{
 		lua_getfield(L, LUA_REGISTRYINDEX, "filename");
-		cmd_name = from_wx(wxString::Format("automation/lua/%s/%s", get_wxstring(L, -1), check_wxstring(L, 1)));
+		cmd_name = str(boost::format("automation/lua/%s/%s") % lua_tostring(L, -1) % luaL_checkstring(L, 1));
 
 		if (!lua_isfunction(L, 3))
 			luaL_error(L, "The macro processing function must be a function");
@@ -896,7 +894,7 @@ namespace Automation4 {
 		lua_pushinteger(L, transform_selection(L, c));
 
 		try {
-			LuaThreadedCall(L, 3, 2, StrDisplay(c), c->parent, true);
+			LuaThreadedCall(L, 3, 2, from_wx(StrDisplay(c)), c->parent, true);
 
 			subsobj->ProcessingComplete(StrDisplay(c));
 
@@ -991,7 +989,7 @@ namespace Automation4 {
 
 	// LuaFeatureFilter
 	LuaExportFilter::LuaExportFilter(lua_State *L)
-	: ExportFilter(check_wxstring(L, 1), get_wxstring(L, 2), lua_tointeger(L, 3))
+	: ExportFilter(luaL_checkstring(L, 1), lua_tostring(L, 2), lua_tointeger(L, 3))
 	, LuaFeature(L)
 	{
 		if (!lua_isfunction(L, 4))
@@ -1096,15 +1094,14 @@ namespace Automation4 {
 		Register(this);
 	}
 
-	Script* LuaScriptFactory::Produce(const wxString &filename) const
+	Script* LuaScriptFactory::Produce(const std::string &filename) const
 	{
 		// Just check if file extension is .lua
 		// Reject anything else
-		if (filename.Right(4).Lower() == ".lua") {
+		if (boost::iends_with(filename, ".lua"))
 			return new LuaScript(filename);
-		} else {
+		else
 			return 0;
-		}
 	}
 }
 

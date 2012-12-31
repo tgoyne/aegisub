@@ -36,12 +36,6 @@
 
 #include "../config.h"
 
-#include <algorithm>
-
-#include <wx/clipbrd.h>
-#include <wx/fontdlg.h>
-#include <wx/tokenzr.h>
-
 #include "command.h"
 
 #include "../ass_dialogue.h"
@@ -60,12 +54,18 @@
 #include "../utils.h"
 #include "../video_context.h"
 
-#include <boost/algorithm/string/predicate.hpp>
+#include <libaegisub/of_type_adaptor.h>
+
+#include <algorithm>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/sliced.hpp>
+#include <boost/tokenizer.hpp>
 
-#include <libaegisub/of_type_adaptor.h>
+#include <wx/clipbrd.h>
+#include <wx/fontdlg.h>
 
 namespace {
 	using namespace boost::adaptors;
@@ -88,8 +88,8 @@ struct validate_sel_multiple : public Command {
 };
 
 void paste_lines(agi::Context *c, bool paste_over) {
-	wxString data = GetClipboard();
-	if (!data) return;
+	std::string data = GetClipboard();
+	if (data.empty()) return;
 
 	AssDialogue *rel_line = c->selectionController->GetActiveLine();
 	entryIter pos = c->ass->Line.iterator_to(*rel_line);
@@ -98,12 +98,9 @@ void paste_lines(agi::Context *c, bool paste_over) {
 	SubtitleSelection newsel;
 
 	std::vector<bool> pasteOverOptions;
-	wxStringTokenizer token (data,"\r\n",wxTOKEN_STRTOK);
-	while (token.HasMoreTokens()) {
-		// Convert data into an AssDialogue
-		wxString curdata = token.GetNextToken();
-		curdata.Trim(true);
-		curdata.Trim(false);
+	boost::char_separator<char> sep("\r\n");
+	for (auto curdata : boost::tokenizer<boost::char_separator<char>>(data, sep)) {
+		boost::trim(curdata);
 		AssDialogue *curdiag;
 		try {
 			// Try to interpret the line as an ASS line
@@ -112,11 +109,8 @@ void paste_lines(agi::Context *c, bool paste_over) {
 		catch (...) {
 			// Line didn't parse correctly, assume it's plain text that
 			// should be pasted in the Text field only
-			curdiag = new AssDialogue();
+			curdiag = new AssDialogue;
 			curdiag->Text = curdata;
-			// Make sure pasted plain-text lines always are blank-timed
-			curdiag->Start = 0;
-			curdiag->End = 0;
 		}
 
 		if (!first)
@@ -179,7 +173,7 @@ T get_value(boost::ptr_vector<AssDialogueBlock> const& blocks, int blockn, T ini
 }
 
 /// Get the block index in the text of the position
-int block_at_pos(wxString const& text, int pos) {
+int block_at_pos(std::string const& text, int pos) {
 	int n = 0;
 	int max = text.size() - 1;
 	for (int i = 0; i <= pos && i <= max; ++i) {
@@ -227,7 +221,7 @@ void set_tag(AssDialogue *line, boost::ptr_vector<AssDialogueBlock> &blocks, std
 	std::string insert(tag + value);
 	int shift = insert.size();
 	if (plain || blockn < 0) {
-		line->Text = line->Text.get().Left(start) + "{" + to_wx(insert) + "}" + line->Text.get().Mid(start);
+		line->Text = line->Text.get().substr(0, start) + "{" + insert + "}" + line->Text.get().substr(start);
 		shift += 2;
 		blocks = line->ParseTags();
 	}
@@ -266,7 +260,7 @@ void set_tag(AssDialogue *line, boost::ptr_vector<AssDialogueBlock> &blocks, std
 
 void commit_text(agi::Context const * const c, wxString const& desc, int sel_start = -1, int sel_end = -1, int *commit_id = 0) {
 	SubtitleSelection const& sel = c->selectionController->GetSelectedSet();
-	wxString text = c->selectionController->GetActiveLine()->Text;
+	std::string text = c->selectionController->GetActiveLine()->Text;
 	for_each(sel.begin(), sel.end(), [&](AssDialogue *d) { d->Text = text; });
 
 	int new_commit_id = c->ass->Commit(desc, AssFile::COMMIT_DIAG_TEXT, commit_id ? *commit_id : -1, sel.size() == 1 ? *sel.begin() : 0);
@@ -278,7 +272,7 @@ void commit_text(agi::Context const * const c, wxString const& desc, int sel_sta
 
 void toggle_override_tag(const agi::Context *c, bool (AssStyle::*field), const char *tag, wxString const& undo_msg) {
 	AssDialogue *const line = c->selectionController->GetActiveLine();
-	AssStyle const* const style = c->ass->GetStyle(from_wx(line->Style));
+	AssStyle const* const style = c->ass->GetStyle(line->Style);
 	bool state = style ? style->*field : AssStyle().*field;
 
 	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
@@ -297,7 +291,7 @@ void toggle_override_tag(const agi::Context *c, bool (AssStyle::*field), const c
 
 void show_color_picker(const agi::Context *c, agi::Color (AssStyle::*field), const char *tag, const char *alt) {
 	AssDialogue *const line = c->selectionController->GetActiveLine();
-	AssStyle const* const style = c->ass->GetStyle(from_wx(line->Style));
+	AssStyle const* const style = c->ass->GetStyle(line->Style);
 	agi::Color color = (style ? style->*field : AssStyle().*field);
 
 	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
@@ -419,7 +413,7 @@ struct edit_font : public Command {
 		boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
 		const int blockn = block_at_pos(line->Text, c->textSelectionController->GetInsertionPoint());
 
-		const AssStyle *style = c->ass->GetStyle(from_wx(line->Style));
+		const AssStyle *style = c->ass->GetStyle(line->Style);
 		const AssStyle default_style;
 		if (!style)
 			style = &default_style;
@@ -466,14 +460,14 @@ struct edit_find_replace : public Command {
 	}
 };
 
-static wxString get_entry_data(AssDialogue *d) { return d->GetEntryData(); }
+static std::string get_entry_data(AssDialogue *d) { return d->GetEntryData(); }
 static void copy_lines(agi::Context *c) {
 	SubtitleSelection sel = c->selectionController->GetSelectedSet();
 	SetClipboard(join(c->ass->Line
 		| agi::of_type<AssDialogue>()
 		| filtered([&](AssDialogue *d) { return sel.count(d); })
 		| transformed(get_entry_data),
-		wxS("\r\n")));
+		"\r\n"));
 }
 
 static void delete_lines(agi::Context *c, wxString const& commit_message) {
@@ -675,11 +669,11 @@ static void combine_lines(agi::Context *c, void (*combiner)(AssDialogue *, AssDi
 }
 
 static void combine_karaoke(AssDialogue *first, AssDialogue *second) {
-	first->Text = wxString::Format("%s{\\k%d}%s", first->Text.get(), (second->Start - first->End) / 10, second->Text.get());
+	first->Text = first->Text.get() + "{\\k" + std::to_string((second->Start - first->End) / 10) + "}" + second->Text.get();
 }
 
 static void combine_concat(AssDialogue *first, AssDialogue *second) {
-	first->Text = first->Text + " " + second->Text;
+	first->Text = first->Text.get() + " " + second->Text.get();
 }
 
 static void combine_drop(AssDialogue *, AssDialogue *) { }
@@ -804,9 +798,9 @@ void split_lines(agi::Context *c, bool estimate) {
 	AssDialogue *n2 = new AssDialogue(*n1);
 	c->ass->Line.insert(++c->ass->Line.iterator_to(*n1), *n2);
 
-	wxString orig = n1->Text;
-	n1->Text = orig.Left(pos).Trim(true); // Trim off trailing whitespace
-	n2->Text = orig.Mid(pos).Trim(false); // Trim off leading whitespace
+	std::string orig = n1->Text;
+	n1->Text = boost::trim_right_copy(orig.substr(0, pos));
+	n2->Text = boost::trim_left_copy(orig.substr(pos));
 
 	if (estimate && orig.size()) {
 		double splitPos = double(pos) / orig.size();

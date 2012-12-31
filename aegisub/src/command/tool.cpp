@@ -36,9 +36,6 @@
 
 #include "../config.h"
 
-#include <wx/msgdlg.h>
-#include <wx/utils.h>
-
 #include "command.h"
 
 #include "../compat.h"
@@ -57,6 +54,11 @@
 #include "../subs_grid.h"
 #include "../video_context.h"
 
+#include <libaegisub/fs.h>
+
+#include <wx/msgdlg.h>
+#include <wx/utils.h>
+
 namespace {
 	using cmd::Command;
 /// @defgroup cmd-tool Various tool and utilities
@@ -71,7 +73,7 @@ struct tool_assdraw : public Command {
 	STR_HELP("Launch ASSDraw3 tool for vector drawing")
 
 	void operator()(agi::Context *) {
-		wxExecute("\"" + StandardPaths::DecodePath("?data/ASSDraw3.exe") + "\"");
+		wxExecute("\"" + to_wx(StandardPaths::DecodePath("?data/ASSDraw3.exe")) + "\"");
 	}
 };
 
@@ -88,7 +90,6 @@ struct tool_export : public Command {
 	}
 };
 
-
 /// Open fonts collector.
 struct tool_font_collector : public Command {
 	CMD_NAME("tool/font_collector")
@@ -101,7 +102,6 @@ struct tool_font_collector : public Command {
 	}
 };
 
-
 /// Selects lines based on defined criteria.
 struct tool_line_select : public Command {
 	CMD_NAME("tool/line/select")
@@ -113,7 +113,6 @@ struct tool_line_select : public Command {
 		c->dialog->Show<DialogSelection>(c);
 	}
 };
-
 
 /// Changes resolution and modifies subtitles to conform to change.
 struct tool_resampleres : public Command {
@@ -129,7 +128,6 @@ struct tool_resampleres : public Command {
 			ResampleResolution(c->ass, settings);
 	}
 };
-
 
 /// Open styling assistant.
 struct tool_style_assistant : public Command {
@@ -187,7 +185,6 @@ struct tool_style_manager : public Command {
 	}
 };
 
-
 /// Open Kanji timer.
 struct tool_time_kanji : public Command {
 	CMD_NAME("tool/time/kanji")
@@ -200,7 +197,6 @@ struct tool_time_kanji : public Command {
 	}
 };
 
-
 /// Launch timing post-processor.
 struct tool_time_postprocess : public Command {
 	CMD_NAME("tool/time/postprocess")
@@ -212,7 +208,6 @@ struct tool_time_postprocess : public Command {
 		DialogTimingProcessor(c).ShowModal();
 	}
 };
-
 
 /// Open translation assistant.
 struct tool_translation_assistant : public Command {
@@ -315,10 +310,9 @@ namespace cmd {
 		reg(new tool_time_kanji);
 		reg(new tool_time_postprocess);
 		reg(new tool_translation_assistant);
-#ifdef __WINDOWS__
-		if (wxFileName::FileExists(StandardPaths::DecodePath("?data/ASSDraw3.exe"))) {
+#ifdef _WIN32
+		if (agi::fs::FileExists(StandardPaths::DecodePath("?data/ASSDraw3.exe")))
 			reg(new tool_assdraw);
-		}
 #endif
 		reg(new tool_translation_assistant_commit);
 		reg(new tool_translation_assistant_preview);

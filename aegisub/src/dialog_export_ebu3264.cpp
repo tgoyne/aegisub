@@ -228,13 +228,13 @@ agi::vfr::Framerate EbuExportSettings::GetFramerate() const {
 
 agi::charset::IconvWrapper *EbuExportSettings::GetTextEncoder() const {
 	switch (text_encoding) {
-		case iso6937_2: return new agi::charset::IconvWrapper(wxSTRING_ENCODING, "ISO-6937-2");
-		case iso8859_5: return new agi::charset::IconvWrapper(wxSTRING_ENCODING, "ISO-8859-5");
-		case iso8859_6: return new agi::charset::IconvWrapper(wxSTRING_ENCODING, "ISO-8859-6");
-		case iso8859_7: return new agi::charset::IconvWrapper(wxSTRING_ENCODING, "ISO-8859-7");
-		case iso8859_8: return new agi::charset::IconvWrapper(wxSTRING_ENCODING, "ISO-8859-8");
-		case utf8:      return new agi::charset::IconvWrapper(wxSTRING_ENCODING, "utf-8");
-		default:        return new agi::charset::IconvWrapper(wxSTRING_ENCODING, "ISO-8859-1");
+		case iso6937_2: return new agi::charset::IconvWrapper("utf-8", "ISO-6937-2");
+		case iso8859_5: return new agi::charset::IconvWrapper("utf-8", "ISO-8859-5");
+		case iso8859_6: return new agi::charset::IconvWrapper("utf-8", "ISO-8859-6");
+		case iso8859_7: return new agi::charset::IconvWrapper("utf-8", "ISO-8859-7");
+		case iso8859_8: return new agi::charset::IconvWrapper("utf-8", "ISO-8859-8");
+		case utf8:      return new agi::charset::IconvWrapper("utf-8", "utf-8");
+		default:        return new agi::charset::IconvWrapper("utf-8", "ISO-8859-1");
 	}
 }
 

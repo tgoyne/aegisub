@@ -47,7 +47,6 @@
 #include "audio_provider_ram.h"
 
 #include "audio_controller.h"
-#include "compat.h"
 #include "dialog_progress.h"
 #include "frame_main.h"
 #include "main.h"
@@ -147,7 +146,7 @@ struct provider_creator {
 };
 }
 
-AudioProvider *AudioProviderFactory::GetProvider(wxString const& filename) {
+AudioProvider *AudioProviderFactory::GetProvider(std::string const& filename) {
 	provider_creator creator;
 	AudioProvider *provider = nullptr;
 
@@ -172,7 +171,7 @@ AudioProvider *AudioProviderFactory::GetProvider(wxString const& filename) {
 			throw agi::AudioProviderOpenError(creator.msg, 0);
 		if (creator.found_file)
 			throw agi::AudioDataNotFoundError(creator.msg, 0);
-		throw agi::FileNotFoundError(from_wx(filename));
+		throw agi::FileNotFoundError(filename);
 	}
 
 	bool needsCache = provider->NeedsCache();
@@ -206,4 +205,4 @@ void AudioProviderFactory::RegisterProviders() {
 #endif
 }
 
-template<> AudioProviderFactory::map *FactoryBase<AudioProvider *(*)(wxString)>::classes = nullptr;
+template<> AudioProviderFactory::map *FactoryBase<AudioProvider *(*)(std::string)>::classes = nullptr;

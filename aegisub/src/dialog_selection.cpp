@@ -37,6 +37,8 @@
 #include <libaegisub/of_type_adaptor.h>
 
 #include <algorithm>
+#include <boost/algorithm/string/find.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <wx/checkbox.h>
 #include <wx/combobox.h>
@@ -68,7 +70,7 @@ enum {
 
 DEFINE_SIMPLE_EXCEPTION(BadRegex, agi::InvalidInputException, "bad_regex")
 
-static boost::flyweight<wxString> AssDialogue::* get_field(int field_n) {
+static boost::flyweight<std::string> AssDialogue::* get_field(int field_n) {
 	switch(field_n) {
 		case FIELD_TEXT:   return &AssDialogue::Text; break;
 		case FIELD_STYLE:  return &AssDialogue::Style; break;
@@ -78,40 +80,39 @@ static boost::flyweight<wxString> AssDialogue::* get_field(int field_n) {
 	}
 }
 
-std::function<bool (wxString)> get_predicate(int mode, wxRegEx *re, bool match_case, wxString const& match_text) {
+std::function<bool (std::string)> get_predicate(int mode, wxRegEx *re, bool match_case, std::string const& match_text) {
 	using std::placeholders::_1;
 
 	switch (mode) {
 		case MODE_REGEXP:
-			return [=](wxString str) { return re->Matches(str); };
+			return [=](std::string str) { return re->Matches(to_wx(str)); };
 		case MODE_EXACT:
 			if (match_case)
-				return std::bind(std::equal_to<wxString>(), match_text, _1);
+				return [&](std::string str) { return str == match_text; };
 			else
-				return bind(std::equal_to<wxString>(), match_text.Lower(), std::bind(&wxString::Lower, _1));
+				return [&](std::string str) { return boost::iequals(match_text, str); };
 		case MODE_CONTAINS:
 			if (match_case)
-				return std::bind(&wxString::Contains, _1, match_text);
+				return [&](std::string str) { return str.find(match_text) != std::string::npos; };
 			else
-				return bind(&wxString::Contains, std::bind(&wxString::Lower, _1), match_text.Lower());
-			break;
+				return [&](std::string str) { return boost::ifind_first(str, match_text); };
 		default: throw agi::InternalError("Bad mode", 0);
 	}
 }
 
-static std::set<AssDialogue*> process(wxString match_text, bool match_case, int mode, bool invert, bool comments, bool dialogue, int field_n, AssFile *ass) {
+static std::set<AssDialogue*> process(std::string const& match_text, bool match_case, int mode, bool invert, bool comments, bool dialogue, int field_n, AssFile *ass) {
 	wxRegEx re;
 	if (mode == MODE_REGEXP) {
 		int flags = wxRE_ADVANCED;
 		if (!match_case)
 			flags |= wxRE_ICASE;
-		if (!re.Compile(match_text, flags))
+		if (!re.Compile(to_wx(match_text), flags))
 			throw BadRegex("Syntax error in regular expression", 0);
 		match_case = false;
 	}
 
-	boost::flyweight<wxString> AssDialogue::*field = get_field(field_n);
-	std::function<bool (wxString)> pred = get_predicate(mode, &re, match_case, match_text);
+	boost::flyweight<std::string> AssDialogue::*field = get_field(field_n);
+	std::function<bool (std::string)> pred = get_predicate(mode, &re, match_case, match_text);
 
 	std::set<AssDialogue*> matches;
 	for (auto diag : ass->Line | agi::of_type<AssDialogue>()) {
@@ -209,7 +210,7 @@ void DialogSelection::Process(wxCommandEvent&) {
 
 	try {
 		matches = process(
-			match_text->GetValue(), case_sensitive->IsChecked(),
+			from_wx(match_text->GetValue()), case_sensitive->IsChecked(),
 			match_mode->GetSelection(), select_unmatching_lines->GetValue(),
 			apply_to_comments->IsChecked(), apply_to_dialogue->IsChecked(),
 			dialogue_field->GetSelection(), con->ass);

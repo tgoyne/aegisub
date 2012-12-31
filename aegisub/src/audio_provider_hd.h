@@ -45,7 +45,7 @@ namespace agi {
 
 class HDAudioProvider : public AudioProvider {
 	/// Name of the file which the decoded audio is written to
-	wxString diskCacheFilename;
+	std::string diskCacheFilename;
 	/// Audio provider which reads from the decoded cache
 	agi::scoped_ptr<AudioProvider> cache_provider;
 

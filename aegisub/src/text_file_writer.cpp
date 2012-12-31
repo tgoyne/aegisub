@@ -34,26 +34,26 @@
 
 #include "config.h"
 
-#include <fstream>
+#include "text_file_writer.h"
+
+#include "charset_conv.h"
+#include "options.h"
 
 #include <libaegisub/io.h>
 
-#include "charset_conv.h"
-#include "compat.h"
-#include "options.h"
-#include "text_file_writer.h"
+#include <boost/algorithm/string/predicate.hpp>
 
-TextFileWriter::TextFileWriter(wxString const& filename, wxString encoding)
-: file(new agi::io::Save(from_wx(filename), true))
+TextFileWriter::TextFileWriter(std::string const& filename, std::string encoding)
+: file(new agi::io::Save(filename, true))
 , conv()
 {
-	if (encoding.empty()) encoding = to_wx(OPT_GET("App/Save Charset")->GetString());
-	if (encoding.Lower() != wxSTRING_ENCODING)
-		conv.reset(new agi::charset::IconvWrapper(wxSTRING_ENCODING, encoding.utf8_str(), true));
+	if (encoding.empty()) encoding = OPT_GET("App/Save Charset")->GetString();
+	if (boost::iequals(encoding, "utf-8"))
+		conv.reset(new agi::charset::IconvWrapper("utf-8", encoding.c_str(), true));
 
 	// Write the BOM
 	try {
-		WriteLineToFile(L"\uFEFF", false);
+		WriteLineToFile("\xEF\xBB\xBF", false);
 	}
 	catch (agi::charset::ConversionFailure&) {
 		// If the BOM could not be converted to the target encoding it isn't needed
@@ -64,26 +64,14 @@ TextFileWriter::~TextFileWriter() {
 	// Explicit empty destructor required with an auto_ptr to an incomplete class
 }
 
-void TextFileWriter::WriteLineToFile(wxString line, bool addLineBreak) {
+void TextFileWriter::WriteLineToFile(std::string&& line, bool addLineBreak) {
 #ifdef _WIN32
 	if (addLineBreak) line += "\r\n";
 #else
 	if (addLineBreak) line += "\n";
 #endif
 
-	// On non-windows this cast does nothing
-	const char *data = reinterpret_cast<const char *>(line.wx_str());
-#if wxUSE_UNICODE_UTF8
-	size_t len = line.utf8_length();
-#else
-	size_t len = line.length() * sizeof(wxStringCharType);
-#endif
-
-	if (conv) {
-		std::string buf = conv->Convert(std::string(data, len));
-		file->Get().write(buf.data(), buf.size());
-	}
-	else {
-		file->Get().write(data, len);
-	}
+	if (conv)
+		line = conv->Convert(line);
+	file->Get().write(line.data(), line.size());
 }

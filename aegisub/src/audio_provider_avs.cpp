@@ -44,30 +44,31 @@
 #include "standard_paths.h"
 #include "utils.h"
 
+#include <libaegisub/access.h>
+
+#include <boost/algorithm/string/predicate.hpp>
 #include <wx/filename.h>
 
-AvisynthAudioProvider::AvisynthAudioProvider(wxString filename) {
+AvisynthAudioProvider::AvisynthAudioProvider(std::string const& filename) {
 	this->filename = filename;
 
-	wxMutexLocker lock(avs_wrapper.GetMutex());
+	agi::acs::CheckFileRead(filename);
 
-	wxFileName fn(filename);
-	if (!fn.FileExists())
-		throw agi::FileNotFoundError(from_wx(filename));
+	wxMutexLocker lock(avs_wrapper.GetMutex());
 
 	try {
 		IScriptEnvironment *env = avs_wrapper.GetEnv();
 
 		// Include
-		if (filename.EndsWith(".avs"))
-			LoadFromClip(env->Invoke("Import", env->SaveString(fn.GetShortPath().mb_str(csConvLocal))));
+		if (boost::iends_with(filename, "avs"))
+			LoadFromClip(env->Invoke("Import", env->SaveString(wxFileName(to_wx(filename)).GetShortPath().mb_str(csConvLocal))));
 		// Use DirectShowSource
 		else {
 			const char * argnames[3] = { 0, "video", "audio" };
-			AVSValue args[3] = { env->SaveString(fn.GetShortPath().mb_str(csConvLocal)), false, true };
+			AVSValue args[3] = { env->SaveString(wxFileName(to_wx(filename)).GetShortPath().mb_str(csConvLocal)), false, true };
 
 			// Load DirectShowSource.dll from app dir if it exists
-			wxFileName dsspath(StandardPaths::DecodePath("?data/DirectShowSource.dll"));
+			wxFileName dsspath(to_wx(StandardPaths::DecodePath("?data/DirectShowSource.dll")));
 			if (dsspath.FileExists())
 				env->Invoke("LoadPlugin", env->SaveString(dsspath.GetShortPath().mb_str(csConvLocal)));
 

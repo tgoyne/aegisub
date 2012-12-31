@@ -27,12 +27,11 @@
 #include <libaegisub/charset_conv.h>
 
 #include "charset_detect.h"
-#include "compat.h"
 
 namespace Automation4 {
-	LuaScriptReader::LuaScriptReader(wxString const& filename)
+	LuaScriptReader::LuaScriptReader(std::string const& filename)
 	: conv(new agi::charset::IconvWrapper(CharSetDetect::GetEncoding(filename).c_str(), "utf-8", false))
-	, file(agi::io::Open(from_wx(filename)))
+	, file(agi::io::Open(filename))
 	{
 	}
 

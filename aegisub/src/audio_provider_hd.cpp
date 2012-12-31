@@ -36,12 +36,6 @@
 
 #include "audio_provider_hd.h"
 
-#include <wx/filefn.h>
-#include <wx/filename.h>
-
-#include <libaegisub/background_runner.h>
-#include <libaegisub/io.h>
-
 #include "audio_controller.h"
 #include "audio_provider_pcm.h"
 #include "compat.h"
@@ -49,29 +43,40 @@
 #include "standard_paths.h"
 #include "utils.h"
 
-namespace {
-wxString cache_dir() {
-	wxString path = to_wx(OPT_GET("Audio/Cache/HD/Location")->GetString());
-	if (path == "default")
-		path = "?temp/";
+#include <libaegisub/access.h>
+#include <libaegisub/background_runner.h>
+#include <libaegisub/fs.h>
+#include <libaegisub/io.h>
+#include <libaegisub/util.h>
 
-	return DecodeRelativePath(StandardPaths::DecodePath(path), StandardPaths::DecodePath("?user/"));
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
+
+namespace {
+std::string cache_dir() {
+	std::string path = OPT_GET("Audio/Cache/HD/Location")->GetString();
+	if (path == "default")
+		path = "?temp";
+
+	return DecodeRelativePath(StandardPaths::DecodePath(path), StandardPaths::DecodePath("?temp"));
 }
 
-wxString cache_path() {
-	wxString pattern = to_wx(OPT_GET("Audio/Cache/HD/Name")->GetString());
-	if (pattern.Find("%02i") == wxNOT_FOUND) pattern = "audio%02i.tmp";
+std::string cache_path() {
+	std::string pattern = OPT_GET("Audio/Cache/HD/Name")->GetString();
+	if (!boost::contains(pattern, "%02i")) pattern = "audio%02i.tmp";
 
-	// Try from 00 to 99
-	for (int i=0;i<100;i++) {
-		// File exists?
-		wxFileName curNameTry(cache_dir(), wxString::Format(pattern, i));
-#if wxCHECK_VERSION(2, 9, 4)
-		if (!curNameTry.Exists())
-#else
-		if (!curNameTry.FileExists() && !curNameTry.DirExists())
-#endif
-			return curNameTry.GetFullPath();
+	for (int i = 0; i < 100; ++i) {
+		std::string path = cache_dir() + pattern;
+		boost::replace_all(path, "%02i", std::to_string(i));
+
+		try {
+			// this is really dumb
+			agi::acs::CheckFileWrite(path);
+		}
+		catch (agi::FileNotFoundError const&) {
+			return path;
+		}
+		catch (...) { }
 	}
 	return "";
 }
@@ -79,7 +84,7 @@ wxString cache_path() {
 /// A PCM audio provider for raw dumps with no header
 class RawAudioProvider : public PCMAudioProvider {
 public:
-	RawAudioProvider(wxString const& cache_filename, AudioProvider *src)
+	RawAudioProvider(std::string const& cache_filename, AudioProvider *src)
 	: PCMAudioProvider(cache_filename)
 	{
 		bytes_per_sample = src->GetBytesPerSample();
@@ -110,30 +115,27 @@ HDAudioProvider::HDAudioProvider(AudioProvider *src, agi::BackgroundRunner *br) 
 	float_samples    = source->AreSamplesFloat();
 
 	// Check free space
-	wxDiskspaceSize_t freespace;
-	if (wxGetDiskSpace(cache_dir(), 0, &freespace)) {
-		if (num_samples * channels * bytes_per_sample > freespace)
-			throw agi::AudioCacheOpenError("Not enough free disk space in " + from_wx(cache_dir()) + " to cache the audio", 0);
-	}
+	if ((uint64_t)num_samples * channels * bytes_per_sample > agi::fs::FreeSpace(cache_dir()))
+		throw agi::AudioCacheOpenError("Not enough free disk space in " + cache_dir() + " to cache the audio", 0);
 
 	diskCacheFilename = cache_path();
 
 	try {
 		{
-			agi::io::Save out(from_wx(diskCacheFilename), true);
+			agi::io::Save out(diskCacheFilename, true);
 			br->Run(bind(&HDAudioProvider::FillCache, this, src, &out.Get(), std::placeholders::_1));
 		}
 		cache_provider.reset(new RawAudioProvider(diskCacheFilename, src));
 	}
 	catch (...) {
-		wxRemoveFile(diskCacheFilename);
+		agi::fs::Remove(diskCacheFilename);
 		throw;
 	}
 }
 
 HDAudioProvider::~HDAudioProvider() {
 	cache_provider.reset(); // explicitly close the file so we can delete it
-	wxRemoveFile(diskCacheFilename);
+	agi::fs::Remove(diskCacheFilename);
 }
 
 void HDAudioProvider::FillBuffer(void *buf, int64_t start, int64_t count) const {

@@ -139,7 +139,7 @@ FontFileLister::CollectionResult FontConfigFontFileLister::GetFontPaths(std::str
 		}
 	}
 
-	ret.paths.push_back((const char *)file);
+	ret.paths.emplace_back((const char *)file);
 	return ret;
 }
 #endif

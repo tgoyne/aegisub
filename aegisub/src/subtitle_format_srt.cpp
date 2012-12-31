@@ -48,6 +48,7 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <boost/format.hpp>
 #include <map>
 #include <wx/regex.h>
 
@@ -101,7 +102,7 @@ public:
 		tag_name_cases["/font"] = TAG_FONT_CLOSE;
 	}
 
-	wxString ToAss(wxString srt)
+	std::string ToAss(wxString srt)
 	{
 		int bold_level = 0;
 		int italics_level = 0;
@@ -277,7 +278,7 @@ public:
 		// make it a little prettier, join tag groups
 		ass.Replace("}{", "", true);
 
-		return ass;
+		return from_wx(ass);
 	}
 };
 
@@ -352,9 +353,9 @@ allparsed:
 	return ms + 1000*(s + 60*(m + 60*(h + d*24)));
 }
 
-wxString WriteSRTTime(AssTime const& ts)
+std::string WriteSRTTime(AssTime const& ts)
 {
-	return wxString::Format("%02d:%02d:%02d,%03d", ts.GetTimeHours(), ts.GetTimeMinutes(), ts.GetTimeSeconds(), ts.GetTimeMiliseconds());
+	return str(boost::format("%02d:%02d:%02d %%03d") % ts.GetTimeHours() % ts.GetTimeMinutes() % ts.GetTimeSeconds() % ts.GetTimeMiliseconds());
 }
 
 }
@@ -364,13 +365,13 @@ SRTSubtitleFormat::SRTSubtitleFormat()
 {
 }
 
-wxArrayString SRTSubtitleFormat::GetReadWildcards() const {
-	wxArrayString formats;
-	formats.Add("srt");
+std::vector<std::string> SRTSubtitleFormat::GetReadWildcards() const {
+	std::vector<std::string> formats;
+	formats.push_back("srt");
 	return formats;
 }
 
-wxArrayString SRTSubtitleFormat::GetWriteWildcards() const {
+std::vector<std::string> SRTSubtitleFormat::GetWriteWildcards() const {
 	return GetReadWildcards();
 }
 
@@ -382,7 +383,7 @@ enum ParseState {
 	STATE_LAST_WAS_BLANK
 };
 
-void SRTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxString const& encoding) const {
+void SRTSubtitleFormat::ReadFile(AssFile *target, std::string const& filename, std::string const& encoding) const {
 	using namespace std;
 
 	TextFileReader file(filename, encoding);
@@ -403,7 +404,7 @@ void SRTSubtitleFormat::ReadFile(AssFile *target, wxString const& filename, wxSt
 	AssDialogue *line = 0;
 	wxString text;
 	while (file.HasMoreLines()) {
-		wxString text_line = file.ReadLineFromFile();
+		wxString text_line = to_wx(file.ReadLineFromFile());
 		line_num++;
 		text_line.Trim(true).Trim(false);
 
@@ -490,7 +491,7 @@ found_timestamps:
 		line->Text = tag_parser.ToAss(text);
 }
 
-void SRTSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, wxString const& encoding) const {
+void SRTSubtitleFormat::WriteFile(const AssFile *src, std::string const& filename, std::string const& encoding) const {
 	TextFileWriter file(filename, encoding);
 
 	// Convert to SRT
@@ -508,7 +509,7 @@ void SRTSubtitleFormat::WriteFile(const AssFile *src, wxString const& filename, 
 	// Write lines
 	int i=0;
 	for (auto current : copy.Line | agi::of_type<AssDialogue>()) {
-		file.WriteLineToFile(wxString::Format("%d", ++i));
+		file.WriteLineToFile(std::to_string(++i));
 		file.WriteLineToFile(WriteSRTTime(current->Start) + " --> " + WriteSRTTime(current->End));
 		file.WriteLineToFile(ConvertTags(current));
 		file.WriteLineToFile("");
@@ -545,8 +546,8 @@ bool SRTSubtitleFormat::CanSave(const AssFile *file) const {
 	return true;
 }
 
-wxString SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
-	wxString final;
+std::string SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
+	std::string final;
 	std::map<char, bool> tag_states;
 	tag_states['i'] = false;
 	tag_states['b'] = false;
@@ -564,25 +565,24 @@ wxString SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
 					if (it != tag_states.end()) {
 						bool temp = tag.Params[0].Get(false);
 						if (temp && !it->second)
-							final += wxString::Format("<%c>", it->first);
+							final += str(boost::format("<%c>") % it->first);
 						if (!temp && it->second)
-							final += wxString::Format("</%c>", it->first);
+							final += str(boost::format("</%c>") % it->first);
 						it->second = temp;
 					}
 				}
 			}
 		}
 		// Plain text
-		else if (AssDialogueBlockPlain *plain = dynamic_cast<AssDialogueBlockPlain*>(&block)) {
-			final += to_wx(plain->GetText());
-		}
+		else if (AssDialogueBlockPlain *plain = dynamic_cast<AssDialogueBlockPlain*>(&block))
+			final += plain->GetText();
 	}
 
 	// Ensure all tags are closed
 	// Otherwise unclosed overrides might affect lines they shouldn't, see bug #809 for example
 	for (auto it : tag_states) {
 		if (it.second)
-			final += wxString::Format("</%c>", it.first);
+			final += str(boost::format("</%c>") % it.first);
 	}
 
 	return final;

@@ -35,13 +35,14 @@
 #include "config.h"
 
 #include "ass_style.h"
-#include "compat.h"
+
 #include "subtitle_format.h"
 #include "utils.h"
 
 #include <algorithm>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <cctype>
 
@@ -135,8 +136,7 @@ public:
 };
 }
 
-AssStyle::AssStyle(wxString const& rawData, int version) {
-	std::string str(from_wx(rawData));
+AssStyle::AssStyle(std::string const& str, int version) {
 	parser p(str);
 
 	name = p.next_str();
@@ -211,28 +211,28 @@ void AssStyle::UpdateData() {
 	replace(name.begin(), name.end(), ',', ';');
 	replace(font.begin(), font.end(), ',', ';');
 
-	data = wxString::Format("Style: %s,%s,%g,%s,%s,%s,%s,%d,%d,%d,%d,%g,%g,%g,%g,%d,%g,%g,%i,%i,%i,%i,%i",
-		to_wx(name), to_wx(font), fontsize,
-		primary.GetAssStyleFormatted(),
-		secondary.GetAssStyleFormatted(),
-		outline.GetAssStyleFormatted(),
-		shadow.GetAssStyleFormatted(),
-		(bold? -1 : 0), (italic ? -1 : 0),
-		(underline?-1:0),(strikeout?-1:0),
-		scalex,scaley,spacing,angle,
-		borderstyle,outline_w,shadow_w,alignment,
-		Margin[0],Margin[1],Margin[2],encoding);
+	data = str(boost::format("Style: %s,%s,%g,%s,%s,%s,%s,%d,%d,%d,%d,%g,%g,%g,%g,%d,%g,%g,%i,%i,%i,%i,%i")
+		% name % font % fontsize
+		% primary.GetAssStyleFormatted()
+		% secondary.GetAssStyleFormatted()
+		% outline.GetAssStyleFormatted()
+		% shadow.GetAssStyleFormatted()
+		% (bold? -1 : 0) % (italic ? -1 : 0)
+		% (underline ? -1 : 0) % (strikeout ? -1 : 0)
+		% scalex % scaley % spacing % angle
+		% borderstyle % outline_w % shadow_w % alignment
+		% Margin[0] % Margin[1] % Margin[2] % encoding);
 }
 
-wxString AssStyle::GetSSAText() const {
-	return wxString::Format("Style: %s,%s,%g,%s,%s,0,%s,%d,%d,%d,%g,%g,%d,%d,%d,%d,0,%i",
-		to_wx(name), to_wx(font), fontsize,
-		primary.GetSsaFormatted(),
-		secondary.GetSsaFormatted(),
-		shadow.GetSsaFormatted(),
-		(bold? -1 : 0), (italic ? -1 : 0),
-		borderstyle,outline_w,shadow_w,AssToSsa(alignment),
-		Margin[0],Margin[1],Margin[2],encoding);
+std::string AssStyle::GetSSAText() const {
+	return str(boost::format("Style: %s,%s,%g,%s,%s,0,%s,%d,%d,%d,%g,%g,%d,%d,%d,%d,0,%i")
+		% name % font % fontsize
+		% primary.GetSsaFormatted()
+		% secondary.GetSsaFormatted()
+		% shadow.GetSsaFormatted()
+		% (bold? -1 : 0) % (italic ? -1 : 0)
+		% borderstyle % outline_w % shadow_w % AssToSsa(alignment)
+		% Margin[0] % Margin[1] % Margin[2] % encoding);
 }
 
 AssEntry *AssStyle::Clone() const {

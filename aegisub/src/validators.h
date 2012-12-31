@@ -32,6 +32,7 @@
 /// @ingroup custom_control utility
 ///
 
+#include <string>
 #include <wx/validate.h>
 
 /// A wx validator that only allows valid numbers
@@ -87,4 +88,16 @@ public:
 	NumValidator(const NumValidator& from);
 
 	DECLARE_EVENT_TABLE()
+};
+
+class StringBinder : public wxValidator {
+	std::string *value;
+
+	wxObject* Clone() const { return new StringBinder(value); }
+	bool Validate(wxWindow*) { return true;}
+	bool TransferToWindow();
+	bool TransferFromWindow();
+
+public:
+	explicit StringBinder(std::string *value) : value(value) { }
 };

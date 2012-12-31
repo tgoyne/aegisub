@@ -34,8 +34,6 @@
 
 #include "config.h"
 
-#include "main.h"
-
 #include "include/aegisub/menu.h"
 #include "command/command.h"
 #include "command/icon.h"
@@ -52,6 +50,7 @@
 #include "export_fixstyle.h"
 #include "export_framerate.h"
 #include "frame_main.h"
+#include "main.h"
 #include "libresrc/libresrc.h"
 #include "options.h"
 #include "plugin_manager.h"
@@ -62,19 +61,17 @@
 #include "utils.h"
 
 #include <libaegisub/io.h>
+#include <libaegisub/fs.h>
 #include <libaegisub/log.h>
 #include <libaegisub/hotkey.h>
 #include <libaegisub/scoped_ptr.h>
 
 #include <sstream>
 
-#include <wx/clipbrd.h>
 #include <wx/config.h>
 #include <wx/datetime.h>
 #include <wx/filefn.h>
-#include <wx/filename.h>
 #include <wx/msgdlg.h>
-#include <wx/stdpaths.h>
 #include <wx/utils.h>
 
 namespace config {
@@ -159,7 +156,7 @@ bool AegisubApp::OnInit() {
 #ifdef __WXMSW__
 	// Try loading configuration from the install dir if one exists there
 	try {
-		std::string conf_local(from_wx(StandardPaths::DecodePath("?data/config.json")));
+		std::string conf_local(StandardPaths::DecodePath("?data/config.json"));
 		agi::scoped_ptr<std::istream> localConfig(agi::io::Open(conf_local));
 		config::opt = new agi::Options(conf_local, GET_DEFAULT_CONFIG(default_config));
 
@@ -173,15 +170,15 @@ bool AegisubApp::OnInit() {
 #endif
 
 	StartupLog("Create log writer");
-	wxString path_log = StandardPaths::DecodePath("?user/log/");
-	wxFileName::Mkdir(path_log, 0777, wxPATH_MKDIR_FULL);
-	agi::log::log->Subscribe(new agi::log::JsonEmitter(from_wx(path_log), agi::log::log));
+	std::string path_log = StandardPaths::DecodePath("?user/log/");
+	agi::fs::CreateDirectory(path_log);
+	agi::log::log->Subscribe(new agi::log::JsonEmitter(path_log, agi::log::log));
 	CleanCache(path_log, "*.json", 10, 100);
 
 	StartupLog("Load user configuration");
 	try {
 		if (!config::opt)
-			config::opt = new agi::Options(from_wx(StandardPaths::DecodePath("?user/config.json")), GET_DEFAULT_CONFIG(default_config));
+			config::opt = new agi::Options(StandardPaths::DecodePath("?user/config.json"), GET_DEFAULT_CONFIG(default_config));
 		std::istringstream stream(GET_DEFAULT_CONFIG(default_config_platform));
 		config::opt->ConfigNext(stream);
 	} catch (agi::Exception& e) {
@@ -205,7 +202,7 @@ bool AegisubApp::OnInit() {
 	icon::icon_init();
 
 	StartupLog("Load MRU");
-	config::mru = new agi::MRUManager(from_wx(StandardPaths::DecodePath("?user/mru.json")), GET_DEFAULT_CONFIG(default_mru), config::opt);
+	config::mru = new agi::MRUManager(StandardPaths::DecodePath("?user/mru.json"), GET_DEFAULT_CONFIG(default_mru), config::opt);
 
 	SetThreadName(-1, "AegiMain");
 
@@ -246,7 +243,7 @@ bool AegisubApp::OnInit() {
 
 		// Load Automation scripts
 		StartupLog("Load global Automation scripts");
-		global_scripts = new Automation4::AutoloadScriptManager(to_wx(OPT_GET("Path/Automation/Autoload")->GetString()));
+		global_scripts = new Automation4::AutoloadScriptManager(OPT_GET("Path/Automation/Autoload")->GetString());
 
 		// Load export filters
 		StartupLog("Register export filters");
@@ -286,8 +283,7 @@ bool AegisubApp::OnInit() {
 #endif
 
 	StartupLog("Clean old autosave files");
-	wxString autosave_path = StandardPaths::DecodePath(to_wx(OPT_GET("Path/Auto/Save")->GetString()));
-	CleanCache(autosave_path, "*.AUTOSAVE.ass", 100, 1000);
+	CleanCache(StandardPaths::DecodePath(OPT_GET("Path/Auto/Save")->GetString()), "*.AUTOSAVE.ass", 100, 1000);
 
 	StartupLog("Initialization complete");
 	return true;
@@ -370,15 +366,14 @@ const static wxString exception_message = _("Oops, Aegisub has crashed!\n\nAn at
 static void UnhandledExeception(bool stackWalk) {
 #if (!defined(_DEBUG) || defined(WITH_EXCEPTIONS)) && (wxUSE_ON_FATAL_EXCEPTION+0)
 	if (AssFile::top) {
-		// Current filename if any.
-		wxFileName file(AssFile::top->filename);
-		if (!file.HasName()) file.SetName("untitled");
+		std::string path = StandardPaths::DecodePath("?user/recovered");
+		agi::fs::CreateDirectory(path);
 
-		// Set path and create if it doesn't exist.
-		file.SetPath(StandardPaths::DecodePath("?user/recovered"));
-		if (!file.DirExists()) file.Mkdir();
+		if (AssFile::top->filename.empty())
+			path = agi::Path::Combine(path, "untitled.ass");
+		else
+			path = agi::Path::Combine(path, agi::Path::FileName(AssFile::top->filename));
 
-		// Save file
 		wxString filename = wxString::Format("%s/%s.%s.ass", file.GetPath(), file.GetName(), wxDateTime::Now().Format("%Y-%m-%d-%H-%M-%S"));
 		AssFile::top->Save(filename,false,false);
 
@@ -452,15 +447,14 @@ int AegisubApp::OnRun() {
 
 	// Report errors
 	if (!error.IsEmpty()) {
-		std::ofstream file;
-		file.open(wxString(StandardPaths::DecodePath("?user/crashlog.txt")).mb_str(),std::ios::out | std::ios::app);
+		std::ofstream file(StandardPaths::DecodePath("?user/crashlog.txt").c_str(), std::ios::out | std::ios::app);
 		if (file.is_open()) {
 			wxDateTime time = wxDateTime::Now();
 			wxString timeStr = "---" + time.FormatISODate() + " " + time.FormatISOTime() + "------------------";
-			file << std::endl << timeStr.mb_str(csConvLocal);
+			file << std::endl << timeStr.utf8_str();
 			file << "\nVER - " << GetAegisubLongVersionString();
-			file << "\nEXC - Aegisub has crashed with unhandled exception \"" << error.mb_str(csConvLocal) <<"\".\n";
-			file << wxString('-', timeStr.size());
+			file << "\nEXC - Aegisub has crashed with unhandled exception \"" << error.utf8_str() <<"\".\n";
+			file << std::string('-', timeStr.size());
 			file << "\n";
 			file.close();
 		}
@@ -474,7 +468,7 @@ int AegisubApp::OnRun() {
 
 void AegisubApp::MacOpenFile(const wxString &filename) {
 	if (frame != nullptr && !filename.empty()) {
-		frame->LoadSubtitles(filename);
+		frame->LoadSubtitles(from_wx(filename));
 		wxFileName filepath(filename);
 		OPT_SET("Path/Last/Subtitles")->SetString(from_wx(filepath.GetPath()));
 	}

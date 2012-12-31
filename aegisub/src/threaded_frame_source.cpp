@@ -107,7 +107,7 @@ std::shared_ptr<AegiVideoFrame> ThreadedFrameSource::ProcFrame(int frameNum, dou
 				}
 			}
 		}
-		catch (wxString const& err) { throw SubtitlesProviderErrorEvent(err); }
+		catch (std::string const& err) { throw SubtitlesProviderErrorEvent(err); }
 
 		provider->DrawSubtitles(*frame, time);
 	}
@@ -177,13 +177,13 @@ static SubtitlesProvider *get_subs_provider(wxEvtHandler *parent) {
 	try {
 		return SubtitlesProviderFactory::GetProvider();
 	}
-	catch (wxString const& err) {
+	catch (std::string const& err) {
 		parent->AddPendingEvent(SubtitlesProviderErrorEvent(err));
 		return 0;
 	}
 }
 
-ThreadedFrameSource::ThreadedFrameSource(wxString videoFileName, wxEvtHandler *parent)
+ThreadedFrameSource::ThreadedFrameSource(std::string const& videoFileName, wxEvtHandler *parent)
 : wxThread(wxTHREAD_JOINABLE)
 , provider(get_subs_provider(parent))
 , videoProvider(VideoProviderFactory::GetProvider(videoFileName))
@@ -250,8 +250,8 @@ VideoProviderErrorEvent::VideoProviderErrorEvent(VideoProviderError const& err)
 {
 	SetEventType(EVT_VIDEO_ERROR);
 }
-SubtitlesProviderErrorEvent::SubtitlesProviderErrorEvent(wxString err)
-: agi::Exception(from_wx(err), nullptr)
+SubtitlesProviderErrorEvent::SubtitlesProviderErrorEvent(std::string const& err)
+: agi::Exception(err, nullptr)
 {
 	SetEventType(EVT_SUBTITLES_ERROR);
 }

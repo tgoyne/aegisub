@@ -109,7 +109,6 @@ struct subtitle_find : public Command {
 	}
 };
 
-
 /// Find next match of last word.
 struct subtitle_find_next : public Command {
 	CMD_NAME("subtitle/find/next")
@@ -261,11 +260,15 @@ struct subtitle_open : public Command {
 	STR_HELP("Opens a subtitles file")
 
 	void operator()(agi::Context *c) {
-		wxString path = to_wx(OPT_GET("Path/Last/Subtitles")->GetString());
-		wxString filename = wxFileSelector(_("Open subtitles file"),path,"","",SubtitleFormat::GetWildcards(0),wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-		if (!filename.empty()) {
+		std::string filename = from_wx(wxFileSelector(
+			_("Open subtitles file"),
+			to_wx(OPT_GET("Path/Last/Subtitles")->GetString()),
+			"","",
+			SubtitleFormat::GetWildcards(0),
+			wxFD_OPEN | wxFD_FILE_MUST_EXIST));
+
+		if (!filename.empty())
 			wxGetApp().frame->LoadSubtitles(filename);
-		}
 	}
 };
 
@@ -282,7 +285,6 @@ struct subtitle_open_autosave : public Command {
 	}
 };
 
-
 /// Opens a subtitles file with a specific charset.
 struct subtitle_open_charset : public Command {
 	CMD_NAME("subtitle/open/charset")
@@ -298,13 +300,11 @@ struct subtitle_open_charset : public Command {
 		wxString filename = wxFileSelector(_("Open subtitles file"),path,"","",SubtitleFormat::GetWildcards(0),wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 		if (!filename.empty()) {
 			wxString charset = wxGetSingleChoice(_("Choose charset code:"), _("Charset"), agi::charset::GetEncodingsList<wxArrayString>(), c->parent, -1, -1, true, 250, 200);
-			if (!charset.empty()) {
-				wxGetApp().frame->LoadSubtitles(filename,charset);
-			}
+			if (!charset.empty())
+				wxGetApp().frame->LoadSubtitles(from_wx(filename), from_wx(charset));
 		}
 	}
 };
-
 
 /// Opens the subtitles from the current video file.
 struct subtitle_open_video : public Command {
@@ -315,7 +315,7 @@ struct subtitle_open_video : public Command {
 	CMD_TYPE(COMMAND_VALIDATE)
 
 	void operator()(agi::Context *c) {
-		wxGetApp().frame->LoadSubtitles(c->videoController->GetVideoName(), "binary");
+		wxGetApp().frame->LoadSubtitles(from_wx(c->videoController->GetVideoName()), "binary");
 	}
 
 	bool Validate(const agi::Context *c) {
@@ -347,7 +347,7 @@ static void save_subtitles(agi::Context *c, wxString filename) {
 	}
 
 	try {
-		c->ass->Save(filename, true, true);
+		c->ass->Save(from_wx(filename), true, true);
 	}
 	catch (const agi::Exception& err) {
 		wxMessageBox(to_wx(err.GetMessage()), "Error", wxOK | wxICON_ERROR | wxCENTER, c->parent);

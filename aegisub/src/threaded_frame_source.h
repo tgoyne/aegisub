@@ -104,7 +104,7 @@ public:
 	/// @brief Constructor
 	/// @param videoFileName File to open
 	/// @param parent Event handler to send FrameReady events to
-	ThreadedFrameSource(wxString videoFileName, wxEvtHandler *parent);
+	ThreadedFrameSource(std::string const& videoFileName, wxEvtHandler *parent);
 	~ThreadedFrameSource();
 };
 
@@ -137,7 +137,7 @@ public:
 	const char * GetName() const { return "subtitles/error"; }
 	wxEvent *Clone() const { return new SubtitlesProviderErrorEvent(*this); };
 	agi::Exception *Copy() const { return new SubtitlesProviderErrorEvent(*this); };
-	SubtitlesProviderErrorEvent(wxString msg);
+	SubtitlesProviderErrorEvent(std::string const& msg);
 };
 
 wxDECLARE_EVENT(EVT_FRAME_READY, FrameReadyEvent);

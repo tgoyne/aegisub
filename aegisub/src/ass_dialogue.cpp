@@ -40,18 +40,13 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
-#include <wx/regex.h>
-#include <wx/tokenzr.h>
-
 using namespace boost::adaptors;
-
-std::size_t hash_value(wxString const& s) {
-	return wxStringHash()(s);
-}
 
 AssDialogue::AssDialogue()
 : Comment(false)
@@ -76,86 +71,91 @@ AssDialogue::AssDialogue(AssDialogue const& that)
 	memmove(Margin, that.Margin, sizeof Margin);
 }
 
-AssDialogue::AssDialogue(wxString const& data)
+AssDialogue::AssDialogue(std::string const& data)
 : Comment(false)
 , Layer(0)
 , Start(0)
 , End(5000)
 , Style("Default")
 {
-	if (!Parse(data))
-		throw SubtitleFormatParseError(from_wx("Failed parsing line: " + data), 0);
+	Parse(data);
 }
 
 AssDialogue::~AssDialogue () {
 }
 
-bool AssDialogue::Parse(wxString const& rawData) {
-	size_t pos = 0;
-	wxString temp;
+typedef boost::iterator_range<std::string::const_iterator> string_range;
 
-	// Get type
-	if (rawData.StartsWith("Dialogue:")) {
+class tokenizer {
+	string_range str;
+	boost::char_separator<char> sep;
+	boost::tokenizer<boost::char_separator<char>> tkn;
+	boost::tokenizer<boost::char_separator<char>>::iterator pos;
+
+public:
+	tokenizer(string_range const& str)
+	: str(str)
+	, sep(",", "", boost::keep_empty_tokens)
+	, tkn(str, sep)
+	, pos(tkn.begin())
+	{
+	}
+
+	string_range next_tok() {
+		if (pos == tkn.end())
+			throw SubtitleFormatParseError("Failed parsing line: " + std::string(str.begin(), str.end()), 0);
+		return *pos++;
+	}
+
+	string_range next_tok_trim() {
+		return trim_copy(next_tok());
+	}
+
+	std::string next_str_trim() {
+		auto range = next_tok_trim();
+		return std::string(begin(range), end(range));
+	}
+};
+
+void AssDialogue::Parse(std::string const& rawData) {
+	boost::iterator_range<std::string::const_iterator> str;
+	if (boost::starts_with(rawData, "Dialogue:")) {
 		Comment = false;
-		pos = 10;
+		str = boost::make_iterator_range(rawData.begin() + 10, rawData.end());
 	}
-	else if (rawData.StartsWith("Comment:")) {
+	else if (boost::starts_with(rawData, "Comment:")) {
 		Comment = true;
-		pos = 9;
+		str = boost::make_iterator_range(rawData.begin() + 9, rawData.end());
 	}
-	else return false;
+	else
+		throw SubtitleFormatParseError("Failed parsing line: " + rawData, 0);
 
-	wxStringTokenizer tkn(rawData.Mid(pos),",",wxTOKEN_RET_EMPTY_ALL);
-	if (!tkn.HasMoreTokens()) return false;
+	tokenizer tkn(str);
 
 	// Get first token and see if it has "Marked=" in it
-	temp = tkn.GetNextToken().Trim(false).Trim(true);
-	bool ssa = temp.Lower().StartsWith("marked=");
+	string_range tmp = tkn.next_tok_trim();
+	bool ssa = boost::istarts_with(tmp, "marked=");
 
 	// Get layer number
 	if (ssa)
 		Layer = 0;
-	else {
-		long templ;
-		temp.ToLong(&templ);
-		Layer = templ;
-	}
+	else
+		Layer = boost::lexical_cast<int>(tmp);
 
-	// Get start time
-	if (!tkn.HasMoreTokens()) return false;
-	Start = tkn.GetNextToken();
-
-	// Get end time
-	if (!tkn.HasMoreTokens()) return false;
-	End = tkn.GetNextToken();
-
-	// Get style
-	if (!tkn.HasMoreTokens()) return false;
-	Style = tkn.GetNextToken().Trim(true).Trim(false);
-
-	// Get actor
-	if (!tkn.HasMoreTokens()) return false;
-	Actor = tkn.GetNextToken().Trim(true).Trim(false);
-
-	// Get margins
-	for (int i = 0; i < 3; ++i) {
-		if (!tkn.HasMoreTokens()) return false;
-		SetMarginString(tkn.GetNextToken().Trim(false).Trim(true), i);
-	}
-
-	if (!tkn.HasMoreTokens()) return false;
-	Effect = tkn.GetNextToken().Trim(true).Trim(false);
-
-	// Get text
-	Text = rawData.Mid(pos + tkn.GetPosition());
-
-	return true;
+	Start = tkn.next_str_trim();
+	End = tkn.next_str_trim();
+	Style = tkn.next_str_trim();
+	Actor = tkn.next_str_trim();
+	for (int& margin : Margin)
+		margin = mid(0, boost::lexical_cast<int>(tkn.next_tok()), 9999);
+	Effect = tkn.next_str_trim();
+	Text = std::string(tkn.next_tok().begin(), str.end());
 }
 
-wxString AssDialogue::GetData(bool ssa) const {
-	wxString s = Style;
-	wxString a = Actor;
-	wxString e = Effect;
+std::string AssDialogue::GetData(bool ssa) const {
+	wxString s = to_wx(Style);
+	wxString a = to_wx(Actor);
+	wxString e = to_wx(Effect);
 	s.Replace(",",";");
 	a.Replace(",",";");
 	e.Replace(",",";");
@@ -169,20 +169,20 @@ wxString AssDialogue::GetData(bool ssa) const {
 		s, a,
 		Margin[0], Margin[1], Margin[2],
 		e,
-		Text.get());
+		to_wx(Text.get()));
 
 	// Make sure that final has no line breaks
 	str.Replace("\n", "");
 	str.Replace("\r", "");
 
-	return str;
+	return from_wx(str);
 }
 
-const wxString AssDialogue::GetEntryData() const {
+const std::string AssDialogue::GetEntryData() const {
 	return GetData(false);
 }
 
-wxString AssDialogue::GetSSAText() const {
+std::string AssDialogue::GetSSAText() const {
 	return GetData(true);
 }
 
@@ -196,7 +196,7 @@ std::auto_ptr<boost::ptr_vector<AssDialogueBlock>> AssDialogue::ParseTags() cons
 	}
 
 	int drawingLevel = 0;
-	std::string text(from_wx(Text.get()));
+	std::string const& text(Text.get());
 
 	for (size_t len = text.size(), cur = 0; cur < len; ) {
 		// Overrides block
@@ -263,32 +263,17 @@ void AssDialogue::StripTags() {
 static std::string get_text(AssDialogueBlock &d) { return d.GetText(); }
 void AssDialogue::UpdateText(boost::ptr_vector<AssDialogueBlock>& blocks) {
 	if (blocks.empty()) return;
-	Text = to_wx(join(blocks | transformed(get_text), ""));
+	Text = join(blocks | transformed(get_text), "");
 }
 
-void AssDialogue::SetMarginString(wxString const& origvalue, int which) {
+void AssDialogue::SetMarginString(std::string const& origvalue, int which) {
 	if (which < 0 || which > 2) throw InvalidMarginIdError();
-
-	// Make it numeric
-	wxString strvalue = origvalue;
-	if (!strvalue.IsNumber()) {
-		strvalue.clear();
-		for (size_t i = 0; i < origvalue.Length(); ++i) {
-			if (origvalue.Mid(i, 1).IsNumber()) {
-				strvalue += origvalue.Mid(i, 1);
-			}
-		}
-	}
-
-	// Get value
-	long value = 0;
-	strvalue.ToLong(&value);
-	Margin[which] = mid<int>(0, value, 9999);
+	Margin[which] = mid<int>(0, atoi(origvalue.c_str()), 9999);
 }
 
-wxString AssDialogue::GetMarginString(int which) const {
+std::string AssDialogue::GetMarginString(int which) const {
 	if (which < 0 || which > 2) throw InvalidMarginIdError();
-	return wxString::Format("%d", Margin[which]);
+	return std::to_string(Margin[which]);
 }
 
 bool AssDialogue::CollidesWith(const AssDialogue *target) const {
@@ -297,10 +282,9 @@ bool AssDialogue::CollidesWith(const AssDialogue *target) const {
 }
 
 static std::string get_text_p(AssDialogueBlock *d) { return d->GetText(); }
-wxString AssDialogue::GetStrippedText() const {
-	wxString ret;
+std::string AssDialogue::GetStrippedText() const {
 	boost::ptr_vector<AssDialogueBlock> blocks(ParseTags());
-	return to_wx(join(blocks | agi::of_type<AssDialogueBlockPlain>() | transformed(get_text_p), ""));
+	return join(blocks | agi::of_type<AssDialogueBlockPlain>() | transformed(get_text_p), "");
 }
 
 AssEntry *AssDialogue::Clone() const {

@@ -38,6 +38,8 @@
 #include "utils.h"
 
 #include <libaegisub/scoped_ptr.h>
+#include <libaegisub/fs.h>
+#include <libaegisub/path.h>
 
 #include <wx/button.h>
 #include <wx/config.h>
@@ -69,7 +71,7 @@ wxDEFINE_EVENT(EVT_COLLECTION_DONE, wxThreadEvent);
 /// @brief Worker thread for the font collector dialog
 class FontsCollectorThread : public wxThread {
 	AssFile *subs;           ///< Subtitle file to process
-	wxString destination;    ///< Path to write fonts to for modes 2 and 3
+	std::string destination; ///< Path to write fonts to for modes 2 and 3
 	wxEvtHandler *collector; ///< Parent dialog
 	FcMode oper;             ///< Copying mode
 
@@ -83,10 +85,10 @@ class FontsCollectorThread : public wxThread {
 #else
 		AppendText(_("Aegisub was built without any font file listers enabled"), 2);
 		struct DummyLister : public FontFileLister {
-			CollectionResult GetFontPaths(wxString const&, int, bool, std::set<wxUniChar> const&) { return CollectionResult(); }
+			CollectionResult GetFontPaths(std::string const&, int, bool, std::set<wxUniChar> const&) { return CollectionResult(); }
 		} lister;
 #endif
-		std::vector<wxString> paths = FontCollector(callback, lister).GetFontPaths(subs);
+		std::vector<std::string> paths = FontCollector(callback, lister).GetFontPaths(subs);
 		if (paths.empty()) return;
 
 		// Copy fonts
@@ -109,44 +111,43 @@ class FontsCollectorThread : public wxThread {
 		agi::scoped_ptr<wxFFileOutputStream> out;
 		agi::scoped_ptr<wxZipOutputStream> zip;
 		if (oper == CopyToZip) {
-			out.reset(new wxFFileOutputStream(destination));
+			out.reset(new wxFFileOutputStream(to_wx(destination)));
 			zip.reset(new wxZipOutputStream(*out));
 		}
 
 		int64_t total_size = 0;
 		bool allOk = true;
-		for (wxString const& path : paths) {
+		for (std::string const& path : paths) {
 			int ret = 0;
-			wxFileName cur_fn(path);
-			total_size += cur_fn.GetSize().GetValue();
+			total_size += agi::fs::Size(path);
 
 			switch (oper) {
 				case SymlinkToFolder:
 				case CopyToScriptFolder:
 				case CopyToFolder: {
-					wxString dest = destination + cur_fn.GetFullName();
-					if (wxFileName::FileExists(dest))
+					std::string dest = agi::Path::Combine(destination, agi::Path::FileName(path));
+					if (agi::fs::FileExists(dest))
 						ret = 2;
 #ifndef _WIN32
 					else if (oper == SymlinkToFolder) {
 						// returns 0 on success, -1 on error...
-						if (symlink(cur_fn.GetFullPath().utf8_str(), dest.utf8_str()))
+						if (symlink(path.c_str(), dest.utf8_str()))
 							ret = 0;
 						else
 							ret = 3;
 					}
 #endif
 					else
-						ret = wxCopyFile(path, dest, true);
+						ret = wxCopyFile(to_wx(path), dest, true);
 				}
 				break;
 
 				case CopyToZip: {
-					wxFFileInputStream in(path);
+					wxFFileInputStream in(to_wx(path));
 					if (!in.IsOk())
 						ret = false;
 					else {
-						ret = zip->PutNextEntry(cur_fn.GetFullName());
+						ret = zip->PutNextEntry(to_wx(agi::Path::FileName(path)));
 						zip->Write(in);
 					}
 				}
@@ -154,13 +155,13 @@ class FontsCollectorThread : public wxThread {
 			}
 
 			if (ret == 1)
-				AppendText(wxString::Format(_("* Copied %s.\n"), path), 1);
+				AppendText(wxString::Format(_("* Copied %s.\n"), to_wx(path)), 1);
 			else if (ret == 2)
-				AppendText(wxString::Format(_("* %s already exists on destination.\n"), wxFileName(path).GetFullName()), 3);
+				AppendText(wxString::Format(_("* %s already exists on destination.\n"), to_wx(agi::Path::FileName(path))), 3);
 			else if (ret == 3)
-				AppendText(wxString::Format(_("* Symlinked %s.\n"), path), 1);
+				AppendText(wxString::Format(_("* Symlinked %s.\n"), to_wx(path)), 1);
 			else {
-				AppendText(wxString::Format(_("* Failed to copy %s.\n"), path), 2);
+				AppendText(wxString::Format(_("* Failed to copy %s.\n"), to_wx(path)), 2);
 				allOk = false;
 			}
 		}
@@ -192,7 +193,7 @@ class FontsCollectorThread : public wxThread {
 		return 0;
 	}
 public:
-	FontsCollectorThread(AssFile *subs, wxString destination, FcMode oper, wxEvtHandler *collector)
+	FontsCollectorThread(AssFile *subs, std::string const& destination, FcMode oper, wxEvtHandler *collector)
 	: wxThread(wxTHREAD_DETACHED)
 	, subs(subs)
 	, destination(destination)
@@ -222,13 +223,13 @@ DialogFontsCollector::DialogFontsCollector(agi::Context *c)
 	collection_mode = new wxRadioBox(this, -1, _("Action"), wxDefaultPosition, wxDefaultSize, countof(modes), modes, 1);
 	collection_mode->SetSelection(mid<int>(0, OPT_GET("Tool/Fonts Collector/Action")->GetInt(), 4));
 
-	if (!subs->filename)
+	if (subs->filename.empty())
 		collection_mode->Enable(2, false);
 
 	wxStaticBoxSizer *destination_box = new wxStaticBoxSizer(wxVERTICAL, this, _("Destination"));
 
 	dest_label = new wxStaticText(this, -1, " ");
-	dest_ctrl = new wxTextCtrl(this, -1, StandardPaths::DecodePath(to_wx(OPT_GET("Path/Fonts Collector Destination")->GetString())));
+	dest_ctrl = new wxTextCtrl(this, -1, to_wx(StandardPaths::DecodePath(OPT_GET("Path/Fonts Collector Destination")->GetString())));
 	dest_browse_button = new wxButton(this, -1, _("&Browse..."));
 
 	wxSizer *dest_browse_sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -280,40 +281,37 @@ void DialogFontsCollector::OnStart(wxCommandEvent &) {
 	collection_log->ClearAll();
 	collection_log->SetReadOnly(true);
 
-	wxString dest;
+	std::string dest;
 	int action = collection_mode->GetSelection();
 	OPT_SET("Tool/Fonts Collector/Action")->SetInt(action);
 	if (action != CheckFontsOnly) {
 		if (action == CopyToScriptFolder)
 			dest = "?script/";
 		else
-			dest = dest_ctrl->GetValue();
+			dest = from_wx(dest_ctrl->GetValue());
 		dest = StandardPaths::DecodePath(dest);
-		wxFileName folder = dest;
+		if (action != CopyToZip)
+			dest = agi::Path::Combine(dest, "");
 
 		if (action != CopyToZip) {
-			if (dest.Last() != '/' && dest.Last() != '\\') {
-				dest += wxFileName::GetPathSeparator();
-				folder = dest;
-			}
-
-			if (folder.FileExists())
+			if (agi::fs::FileExists(dest))
 				wxMessageBox(_("Invalid destination."), _("Error"), wxOK | wxICON_ERROR | wxCENTER, this);
-			if (!folder.DirExists())
-				folder.Mkdir(0777, wxPATH_MKDIR_FULL);
-			if (!folder.DirExists()) {
+			try {
+				agi::fs::CreateDirectory(dest);
+			}
+			catch (agi::Exception const&) {
 				wxMessageBox(_("Could not create destination folder."), _("Error"), wxOK | wxICON_ERROR | wxCENTER, this);
 				return;
 			}
 		}
-		else if (folder.IsDir() || folder.GetName().empty()) {
+		else if (agi::fs::DirectoryExists(dest) || agi::Path::FileName(dest).empty()) {
 			wxMessageBox(_("Invalid path for .zip file."), _("Error"), wxOK | wxICON_ERROR | wxCENTER, this);
 			return;
 		}
 	}
 
 	if (action != CheckFontsOnly)
-		OPT_SET("Path/Fonts Collector Destination")->SetString(from_wx(dest));
+		OPT_SET("Path/Fonts Collector Destination")->SetString(dest);
 
 	// Disable the UI while it runs as we don't support canceling
 	EnableCloseButton(false);
@@ -397,7 +395,7 @@ void DialogFontsCollector::OnCollectionComplete(wxThreadEvent &) {
 	start_btn->Enable();
 	close_btn->Enable();
 	collection_mode->Enable();
-	if (!subs->filename)
+	if (subs->filename.empty())
 		collection_mode->Enable(2, false);
 
 	wxCommandEvent evt;

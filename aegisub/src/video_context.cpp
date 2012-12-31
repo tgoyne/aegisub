@@ -34,20 +34,8 @@
 
 #include "config.h"
 
-#include <cstring>
-
-#include <wx/clipbrd.h>
-#include <wx/config.h>
-#include <wx/filename.h>
-#include <wx/image.h>
-#include <wx/msgdlg.h>
-
-#include <libaegisub/keyframe.h>
-#include <libaegisub/log.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
-#include "ass_style.h"
 #include "ass_time.h"
 #include "audio_controller.h"
 #include "compat.h"
@@ -63,8 +51,13 @@
 #include "video_context.h"
 #include "video_frame.h"
 
-/// @brief Constructor
-///
+#include <libaegisub/path.h>
+#include <libaegisub/keyframe.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+
+#include <wx/msgdlg.h>
+
 VideoContext::VideoContext()
 : playback(this)
 , startMS(0)
@@ -126,7 +119,7 @@ void VideoContext::SetContext(agi::Context *context) {
 	context->ass->AddFileSaveListener(&VideoContext::OnSubtitlesSave, this);
 }
 
-void VideoContext::SetVideo(const wxString &filename) {
+void VideoContext::SetVideo(const std::string &filename) {
 	Reset();
 	if (filename.empty()) {
 		VideoOpen();
@@ -148,8 +141,8 @@ void VideoContext::SetVideo(const wxString &filename) {
 		// If the script resolution hasn't been set at all just force it to the
 		// video resolution
 		if (sx == 0 && sy == 0) {
-			context->ass->SetScriptInfo("PlayResX", wxString::Format("%d", vx));
-			context->ass->SetScriptInfo("PlayResY", wxString::Format("%d", vy));
+			context->ass->SetScriptInfo("PlayResX", std::to_string(vx));
+			context->ass->SetScriptInfo("PlayResY", std::to_string(vy));
 			commit_subs = true;
 		}
 		// If it has been set to something other than a multiple of the video
@@ -166,8 +159,8 @@ void VideoContext::SetVideo(const wxString &filename) {
 					break;
 				// Fallthrough to case 2
 			case 2: // Always change script res
-				context->ass->SetScriptInfo("PlayResX", wxString::Format("%d", vx));
-				context->ass->SetScriptInfo("PlayResY", wxString::Format("%d", vy));
+				context->ass->SetScriptInfo("PlayResX", std::to_string(vx));
+				context->ass->SetScriptInfo("PlayResY", std::to_string(vy));
 				commit_subs = true;
 				break;
 			default: // Never change
@@ -193,17 +186,17 @@ void VideoContext::SetVideo(const wxString &filename) {
 			SetAspectRatio(4, dar);
 
 		// Set filename
-		config::mru->Add("Video", from_wx(filename));
-		StandardPaths::SetPathValue("?video", wxFileName(filename).GetPath());
+		config::mru->Add("Video", filename);
+		StandardPaths::SetPathValue("?video", agi::Path::DirName(filename));
 
 		// Show warning
-		wxString warning = videoProvider->GetWarning();
-		if (!warning.empty()) wxMessageBox(warning, "Warning", wxICON_WARNING | wxOK);
+		std::string warning = videoProvider->GetWarning();
+		if (!warning.empty())
+			wxMessageBox(to_wx(warning), "Warning", wxICON_WARNING | wxOK);
 
 		hasSubtitles = false;
-		if (filename.Right(4).Lower() == ".mkv") {
+		if (boost::iends_with(filename, ".mkv"))
 			hasSubtitles = MatroskaWrapper::HasSubtitles(filename);
-		}
 
 		provider->LoadSubtitles(context->ass);
 		VideoOpen();
@@ -212,7 +205,7 @@ void VideoContext::SetVideo(const wxString &filename) {
 	}
 	catch (agi::UserCancelException const&) { }
 	catch (agi::FileNotAccessibleError const& err) {
-		config::mru->Remove("Video", from_wx(filename));
+		config::mru->Remove("Video", filename);
 		wxMessageBox(to_wx(err.GetMessage()), "Error setting video", wxOK | wxICON_ERROR | wxCENTER);
 	}
 	catch (VideoProviderError const& err) {
@@ -228,7 +221,7 @@ void VideoContext::SetVideo(const wxString &filename) {
 void VideoContext::Reload() {
 	if (IsLoaded()) {
 		int frame = frame_n;
-		SetVideo(videoFile.Clone());
+		SetVideo(std::string(videoFile));
 		JumpToFrame(frame);
 	}
 }
@@ -255,16 +248,16 @@ void VideoContext::OnSubtitlesSave() {
 		return;
 	}
 
-	wxString ar;
+	std::string ar;
 	if (arType == 4)
-		ar = wxString::Format("c%g", arValue);
+		ar = "c" + std::to_string(arValue);
 	else
-		ar = wxString::Format("%d", arType);
+		ar = "c" + std::to_string(arType);
 
 	context->ass->SetScriptInfo("Video File", MakeRelativePath(videoFile, context->ass->filename));
 	context->ass->SetScriptInfo("YCbCr Matrix", videoProvider->GetColorSpace());
 	context->ass->SetScriptInfo("Video Aspect Ratio", ar);
-	context->ass->SetScriptInfo("Video Position", wxString::Format("%d", frame_n));
+	context->ass->SetScriptInfo("Video Position", std::to_string(frame_n));
 }
 
 void VideoContext::JumpToFrame(int n) {
@@ -411,27 +404,27 @@ void VideoContext::SetAspectRatio(int type, double value) {
 	ARChange(arType, arValue);
 }
 
-void VideoContext::LoadKeyframes(wxString filename) {
+void VideoContext::LoadKeyframes(std::string const& filename) {
 	if (filename == keyFramesFilename || filename.empty()) return;
 	try {
-		keyFrames = agi::keyframe::Load(from_wx(filename));
+		keyFrames = agi::keyframe::Load(filename);
 		keyFramesFilename = filename;
 		KeyframesOpen(keyFrames);
-		config::mru->Add("Keyframes", from_wx(filename));
+		config::mru->Add("Keyframes", filename);
 	}
 	catch (agi::keyframe::Error const& err) {
 		wxMessageBox(to_wx(err.GetMessage()), "Error opening keyframes file", wxOK | wxICON_ERROR | wxCENTER, context->parent);
-		config::mru->Remove("Keyframes", from_wx(filename));
+		config::mru->Remove("Keyframes", filename);
 	}
 	catch (agi::FileSystemError const&) {
-		wxLogError("Could not open file " + filename);
-		config::mru->Remove("Keyframes", from_wx(filename));
+		wxLogError(to_wx("Could not open file " + filename));
+		config::mru->Remove("Keyframes", filename);
 	}
 }
 
-void VideoContext::SaveKeyframes(wxString filename) {
-	agi::keyframe::Save(from_wx(filename), GetKeyFrames());
-	config::mru->Add("Keyframes", from_wx(filename));
+void VideoContext::SaveKeyframes(std::string const& filename) {
+	agi::keyframe::Save(filename, GetKeyFrames());
+	config::mru->Add("Keyframes", filename);
 }
 
 void VideoContext::CloseKeyframes() {
@@ -443,30 +436,30 @@ void VideoContext::CloseKeyframes() {
 	KeyframesOpen(keyFrames);
 }
 
-void VideoContext::LoadTimecodes(wxString filename) {
+void VideoContext::LoadTimecodes(std::string const& filename) {
 	if (filename == ovrTimecodeFile || filename.empty()) return;
 	try {
-		ovrFPS = agi::vfr::Framerate(from_wx(filename));
+		ovrFPS = agi::vfr::Framerate(filename);
 		ovrTimecodeFile = filename;
-		config::mru->Add("Timecodes", from_wx(filename));
+		config::mru->Add("Timecodes", filename);
 		OnSubtitlesCommit(0, std::set<const AssEntry*>());
 		TimecodesOpen(ovrFPS);
 	}
 	catch (const agi::FileSystemError&) {
-		wxLogError("Could not open file " + filename);
-		config::mru->Remove("Timecodes", from_wx(filename));
+		wxLogError(to_wx("Could not open file " + filename));
+		config::mru->Remove("Timecodes", filename);
 	}
 	catch (const agi::vfr::Error& e) {
-		wxLogError("Timecode file parse error: %s", e.GetMessage());
+		wxLogError("Timecode file parse error: %s", to_wx(e.GetMessage()));
 	}
 }
-void VideoContext::SaveTimecodes(wxString filename) {
+void VideoContext::SaveTimecodes(std::string const& filename) {
 	try {
-		FPS().Save(from_wx(filename), IsLoaded() ? GetLength() : -1);
-		config::mru->Add("Timecodes", from_wx(filename));
+		FPS().Save(filename, IsLoaded() ? GetLength() : -1);
+		config::mru->Add("Timecodes", filename);
 	}
 	catch(const agi::FileSystemError&) {
-		wxLogError("Could not write to " + filename);
+		wxLogError("Could not write to " + to_wx(filename));
 	}
 }
 void VideoContext::CloseTimecodes() {

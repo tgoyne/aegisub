@@ -47,7 +47,7 @@
 #include <libaegisub/of_type_adaptor.h>
 
 AssFixStylesFilter::AssFixStylesFilter()
-: AssExportFilter(_("Fix Styles"), _("Fixes styles by replacing any style that isn't available on file with Default."), -5000)
+: AssExportFilter(from_wx(_("Fix Styles")), from_wx(_("Fixes styles by replacing any style that isn't available on file with Default.")), -5000)
 {
 }
 
@@ -57,7 +57,7 @@ void AssFixStylesFilter::ProcessSubs(AssFile *subs, wxWindow *) {
 	sort(begin(styles), end(styles));
 
 	for (auto diag : subs->Line | agi::of_type<AssDialogue>()) {
-		if (!binary_search(begin(styles), end(styles), from_wx(diag->Style.get().Lower())))
+		if (!binary_search(begin(styles), end(styles), boost::to_lower_copy(diag->Style.get())))
 			diag->Style = "Default";
 	}
 }

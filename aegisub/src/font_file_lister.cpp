@@ -49,7 +49,7 @@ void FontCollector::ProcessDialogueLine(const AssDialogue *line, int index) {
 	if (line->Comment) return;
 
 	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
-	StyleInfo style = styles[from_wx(line->Style)];
+	StyleInfo style = styles[line->Style];
 	StyleInfo initial = style;
 
 	bool overriden = false;
@@ -60,7 +60,7 @@ void FontCollector::ProcessDialogueLine(const AssDialogue *line, int index) {
 				std::string const& name = tag.Name;
 
 				if (name == "\\r") {
-					style = styles[tag.Params[0].Get(from_wx(line->Style))];
+					style = styles[tag.Params[0].Get(line->Style.get())];
 					overriden = false;
 				}
 				else if (name == "\\b") {
@@ -147,7 +147,7 @@ void FontCollector::PrintUsage(UsageData const& data) {
 	status_callback("\n", 2);
 }
 
-std::vector<wxString> FontCollector::GetFontPaths(const AssFile *file) {
+std::vector<std::string> FontCollector::GetFontPaths(const AssFile *file) {
 	missing = 0;
 	missing_glyphs = 0;
 
@@ -169,7 +169,7 @@ std::vector<wxString> FontCollector::GetFontPaths(const AssFile *file) {
 	for_each(used_styles.begin(), used_styles.end(), bind(&FontCollector::ProcessChunk, this, _1));
 	status_callback(_("Done\n\n"), 0);
 
-	std::vector<wxString> paths;
+	std::vector<std::string> paths;
 	paths.reserve(results.size());
 	paths.insert(paths.end(), results.begin(), results.end());
 

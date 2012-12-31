@@ -32,7 +32,6 @@
 /// @ingroup utility
 ///
 
-
 #pragma once
 
 #include <cstdint>
@@ -42,7 +41,6 @@
 #include <utility>
 #include <vector>
 
-#include <wx/app.h>
 #include <wx/icon.h>
 #include <wx/thread.h>
 
@@ -50,9 +48,9 @@ class wxMouseEvent;
 class wxWindow;
 
 /// @brief Make a path relative to reference
-wxString MakeRelativePath(wxString path,wxString reference);
+std::string MakeRelativePath(std::string const& path, std::string const& reference);
 /// @brief Extract original path from relative
-wxString DecodeRelativePath(wxString path,wxString reference);
+std::string DecodeRelativePath(std::string const& path, std::string const& reference);
 wxString AegiFloatToString(double value);
 wxString AegiIntegerToString(int value);
 wxString PrettySize(int bytes);
@@ -68,14 +66,8 @@ bool IsWhitespace(wchar_t c);
 /// Check if every character in str is whitespace
 bool StringEmptyOrWhitespace(const wxString &str);
 
-/// @brief String to integer
-///
-/// wxString::ToLong() is slow and not as flexible
-int AegiStringToInt(const wxString &str,int start=0,int end=-1);
-int AegiStringToFix(const wxString &str,size_t decimalPlaces,int start=0,int end=-1);
-
 /// Get the length in characters of the longest line in the given text
-size_t MaxLineLength(wxString const& text);
+size_t MaxLineLength(std::string const& text);
 
 /// @brief Launch a new copy of Aegisub.
 ///
@@ -101,7 +93,7 @@ bool ForwardMouseWheelEvent(wxWindow *source, wxMouseEvent &evt);
 /// @param file_type Wildcard pattern for files to clean up
 /// @param max_size Maximum size of directory in MB
 /// @param max_files Maximum number of files
-void CleanCache(wxString const& directory, wxString const& file_type, int64_t max_size, int64_t max_files = -1);
+void CleanCache(std::string const& directory, std::string const& file_type, uint64_t max_size, uint64_t max_files = -1);
 
 /// @brief Templated abs() function
 template <typename T> T tabs(T x) { return x < 0 ? -x : x; }
@@ -111,9 +103,9 @@ template <typename T> T tabs(T x) { return x < 0 ? -x : x; }
 template<typename T> inline T mid(T a, T b, T c) { return std::max(a, std::min(b, c)); }
 
 /// Get the text contents of the clipboard, or empty string on failure
-wxString GetClipboard();
+std::string GetClipboard();
 /// Try to set the clipboard to the given string
-void SetClipboard(wxString const& new_value);
+void SetClipboard(std::string const& new_value);
 void SetClipboard(wxBitmap const& new_value);
 
 #ifndef FORCEINLINE

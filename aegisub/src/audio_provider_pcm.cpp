@@ -32,22 +32,7 @@
 /// @ingroup audio_input
 ///
 
-
 #include "config.h"
-
-#include <cassert>
-#include <cstdint>
-#ifndef __WINDOWS__
-#include <sys/fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#endif
-
-#include <wx/file.h>
-#include <wx/filename.h>
-#include <wx/log.h>
-
-#include <libaegisub/log.h>
 
 #include "aegisub_endian.h"
 #include "audio_controller.h"
@@ -55,7 +40,23 @@
 #include "compat.h"
 #include "utils.h"
 
-PCMAudioProvider::PCMAudioProvider(const wxString &filename)
+#include <libaegisub/log.h>
+#ifdef _WIN32
+#include <libaegisub/charset_conv_win.h>
+#endif
+
+#include <cassert>
+#include <cstdint>
+#ifndef _WIN32
+#include <sys/fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#endif
+
+#include <wx/file.h>
+#include <wx/filename.h>
+
+PCMAudioProvider::PCMAudioProvider(const std::string &filename)
 : current_mapping(0)
 , mapping_start(0)
 , mapping_length(0)
@@ -64,7 +65,7 @@ PCMAudioProvider::PCMAudioProvider(const wxString &filename)
 , file_mapping(0, CloseHandle)
 {
 	file_handle = CreateFile(
-		filename.c_str(),
+		agi::charset::ConvertW(filename).c_str(),
 		FILE_READ_DATA,
 		FILE_SHARE_READ|FILE_SHARE_WRITE,
 		0,
@@ -73,7 +74,7 @@ PCMAudioProvider::PCMAudioProvider(const wxString &filename)
 		0);
 
 	if (file_handle == INVALID_HANDLE_VALUE)
-		throw agi::FileNotFoundError(from_wx(filename));
+		throw agi::FileNotFoundError(filename);
 
 	LARGE_INTEGER li_file_size = {0};
 	if (!GetFileSizeEx(file_handle, &li_file_size))
@@ -91,10 +92,10 @@ PCMAudioProvider::PCMAudioProvider(const wxString &filename)
 	if (file_mapping == 0)
 		throw agi::AudioProviderOpenError("Failed creating file mapping", 0);
 #else
-, file_handle(open(filename.mb_str(*wxConvFileName), O_RDONLY), close)
+, file_handle(open(filename.c_str(), O_RDONLY), close)
 {
 	if (file_handle == -1)
-		throw agi::FileNotFoundError(from_wx(filename));
+		throw agi::FileNotFoundError(filename);
 
 	struct stat filestats;
 	memset(&filestats, 0, sizeof(filestats));
@@ -268,7 +269,7 @@ class  RiffWavPCMAudioProvider : public PCMAudioProvider {
 
 public:
 
-	RiffWavPCMAudioProvider(const wxString &_filename)
+	RiffWavPCMAudioProvider(const std::string &_filename)
 	: PCMAudioProvider(_filename)
 	{
 		filename = _filename;
@@ -418,7 +419,7 @@ class Wave64AudioProvider : public PCMAudioProvider {
 
 public:
 
-	Wave64AudioProvider(const wxString &_filename)
+	Wave64AudioProvider(const std::string &_filename)
 	: PCMAudioProvider(_filename)
 	{
 		filename = _filename;
@@ -506,7 +507,7 @@ public:
 	}
 };
 
-AudioProvider *CreatePCMAudioProvider(const wxString &filename)
+AudioProvider *CreatePCMAudioProvider(const std::string &filename)
 {
 	bool wrong_file_type = true;
 	std::string msg;

@@ -36,5 +36,5 @@ namespace CharSetDetect {
 	/// @brief Get character set name.
 	/// @param filename File to check
 	/// @return Character set name
-	wxString GetEncoding(wxString const& filename);
+	std::string GetEncoding(std::string const& filename);
 }

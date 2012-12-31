@@ -55,6 +55,7 @@
 #include <wx/listctrl.h>
 #include <wx/log.h>
 #include <wx/msgdlg.h>
+#include <wx/sizer.h>
 
 using std::placeholders::_1;
 
@@ -147,9 +148,9 @@ void DialogAutomation::RebuildList()
 
 void DialogAutomation::SetScriptInfo(int i, Automation4::Script *script)
 {
-	list->SetItem(i, 1, script->GetName());
-	list->SetItem(i, 2, wxFileName(script->GetFilename()).GetFullName());
-	list->SetItem(i, 3, script->GetDescription());
+	list->SetItem(i, 1, to_wx(script->GetName()));
+	list->SetItem(i, 2, to_wx(script->GetPrettyFilename()));
+	list->SetItem(i, 3, to_wx(script->GetDescription()));
 	if (!script->GetLoadedState())
 		list->SetItemBackgroundColour(i, wxColour(255,128,128));
 	else
@@ -181,7 +182,7 @@ template<class Container>
 static bool has_file(Container const& c, wxFileName const& fn)
 {
 	return any_of(c.begin(), c.end(),
-		[&](const Automation4::Script *s) { return fn.SameAs(s->GetFilename()); });
+		[&](const Automation4::Script *s) { return fn.SameAs(to_wx(s->GetFilename())); });
 }
 
 void DialogAutomation::OnAdd(wxCommandEvent &)
@@ -190,7 +191,7 @@ void DialogAutomation::OnAdd(wxCommandEvent &)
 		_("Add Automation script"),
 		to_wx(OPT_GET("Path/Last/Automation")->GetString()),
 		"",
-		Automation4::ScriptFactory::GetWildcardStr(),
+		to_wx(Automation4::ScriptFactory::GetWildcardStr()),
 		wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
 
 	if (diag.ShowModal() == wxID_CANCEL) return;
@@ -207,7 +208,7 @@ void DialogAutomation::OnAdd(wxCommandEvent &)
 			continue;
 		}
 
-		local_manager->Add(Automation4::ScriptFactory::CreateFromFile(fname, true));
+		local_manager->Add(Automation4::ScriptFactory::CreateFromFile(from_wx(fname), true));
 	}
 }
 
@@ -242,7 +243,7 @@ static wxString cmd_to_str(const cmd::Command *f, agi::Context *c) {
 }
 
 static wxString filt_to_str(const Automation4::ExportFilter* f) {
-	return wxString::Format(_("    Export filter: %s"), f->GetName());
+	return wxString::Format(_("    Export filter: %s"), to_wx(f->GetName()));
 }
 
 static wxString form_to_str(const SubtitleFormat* f) {

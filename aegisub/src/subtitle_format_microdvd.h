@@ -38,11 +38,11 @@ class MicroDVDSubtitleFormat : public SubtitleFormat {
 public:
 	MicroDVDSubtitleFormat();
 
-	wxArrayString GetReadWildcards() const override;
-	wxArrayString GetWriteWildcards() const override;
+	std::vector<std::string> GetReadWildcards() const override;
+	std::vector<std::string> GetWriteWildcards() const override;
 
-	bool CanReadFile(wxString const& filename) const override;
-	void ReadFile(AssFile *target, wxString const& filename, wxString const& forceEncoding) const override;
+	bool CanReadFile(std::string const& filename) const override;
+	void ReadFile(AssFile *target, std::string const& filename, std::string const& forceEncoding) const override;
 
-	void WriteFile(const AssFile *src, wxString const& filename, wxString const& encoding) const override;
+	void WriteFile(const AssFile *src, std::string const& filename, std::string const& encoding) const override;
 };

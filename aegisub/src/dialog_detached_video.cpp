@@ -36,9 +36,9 @@
 
 #include "dialog_detached_video.h"
 
+#include "compat.h"
 #include "include/aegisub/context.h"
 #include "include/aegisub/hotkey.h"
-
 #include "options.h"
 #include "persist_location.h"
 #include "utils.h"
@@ -46,7 +46,8 @@
 #include "video_context.h"
 #include "video_display.h"
 
-#include <wx/filename.h>
+#include <libaegisub/path.h>
+
 #include <wx/sizer.h>
 #include <wx/display.h> /// Must be included last.
 
@@ -60,7 +61,7 @@ DialogDetachedVideo::DialogDetachedVideo(agi::Context *context)
 	// Set obscure stuff
 	SetExtraStyle((GetExtraStyle() & ~wxWS_EX_BLOCK_EVENTS) | wxWS_EX_PROCESS_UI_UPDATES);
 
-	SetTitle(wxString::Format(_("Video: %s"), wxFileName(context->videoController->GetVideoName()).GetFullName()));
+	SetTitle(wxString::Format(_("Video: %s"), to_wx(agi::Path::FileName(context->videoController->GetVideoName()))));
 
 	old_display->Unload();
 

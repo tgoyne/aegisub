@@ -36,17 +36,15 @@
 
 #include "aegisublocale.h"
 
+#include "compat.h"
+#include "standard_paths.h"
+
 #include <algorithm>
 #include <clocale>
 #include <functional>
 
-#include <wx/dir.h>
-#include <wx/filename.h>
 #include <wx/intl.h>
-#include <wx/stdpaths.h>
 #include <wx/choicdlg.h> // Keep this last so wxUSE_CHOICEDLG is set.
-
-#include "standard_paths.h"
 
 #ifndef AEGISUB_CATALOG
 #define AEGISUB_CATALOG "aegisub"
@@ -56,7 +54,7 @@ wxTranslations *AegisubLocale::GetTranslations() {
 	wxTranslations *translations = wxTranslations::Get();
 	if (!translations) {
 		wxTranslations::Set(translations = new wxTranslations);
-		wxFileTranslationsLoader::AddCatalogLookupPathPrefix(StandardPaths::DecodePath("?data/locale/"));
+		wxFileTranslationsLoader::AddCatalogLookupPathPrefix(to_wx(StandardPaths::DecodePath("?data/locale/")));
 	}
 	return translations;
 }

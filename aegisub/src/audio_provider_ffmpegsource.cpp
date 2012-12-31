@@ -35,22 +35,17 @@
 #include "config.h"
 
 #ifdef WITH_FFMS2
-
-#ifdef WIN32
-#include <objbase.h>
-#endif
-
-#include <map>
-
 #include "audio_provider_ffmpegsource.h"
 
 #include "audio_controller.h"
-#include "compat.h"
 #include "options.h"
+#include <libaegisub/fs.h>
+
+#include <map>
 
 /// @brief Constructor
 /// @param filename The filename to open
-FFmpegSourceAudioProvider::FFmpegSourceAudioProvider(wxString filename) try
+FFmpegSourceAudioProvider::FFmpegSourceAudioProvider(std::string const& filename) try
 : AudioSource(nullptr, FFMS_DestroyAudioSource)
 {
 	ErrInfo.Buffer		= FFMSErrMsg;
@@ -61,17 +56,15 @@ FFmpegSourceAudioProvider::FFmpegSourceAudioProvider(wxString filename) try
 
 	LoadAudio(filename);
 }
-catch (wxString const& err) {
-	throw agi::AudioProviderOpenError(from_wx(err), 0);
+catch (std::string const& err) {
+	throw agi::AudioProviderOpenError(err, 0);
 }
 catch (const char *err) {
 	throw agi::AudioProviderOpenError(err, 0);
 }
 
-void FFmpegSourceAudioProvider::LoadAudio(wxString filename) {
-	wxString FileNameShort = wxFileName(filename).GetShortPath();
-
-	FFMS_Indexer *Indexer = FFMS_CreateIndexer(FileNameShort.utf8_str(), &ErrInfo);
+void FFmpegSourceAudioProvider::LoadAudio(std::string const& filename) {
+	FFMS_Indexer *Indexer = FFMS_CreateIndexer(filename.c_str(), &ErrInfo);
 	if (!Indexer) {
 		if (ErrInfo.SubType == FFMS_ERROR_FILE_READ)
 			throw agi::FileNotFoundError(ErrInfo.Buffer);
@@ -79,8 +72,8 @@ void FFmpegSourceAudioProvider::LoadAudio(wxString filename) {
 			throw agi::AudioDataNotFoundError(ErrInfo.Buffer, 0);
 	}
 
-	std::map<int,wxString> TrackList = GetTracksOfType(Indexer, FFMS_TYPE_AUDIO);
-	if (TrackList.size() <= 0)
+	std::map<int, std::string> TrackList = GetTracksOfType(Indexer, FFMS_TYPE_AUDIO);
+	if (TrackList.empty())
 		throw agi::AudioDataNotFoundError("no audio tracks found", 0);
 
 	// initialize the track number to an invalid value so we can detect later on
@@ -94,13 +87,13 @@ void FFmpegSourceAudioProvider::LoadAudio(wxString filename) {
 	}
 
 	// generate a name for the cache file
-	wxString CacheName = GetCacheFilename(filename);
+	std::string CacheName = GetCacheFilename(filename);
 
 	// try to read index
 	agi::scoped_holder<FFMS_Index*, void (FFMS_CC*)(FFMS_Index*)>
-		Index(FFMS_ReadIndex(CacheName.utf8_str(), &ErrInfo), FFMS_DestroyIndex);
+		Index(FFMS_ReadIndex(CacheName.c_str(), &ErrInfo), FFMS_DestroyIndex);
 
-	if (Index && FFMS_IndexBelongsToFile(Index, FileNameShort.utf8_str(), &ErrInfo))
+	if (Index && FFMS_IndexBelongsToFile(Index, filename.c_str(), &ErrInfo))
 		Index = nullptr;
 
 	// index valid but track number still not set?
@@ -143,16 +136,13 @@ void FFmpegSourceAudioProvider::LoadAudio(wxString filename) {
 		if (TrackNumber == FFMS_TRACKMASK_ALL)
 			TrackNumber = FFMS_GetFirstTrackOfType(Index, FFMS_TYPE_AUDIO, &ErrInfo);
 	}
-	else {
+	else
 		FFMS_CancelIndexing(Indexer);
-	}
 
 	// update access time of index file so it won't get cleaned away
-	if (!wxFileName(CacheName).Touch()) {
-		// warn user?
-	}
+	agi::fs::Touch(CacheName);
 
-	AudioSource = FFMS_CreateAudioSource(FileNameShort.utf8_str(), TrackNumber, Index, -1, &ErrInfo);
+	AudioSource = FFMS_CreateAudioSource(filename.c_str(), TrackNumber, Index, -1, &ErrInfo);
 	if (!AudioSource)
 		throw agi::AudioProviderOpenError(std::string("Failed to open audio track: ") + ErrInfo.Buffer, 0);
 

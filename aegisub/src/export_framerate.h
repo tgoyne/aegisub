@@ -33,6 +33,7 @@
 ///
 
 #include "ass_export_filter.h"
+
 #include <libaegisub/vfr.h>
 
 class AssDialogue;

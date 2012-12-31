@@ -35,8 +35,8 @@
 #include "factory_manager.h"
 #include "include/aegisub/video_provider.h"
 
-class VideoProviderFactory : public Factory1<VideoProvider, wxString> {
+class VideoProviderFactory : public Factory1<VideoProvider, std::string> {
 public:
-	static VideoProvider *GetProvider(wxString video);
+	static VideoProvider *GetProvider(std::string video);
 	static void RegisterProviders();
 };

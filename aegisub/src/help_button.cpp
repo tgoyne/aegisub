@@ -45,6 +45,7 @@
 
 #include <libaegisub/exception.h>
 
+#include "compat.h"
 #include "standard_paths.h"
 #include "utils.h"
 
@@ -94,7 +95,7 @@ void HelpButton::OpenPage(wxString const& pageID) {
 	wxString section;
 	page = page.BeforeFirst('#', &section);
 
-	wxFileName docFile(StandardPaths::DecodePath("?data/docs/"), page, "html", wxPATH_NATIVE);
+	wxFileName docFile(to_wx(StandardPaths::DecodePath("?data/docs/")), page, "html", wxPATH_NATIVE);
 
 	wxString url;
 	// If we can read a file by the constructed name, assume we have a local copy of the manual

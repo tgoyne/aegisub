@@ -32,34 +32,23 @@
 /// @ingroup utility
 ///
 
+#include <string>
 
-
-#include <fstream>
-
-#include <wx/string.h>
+#include <libaegisub/scoped_ptr.h>
 
 namespace agi {
 	namespace charset { class IconvWrapper; }
 	namespace io { class Save; }
 }
 
-#include <libaegisub/scoped_ptr.h>
-
 class TextFileWriter {
 	agi::scoped_ptr<agi::io::Save> file;
 	agi::scoped_ptr<agi::charset::IconvWrapper> conv;
 
 public:
-	TextFileWriter(wxString const& filename, wxString encoding="");
+	TextFileWriter(std::string const& filename, std::string encoding="");
 	~TextFileWriter();
 
-	void WriteLineToFile(wxString line, bool addLineBreak=true);
+	void WriteLineToFile(std::string const& line, bool addLineBreak=true) { WriteLineToFile(std::string(line), addLineBreak); }
+	void WriteLineToFile(std::string&& line, bool addLineBreak=true);
 };
-
-#if wxUSE_UNICODE_UTF8
-#define wxSTRING_ENCODING "utf-8"
-#elif defined(_WIN32)
-#define wxSTRING_ENCODING "utf-16le"
-#else
-#define wxSTRING_ENCODING "utf-32le"
-#endif

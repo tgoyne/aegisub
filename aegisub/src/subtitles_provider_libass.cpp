@@ -90,9 +90,9 @@ class FontConfigCacheThread : public wxThread {
 	}
 public:
 	FontConfigCacheThread(ASS_Library *ass_library, FontConfigCacheThread **thisPtr)
-		: ass_library(ass_library)
-		, ass_renderer(nullptr)
-		, thisPtr(thisPtr)
+	: ass_library(ass_library)
+	, ass_renderer(nullptr)
+	, thisPtr(thisPtr)
 	{
 		*thisPtr = this;
 		Create();

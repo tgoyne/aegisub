@@ -34,6 +34,7 @@
 #include <libaegisub/hotkey.h>
 #include <libaegisub/json.h>
 #include <libaegisub/log.h>
+#include <libaegisub/path.h>
 
 #include <algorithm>
 #include <deque>
@@ -41,7 +42,6 @@
 #include <vector>
 
 #include <wx/app.h>
-#include <wx/filename.h>
 #include <wx/frame.h>
 #include <wx/menu.h>
 #include <wx/menuitem.h>
@@ -100,7 +100,7 @@ public:
 		for (auto it = mru->begin(); it != mru->end(); ++it, ++i) {
 			items[i]->SetItemLabel(wxString::Format("%s%d %s",
 				i <= 9 ? "&" : "", i + 1,
-				wxFileName(to_wx(*it)).GetFullName()));
+				to_wx(agi::Path::FileName(*it))));
 			items[i]->Enable(true);
 		}
 	}
@@ -292,7 +292,7 @@ menu_map const& get_menus_root() {
 	if (!root.empty()) return root;
 
 	try {
-		root = agi::json_util::file(StandardPaths::DecodePath("?user/menu.json").utf8_str().data(), GET_DEFAULT_CONFIG(default_menu));
+		root = agi::json_util::file(StandardPaths::DecodePath("?user/menu.json"), GET_DEFAULT_CONFIG(default_menu));
 		return root;
 	}
 	catch (json::Reader::ParseException const& e) {

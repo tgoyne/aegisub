@@ -18,12 +18,12 @@
 ///
 
 #include <istream>
+#include <string>
 
 #include <libaegisub/scoped_ptr.h>
 
 struct lua_State;
 namespace agi { namespace charset { class IconvWrapper; } }
-class wxString;
 
 namespace Automation4 {
 	class LuaScriptReader {
@@ -33,7 +33,7 @@ namespace Automation4 {
 
 		const char *Read(size_t *bytes_read);
 	public:
-		LuaScriptReader(wxString const& filename);
+		LuaScriptReader(std::string const& filename);
 		~LuaScriptReader();
 
 		static const char* reader_func(lua_State *, void *data, size_t *size);

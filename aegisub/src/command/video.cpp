@@ -38,12 +38,6 @@
 
 #include "command.h"
 
-#include <wx/clipbrd.h>
-#include <wx/filedlg.h>
-#include <wx/filename.h>
-#include <wx/msgdlg.h>
-#include <wx/textdlg.h>
-
 #include "../ass_dialogue.h"
 #include "../ass_time.h"
 #include "../compat.h"
@@ -65,6 +59,18 @@
 #include "../video_display.h"
 #include "../video_frame.h"
 #include "../video_slider.h"
+
+#include <libaegisub/fs.h>
+#include <libaegisub/path.h>
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/format.hpp>
+
+#include <wx/clipbrd.h>
+#include <wx/filedlg.h>
+#include <wx/filename.h>
+#include <wx/msgdlg.h>
+#include <wx/textdlg.h>
 
 namespace {
 	using cmd::Command;
@@ -474,14 +480,14 @@ struct video_frame_prev_large : public validator_video_loaded {
 
 static void save_snapshot(agi::Context *c, bool raw) {
 	static const agi::OptionValue* ssPath = OPT_GET("Path/Screenshot");
-	wxString option = to_wx(ssPath->GetString());
-	wxFileName videoFile(c->videoController->GetVideoName());
-	wxString basepath;
+	std::string option = ssPath->GetString();
+	wxFileName videoFile(to_wx(c->videoController->GetVideoName()));
+	std::string basepath;
 
 	// Is it a path specifier and not an actual fixed path?
 	if (option[0] == '?') {
 		// If dummy video is loaded, we can't save to the video location
-		if (option.StartsWith("?video") && (c->videoController->GetVideoName().Find("?dummy") != wxNOT_FOUND)) {
+		if (boost::starts_with(option, "?video") && boost::starts_with(c->videoController->GetVideoName(), "?dummy")) {
 			// So try the script location instead
 			option = "?script";
 		}
@@ -490,19 +496,20 @@ static void save_snapshot(agi::Context *c, bool raw) {
 		// If where ever that is isn't defined, we can't save there
 		if ((basepath == "\\") || (basepath == "/")) {
 			// So save to the current user's home dir instead
-			basepath = wxGetHomeDir();
+			basepath = from_wx(wxGetHomeDir());
 		}
 	}
 	// Actual fixed (possibly relative) path, decode it
-	else basepath = DecodeRelativePath(option,StandardPaths::DecodePath("?user/"));
+	else
+		basepath = DecodeRelativePath(option, StandardPaths::DecodePath("?user/"));
 	basepath += "/" + videoFile.GetName();
 
 	// Get full path
 	int session_shot_count = 1;
-	wxString path;
+	std::string path;
 	do {
-		path = wxString::Format("%s_%03d_%d.png", basepath, session_shot_count++, c->videoController->GetFrameN());
-	} while (wxFileName::FileExists(path));
+		path = str(boost::format("%s_%03d_%d.png") % basepath % session_shot_count++ % c->videoController->GetFrameN());
+	} while (agi::fs::FileExists(path));
 
 	c->videoController->GetFrame(c->videoController->GetFrameN(), raw)->GetImage().SaveFile(path,wxBITMAP_TYPE_PNG);
 }
@@ -586,10 +593,10 @@ struct video_open : public Command {
 		wxString path = to_wx(OPT_GET("Path/Last/Video")->GetString());
 		wxString str = _("Video Formats") + " (*.asf,*.avi,*.avs,*.d2v,*.m2ts,*.m4v,*.mkv,*.mov,*.mp4,*.mpeg,*.mpg,*.ogm,*.webm,*.wmv,*.ts,*.y4m,*.yuv)|*.asf;*.avi;*.avs;*.d2v;*.m2ts;*.m4v;*.mkv;*.mov;*.mp4;*.mpeg;*.mpg;*.ogm;*.webm;*.wmv;*.ts;*.y4m;*.yuv|"
 					 + _("All Files") + " (*.*)|*.*";
-		wxString filename = wxFileSelector(_("Open video file"),path,"","",str,wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+		std::string filename = from_wx(wxFileSelector(_("Open video file"),path,"","",str,wxFD_OPEN | wxFD_FILE_MUST_EXIST));
 		if (!filename.empty()) {
 			c->videoController->SetVideo(filename);
-			OPT_SET("Path/Last/Video")->SetString(from_wx(wxFileName(filename).GetPath()));
+			OPT_SET("Path/Last/Video")->SetString(agi::Path::DirName(filename));
 		}
 	}
 };
@@ -602,7 +609,7 @@ struct video_open_dummy : public Command {
 	STR_HELP("Opens a video clip with solid color")
 
 	void operator()(agi::Context *c) {
-		wxString fn = DialogDummyVideo::CreateDummyVideo(c->parent);
+		std::string fn = DialogDummyVideo::CreateDummyVideo(c->parent);
 		if (!fn.empty())
 			c->videoController->SetVideo(fn);
 	}

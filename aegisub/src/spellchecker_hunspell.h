@@ -20,15 +20,10 @@
 ///
 
 #ifdef WITH_HUNSPELL
-
 #include <libaegisub/spellchecker.h>
 
 #include <libaegisub/scoped_ptr.h>
 #include <libaegisub/signal.h>
-
-#include <set>
-
-#include <wx/string.h>
 
 namespace agi { namespace charset { class IconvWrapper; } }
 class Hunspell;
@@ -46,7 +41,7 @@ class HunspellSpellChecker : public agi::SpellChecker {
 	std::vector<std::string> languages;
 
 	/// Path to user-local dictionary.
-	wxString userDicPath;
+	std::string userDicPath;
 
 	/// Words in the custom user dictionary
 	std::set<std::string> customWords;

@@ -32,12 +32,19 @@
 /// @ingroup configuration_ui
 ///
 
-
 #include "config.h"
 
 #ifdef WITH_UPDATE_CHECKER
 
 #include "dialog_version_check.h"
+
+#include "compat.h"
+#include "options.h"
+#include "string_codec.h"
+#include "version.h"
+
+#include <libaegisub/exception.h>
+#include <libaegisub/scoped_ptr.h>
 
 #include <wx/app.h>
 #include <wx/button.h>
@@ -49,29 +56,21 @@
 #include <wx/platinfo.h>
 #include <wx/protocol/http.h>
 #include <wx/sizer.h>
+#include <wx/sstream.h>
 #include <wx/statline.h>
 #include <wx/stattext.h>
 #include <wx/string.h>
 #include <wx/textctrl.h>
 #include <wx/thread.h>
-#include <wx/tokenzr.h>
 #include <wx/txtstrm.h>
 
 #include <algorithm>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <functional>
 #include <memory>
 #include <set>
 #include <vector>
-
-#include <wx/sstream.h>
-
-#include "compat.h"
-#include "options.h"
-#include "string_codec.h"
-#include "version.h"
-
-#include <libaegisub/exception.h>
-#include <libaegisub/scoped_ptr.h>
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
@@ -100,9 +99,9 @@ void PerformVersionCheck(bool interactive)
 /* *** The actual implementation begins here *** */
 
 struct AegisubUpdateDescription {
-	wxString url;
-	wxString friendly_name;
-	wxString description;
+	std::string url;
+	std::string friendly_name;
+	std::string description;
 };
 
 class AegisubVersionCheckResultEvent : public wxEvent {
@@ -110,8 +109,7 @@ class AegisubVersionCheckResultEvent : public wxEvent {
 	std::vector<AegisubUpdateDescription> updates;
 
 public:
-	AegisubVersionCheckResultEvent(wxString message = wxString());
-
+	AegisubVersionCheckResultEvent(wxString const& message = wxString());
 
 	wxEvent *Clone() const
 	{
@@ -123,9 +121,9 @@ public:
 	// If there are no updates in the list, either none were found or an error occurred,
 	// either way it means "failure" if it's empty
 	const std::vector<AegisubUpdateDescription> & GetUpdates() const { return updates; }
-	void AddUpdate(const wxString &url, const wxString &friendly_name, const wxString &description)
+	void AddUpdate(const std::string &url, const std::string &friendly_name, const std::string &description)
 	{
-		updates.push_back(AegisubUpdateDescription());
+		updates.emplace_back();
 		AegisubUpdateDescription &desc = updates.back();
 		desc.url = url;
 		desc.friendly_name = friendly_name;
@@ -135,12 +133,11 @@ public:
 
 wxDEFINE_EVENT(AEGISUB_EVENT_VERSIONCHECK_RESULT, AegisubVersionCheckResultEvent);
 
-AegisubVersionCheckResultEvent::AegisubVersionCheckResultEvent(wxString message)
+AegisubVersionCheckResultEvent::AegisubVersionCheckResultEvent(wxString const& message)
 : wxEvent(0, AEGISUB_EVENT_VERSIONCHECK_RESULT)
 , main_text(message)
 {
 }
-
 
 DEFINE_SIMPLE_EXCEPTION_NOINNER(VersionCheckError, agi::Exception, "versioncheck")
 
@@ -268,7 +265,6 @@ static const char * GetOSShortName()
 		return "unknown";
 }
 
-
 #ifdef WIN32
 typedef BOOL (WINAPI * PGetUserPreferredUILanguages)(DWORD dwFlags, PULONG pulNumLanguages, wchar_t *pwszLanguagesBuffer, PULONG pcchLanguagesBuffer);
 
@@ -328,23 +324,11 @@ static wxString GetAegisubLanguage()
 	return to_wx(OPT_GET("App/Language")->GetString());
 }
 
-template<class OutIter>
-static void split_str(wxString const& str, wxString const& sep, bool empty, OutIter out)
-{
-	wxStringTokenizer tk(str, sep, empty ? wxTOKEN_DEFAULT : wxTOKEN_RET_EMPTY_ALL);
-	while (tk.HasMoreTokens())
-	{
-		*out++ = tk.GetNextToken();
-	}
-}
-
-
 void AegisubVersionCheckerThread::DoCheck()
 {
-	std::set<wxString> accept_tags;
+	std::set<std::string> accept_tags;
 #ifdef UPDATE_CHECKER_ACCEPT_TAGS
-	split_str(wxString(UPDATE_CHECKER_ACCEPT_TAGS, wxConvUTF8), " ", false,
-		inserter(accept_tags, accept_tags.end()));
+	boost::split(accept_tags, UPDATE_CHECKER_ACCEPT_TAGS, boost::is_any_of(" "), boost::token_compress_on);
 #endif
 
 #ifdef __APPLE__
@@ -415,16 +399,17 @@ void AegisubVersionCheckerThread::DoCheck()
 
 	while (!stream->Eof() && stream->GetSize() > 0)
 	{
-		wxArrayString parsed;
-		split_str(text.ReadLine(), "|", true, std::back_inserter(parsed));
+		std::vector<std::string> parsed;
+		std::string line(from_wx(text.ReadLine()));
+		boost::split(parsed, line, boost::is_any_of("|"));
 		if (parsed.size() != 6) continue;
 
-		wxString line_type = parsed[0];
-		wxString line_revision = parsed[1];
-		wxString line_tags_str = parsed[2];
-		wxString line_url = inline_string_decode(parsed[3]);
-		wxString line_friendlyname = inline_string_decode(parsed[4]);
-		wxString line_description = inline_string_decode(parsed[5]);
+		std::string line_type = parsed[0];
+		std::string line_revision = parsed[1];
+		std::string line_tags_str = parsed[2];
+		std::string line_url = inline_string_decode(parsed[3]);
+		std::string line_friendlyname = inline_string_decode(parsed[4]);
+		std::string line_description = inline_string_decode(parsed[5]);
 
 		// stable runners don't want unstable, not interesting, skip
 		if ((line_type == "branch" || line_type == "dev") && GetIsOfficialRelease())
@@ -437,8 +422,8 @@ void AegisubVersionCheckerThread::DoCheck()
 		}
 		else
 		{
-			std::set<wxString> tags;
-			split_str(line_tags_str, " ", false, inserter(tags, tags.end()));
+			std::set<std::string> tags;
+			boost::split(tags, line_tags_str, boost::is_any_of(" "), boost::token_compress_on);
 			if (!includes(accept_tags.begin(), accept_tags.end(), tags.begin(), tags.end()))
 				continue;
 		}
@@ -450,14 +435,9 @@ void AegisubVersionCheckerThread::DoCheck()
 		else
 		{
 			// maybe interesting, check revision
-
-			long new_revision = 0;
-			if (!line_revision.ToLong(&new_revision)) continue;
-			if (new_revision <= GetSVNRevision())
-			{
+			if (atoi(line_revision.c_str()) <= GetSVNRevision())
 				// too old, not interesting, skip
 				continue;
-			}
 		}
 
 		// it's interesting!
@@ -465,9 +445,7 @@ void AegisubVersionCheckerThread::DoCheck()
 	}
 
 	if (result_event.GetUpdates().size() > 0 || interactive)
-	{
 		wxTheApp->AddPendingEvent(result_event);
-	}
 }
 
 class VersionCheckerResultDialog : public wxDialog {
@@ -499,16 +477,16 @@ VersionCheckerResultDialog::VersionCheckerResultDialog(const wxString &main_text
 	{
 		main_sizer->Add(new wxStaticLine(this), 0, wxEXPAND|wxALL, 6);
 
-		text = new wxStaticText(this, -1, upd_iterator->friendly_name);
+		text = new wxStaticText(this, -1, to_wx(upd_iterator->friendly_name));
 		wxFont boldfont = text->GetFont();
 		boldfont.SetWeight(wxFONTWEIGHT_BOLD);
 		text->SetFont(boldfont);
 		main_sizer->Add(text, 0, wxEXPAND|wxBOTTOM, 6);
 
-		wxTextCtrl *descbox = new wxTextCtrl(this, -1, upd_iterator->description, wxDefaultPosition, wxSize(controls_width,60), wxTE_MULTILINE|wxTE_READONLY);
+		wxTextCtrl *descbox = new wxTextCtrl(this, -1, to_wx(upd_iterator->description), wxDefaultPosition, wxSize(controls_width,60), wxTE_MULTILINE|wxTE_READONLY);
 		main_sizer->Add(descbox, 0, wxEXPAND|wxBOTTOM, 6);
 
-		main_sizer->Add(new wxHyperlinkCtrl(this, -1, upd_iterator->url, upd_iterator->url), 0, wxALIGN_LEFT|wxBOTTOM, 6);
+		main_sizer->Add(new wxHyperlinkCtrl(this, -1, to_wx(upd_iterator->url), to_wx(upd_iterator->url)), 0, wxALIGN_LEFT|wxBOTTOM, 6);
 	}
 
 	automatic_check_checkbox = new wxCheckBox(this, -1, _("&Auto Check for Updates"));
