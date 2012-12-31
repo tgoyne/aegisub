@@ -106,14 +106,14 @@ public:
 };
 
 class AssDialogueBlockOverride : public AssDialogueBlock {
+	void ParseTags();
 public:
-	AssDialogueBlockOverride(std::string const& text = std::string()) : AssDialogueBlock(text) { }
+	AssDialogueBlockOverride(std::string const& text = std::string()) : AssDialogueBlock(text) { ParseTags(); }
 
 	std::vector<AssOverrideTag> Tags;
 
 	AssBlockType GetType() const override { return BLOCK_OVERRIDE; }
 	std::string GetText() override;
-	void ParseTags();
 	void AddTag(std::string const& tag);
 
 	/// Type of callback function passed to ProcessParameters

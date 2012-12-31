@@ -173,6 +173,31 @@ struct dialogue_tokens : lex::lexer<Lexer> {
 	}
 };
 
+struct base { };
+
+struct plain : public base {
+	std::string text;
+};
+
+struct ovr : public base {
+	std::string text;
+};
+
+template<typename Iterator>
+struct dialogue_grammar : qi::grammar<Iterator, std::vector<int>()> {
+	qi::rule<Iterator, std::vector<base *>()> dialogue;
+	qi::rule<Iterator, plain*()> p;
+	qi::rule<Iterator, ovr*()> o;
+
+	dialogue_grammar() : dialogue_grammar::base_type(dialogue) {
+		using namespace agi::ass::DialogueTokenType;
+
+		dialogue = *(p | o);
+		o = qi::char_(OVR_BEGIN) >> *(qi::char_ - qi::char_(OVR_END)) << qi::char_(OVR_END);
+		p = *qi::char_;
+	}
+};
+
 }
 
 namespace agi {

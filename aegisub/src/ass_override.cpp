@@ -108,10 +108,8 @@ template<> agi::Color AssOverrideParameter::Get<agi::Color>() const {
 }
 
 template<> AssDialogueBlockOverride *AssOverrideParameter::Get<AssDialogueBlockOverride*>() const {
-	if (!block.get()) {
+	if (!block.get())
 		block.reset(new AssDialogueBlockOverride(Get<std::string>()));
-		block->ParseTags();
-	}
 	return block.get();
 }
 

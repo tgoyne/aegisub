@@ -197,60 +197,39 @@ std::auto_ptr<boost::ptr_vector<AssDialogueBlock>> AssDialogue::ParseTags() cons
 
 	int drawingLevel = 0;
 	std::string text(from_wx(Text.get()));
+	auto tokens = agi::ass::TokenizeDialogueBody(text);
+	agi::ass::MarkDrawings(tokens, text);
 
-	for (size_t len = text.size(), cur = 0; cur < len; ) {
-		// Overrides block
-		if (text[cur] == '{') {
-			size_t end = text.find('}', cur);
-
-			// VSFilter requires that override blocks be closed, while libass
-			// does not. We match VSFilter here.
-			if (end == std::string::npos)
-				goto plain;
-
-			++cur;
-			// Get contents of block
-			std::string work = text.substr(cur, end - cur);
-			cur = end + 1;
-
-			if (work.size() && work.find('\\') == std::string::npos) {
-				//We've found an override block with no backslashes
-				//We're going to assume it's a comment and not consider it an override block
-				Blocks.push_back(new AssDialogueBlockComment(work));
-			}
-			else {
-				// Create block
-				AssDialogueBlockOverride *block = new AssDialogueBlockOverride(work);
-				block->ParseTags();
-				Blocks.push_back(block);
-
-				// Look for \p in block
-				for (auto const& tag : block->Tags) {
-					if (tag.Name == "\\p")
-						drawingLevel = tag.Params[0].Get<int>(0);
+	size_t pos = 0;
+	for (size_t i = 0; i < tokens.size(); ++i) {
+		switch (tokens[i].type) {
+			case agi::ass::DialogueTokenType::OVR_BEGIN: {
+				size_t start = pos + 1;
+				bool has_tags = false;
+				for (; tokens[i].type != agi::ass::DialogueTokenType::OVR_END; ++i) {
+					has_tags = has_tags || tokens[i].type == agi::ass::DialogueTokenType::TAG_START;
+					pos += tokens[i].length;
 				}
+
+				if (has_tags)
+					Blocks.push_back(new AssDialogueBlockOverride(text.substr(start, pos - start)));
+				else
+					Blocks.push_back(new AssDialogueBlockComment(text.substr(start, pos - start)));
+				break;
 			}
-
-			continue;
+			case agi::ass::DialogueTokenType::DRAWING:
+				Blocks.push_back(new AssDialogueBlockDrawing(text.substr(pos, tokens[i].length)));
+				break;
+			default: {
+				size_t start = pos;
+				for (; i < tokens.size() && tokens[i].type != agi::ass::DialogueTokenType::OVR_BEGIN; ++i)
+					pos += tokens[i].length;
+				Blocks.push_back(new AssDialogueBlockPlain(text.substr(start, pos - start)));
+				if (i < tokens.size() && tokens[i].type == agi::ass::DialogueTokenType::OVR_BEGIN)
+					--i;
+			}
 		}
-
-		// Plain-text/drawing block
-plain:
-		std::string work;
-		size_t end = text.find('{', cur + 1);
-		if (end == std::string::npos) {
-			work = text.substr(cur);
-			cur = len;
-		}
-		else {
-			work = text.substr(cur, end - cur);
-			cur = end;
-		}
-
-		if (drawingLevel == 0)
-			Blocks.push_back(new AssDialogueBlockPlain(work));
-		else
-			Blocks.push_back(new AssDialogueBlockDrawing(work, drawingLevel));
+		pos += tokens[i].length;
 	}
 
 	return Blocks.release();
