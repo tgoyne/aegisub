@@ -17,16 +17,10 @@
 /// @ingroup libaegisub
 
 #include <libaegisub/exception.h>
+#include <libaegisub/fs_fwd.h>
 
 namespace agi {
 	namespace acs {
-
-DEFINE_SIMPLE_EXCEPTION_NOINNER(Fatal, FileSystemError, "filesystem/fatal");
-DEFINE_SIMPLE_EXCEPTION_NOINNER(NotAFile, FileSystemError, "filesystem/not_a_file")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(NotADirectory, FileSystemError, "filesystem/not_a_directory")
-
-DEFINE_SIMPLE_EXCEPTION_NOINNER(Read, FileNotAccessibleError, "filesystem/not_accessible/read_permission")
-DEFINE_SIMPLE_EXCEPTION_NOINNER(Write, FileNotAccessibleError, "filesystem/not_accessible/write_permission")
 
 enum Type {
 	FileRead,
@@ -35,13 +29,14 @@ enum Type {
 	DirWrite
 };
 
-void Check(const std::string &file, acs::Type);
+void Check(fs::path const& file, acs::Type);
+void Check(fs::path const& src_path, fs::path const& dst_path);
 
-void CheckFileRead(const std::string &file);
-void CheckDirRead(const std::string &dir);
+void CheckFileRead(fs::path const& file);
+void CheckDirRead(fs::path const& dir);
 
-void CheckFileWrite(const std::string &file);
-void CheckDirWrite(const std::string &dir);
+void CheckFileWrite(fs::path const& file);
+void CheckDirWrite(fs::path const& dir);
 
 	} // namespace axs
 } // namespace agi
