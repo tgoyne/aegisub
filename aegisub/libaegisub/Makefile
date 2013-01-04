@@ -34,13 +34,15 @@ SRC += \
 	common/option.cpp \
 	common/option_visit.cpp \
 	common/parser.cpp \
+	common/path.cpp \
 	common/util.cpp \
 	common/log.cpp \
 	common/thesaurus.cpp \
 	common/vfr.cpp \
 	unix/util.cpp \
 	unix/access.cpp \
-	unix/log.cpp
+	unix/log.cpp \
+	unix/path.cpp
 
 ifeq (yes, $(BUILD_DARWIN))
 SRC += osx/util.mm

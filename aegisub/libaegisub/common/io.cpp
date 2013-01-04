@@ -26,6 +26,7 @@
 #include <libaegisub/charset_conv_win.h>
 #include "libaegisub/io.h"
 #include "libaegisub/log.h"
+#include "libaegisub/path.h"
 #include "libaegisub/util.h"
 
 #ifdef _WIN32
@@ -73,9 +74,7 @@ Save::Save(const std::string& file, bool binary)
 , tmp_name(make_temp_name(file))
 {
 	LOG_D("agi/io/save/file") << file;
-	const std::string pwd = util::DirName(file);
-
-	acs::CheckDirWrite(pwd);
+	acs::CheckDirWrite(Path::DirName(file));
 
 	try {
 		acs::CheckFileWrite(file);

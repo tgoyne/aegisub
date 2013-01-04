@@ -63,6 +63,7 @@
     <ClInclude Include="$(SrcDir)include\libaegisub\spellchecker.h" />
     <ClInclude Include="..\..\libaegisub\include\libaegisub\calltip_provider.h" />
     <ClInclude Include="..\..\libaegisub\include\libaegisub\of_type_adaptor.h" />
+    <ClInclude Include="..\..\libaegisub\include\libaegisub\path.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)windows\lagi_pre.cpp">
@@ -95,6 +96,8 @@
     <ClCompile Include="$(SrcDir)common\parser.cpp" />
     <ClCompile Include="..\..\libaegisub\common\calltip_provider.cpp" />
     <ClCompile Include="..\..\libaegisub\common\io.cpp" />
+    <ClCompile Include="..\..\libaegisub\common\path.cpp" />
+    <ClCompile Include="..\..\libaegisub\windows\path_win.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(SrcDir)include\libaegisub\charsets.def" />

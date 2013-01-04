@@ -34,20 +34,6 @@ namespace agi {
 	/// Clamp `b` to the range [`a`,`c`]
 	template<typename T> inline T mid(T a, T b, T c) { return std::max(a, std::min(b, c)); }
 
-	/// Get the parent directory of a path.
-	/// @param path Path to process.
-	const std::string DirName(const std::string& path);
-
-	/// Rename a file.
-	/// @param from Source.
-	/// @param to   Destination.
-	void Rename(const std::string& from, const std::string& to);
-
-	/// Delete a file
-	/// @param path Path to file to delete
-	/// @throws agi::FileNotAccessibleError if file exists but could not be deleted
-	void Remove(std::string const& path);
-
 	/// Get time suitable for logging mechanisms.
 	/// @param tv timeval
 	void time_log(agi_timeval &tv);
