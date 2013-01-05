@@ -16,12 +16,13 @@
 /// @brief Public interface for general utilities.
 /// @ingroup libaegisub
 
-#include <cstdint>
-
-#include <string>
 #include <algorithm>
+#include <cstdint>
+#include <string>
 
 #include <libaegisub/types.h>
+
+struct tm;
 
 namespace agi {
 	namespace util {
@@ -42,6 +43,12 @@ namespace agi {
 
 	bool try_parse(std::string const& str, double *out);
 	bool try_parse(std::string const& str, int *out);
+
+	/// strftime, but on std::string rather than a fixed buffer
+	/// @param fmt strftime format string
+	/// @param tmptr Time to format, or nullptr for current time
+	/// @return The strftime-formatted string
+	std::string strftime(const char *fmt, const tm *tmptr = nullptr);
 
 	struct delete_ptr {
 		template<class T>

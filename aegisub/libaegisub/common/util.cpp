@@ -20,6 +20,7 @@
 
 #include <climits>
 #include <cstdio>
+#include <ctime>
 
 #include "libaegisub/util.h"
 
@@ -40,6 +41,17 @@ int strtoi(std::string const& str) {
 		return 0;
 
 	return (int)l;
+}
+
+std::string strftime(const char *fmt, const tm *tmptr) {
+	if (!tmptr) {
+		time_t t = time(nullptr);
+		tmptr = localtime(&t);
+	}
+
+	char buff[65536];
+	::strftime(buff, sizeof buff, fmt, tmptr);
+	return buff;
 }
 
 	} // namespace util
