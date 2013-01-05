@@ -25,12 +25,6 @@
 
 namespace agi {
 	namespace util {
-	/// Whether the path is a file or directory.
-	enum PathType {
-		TypeFile,		///< File
-		TypeDir			///< Directory
-	};
-
 	/// Clamp `b` to the range [`a`,`c`]
 	template<typename T> inline T mid(T a, T b, T c) { return std::max(a, std::min(b, c)); }
 
@@ -48,11 +42,6 @@ namespace agi {
 
 	bool try_parse(std::string const& str, double *out);
 	bool try_parse(std::string const& str, int *out);
-
-	/// Check for amount of free space on a Path.
-	/// @param path[in] Path to check
-	/// @param type     PathType (default is TypeDir)
-	uint64_t freespace(std::string const& path, PathType type=TypeDir);
 
 	struct delete_ptr {
 		template<class T>

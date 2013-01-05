@@ -24,6 +24,7 @@
 
 #include <libaegisub/access.h>
 #include <libaegisub/charset_conv_win.h>
+#include "libaegisub/fs.h"
 #include "libaegisub/io.h"
 #include "libaegisub/log.h"
 #include "libaegisub/path.h"
@@ -82,7 +83,7 @@ Save::Save(const std::string& file, bool binary)
 		// If the file doesn't exist we create a 0 byte file, this so so
 		// util::Rename will find it, and to let users know something went
 		// wrong by leaving a 0 byte file.
-		std::ofstream(ConvertW(file).c_str());
+		fs::Touch(file);
 	}
 
 	fp = new std::ofstream(ConvertW(tmp_name).c_str(), binary ? std::ios::binary : std::ios::out);
@@ -93,8 +94,8 @@ Save::Save(const std::string& file, bool binary)
 }
 
 Save::~Save() {
-	delete fp;
-	util::Rename(tmp_name, file_name);
+	delete fp; // Explicitly delete to unlock file on Windows
+	fs::Rename(tmp_name, file_name);
 }
 
 std::ofstream& Save::Get() {

@@ -62,6 +62,7 @@
     <ClInclude Include="$(SrcDir)include\libaegisub\color.h" />
     <ClInclude Include="$(SrcDir)include\libaegisub\spellchecker.h" />
     <ClInclude Include="..\..\libaegisub\include\libaegisub\calltip_provider.h" />
+    <ClInclude Include="..\..\libaegisub\include\libaegisub\fs.h" />
     <ClInclude Include="..\..\libaegisub\include\libaegisub\of_type_adaptor.h" />
     <ClInclude Include="..\..\libaegisub\include\libaegisub\path.h" />
   </ItemGroup>
@@ -97,6 +98,7 @@
     <ClCompile Include="..\..\libaegisub\common\calltip_provider.cpp" />
     <ClCompile Include="..\..\libaegisub\common\io.cpp" />
     <ClCompile Include="..\..\libaegisub\common\path.cpp" />
+    <ClCompile Include="..\..\libaegisub\windows\fs.cpp" />
     <ClCompile Include="..\..\libaegisub\windows\path_win.cpp" />
   </ItemGroup>
   <ItemGroup>
