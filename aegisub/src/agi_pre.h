@@ -59,16 +59,6 @@
 #include <typeinfo>
 #include <utility>
 
-#ifdef _WIN32
-#include <objbase.h>
-#include <mmsystem.h>
-#else
-#include <sys/fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/param.h>
-#endif
-
 #include <boost/flyweight.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptor/filtered.hpp>
@@ -77,107 +67,44 @@
 #include <boost/range/algorithm_ext.hpp>
 
 // wxWidgets headers
-#include <wx/wxprec.h> // Leave this first.
+#include <wx/defs.h> // Leave this first.
+#include <wx/wx.h>
 
 #include <wx/accel.h>
-#include <wx/app.h>
-#include <wx/arrstr.h>
-#include <wx/bitmap.h>
-#include <wx/bmpbuttn.h>
-#include <wx/button.h>
-#include <wx/checkbox.h>
-#include <wx/checklst.h>
-#include <wx/choicdlg.h>
-#include <wx/choice.h>
 #include <wx/choicebk.h>
 #include <wx/clipbrd.h>
-#include <wx/colour.h>
-#include <wx/combobox.h>
 #include <wx/config.h>
-#include <wx/control.h>
-#include <wx/dataobj.h>
 #include <wx/dataview.h>
 #include <wx/datetime.h>
-#include <wx/dc.h>
-#include <wx/dcbuffer.h>
-#include <wx/dcclient.h>
-#include <wx/dcmemory.h>
-#include <wx/dcscreen.h>
-#include <wx/dialog.h>
-#include <wx/dir.h>
-#include <wx/dirdlg.h>
 #include <wx/display.h>
-#include <wx/dnd.h>
 #include <wx/docview.h>
-#include <wx/dynarray.h>
-#include <wx/event.h>
 #include <wx/file.h>
-#include <wx/filedlg.h>
 #include <wx/filefn.h>
 #include <wx/filename.h>
 #include <wx/filesys.h>
-#include <wx/font.h>
 #include <wx/fontdlg.h>
-#include <wx/frame.h>
-#include <wx/fs_inet.h>
-#include <wx/gauge.h>
 #include <wx/gbsizer.h>
-#include <wx/gdicmn.h>
 #include <wx/glcanvas.h>
 #include <wx/grid.h>
-#include <wx/hashmap.h>
-#include <wx/icon.h>
-#include <wx/image.h>
-#include <wx/intl.h>
-#include <wx/listbox.h>
 #include <wx/listctrl.h>
-#include <wx/log.h>
-#include <wx/menu.h>
-#include <wx/menuitem.h>
-#include <wx/msgdlg.h>
-#include <wx/mstream.h>
 #include <wx/notebook.h>
-#include <wx/panel.h>
 #include <wx/power.h>
-#include <wx/radiobox.h>
-#include <wx/radiobut.h>
 #include <wx/rawbmp.h>
-#include <wx/recguard.h>
 #include <wx/regex.h>
 #include <wx/sashwin.h>
-#include <wx/scrolbar.h>
-#include <wx/settings.h>
-#include <wx/sizer.h>
-#include <wx/slider.h>
 #include <wx/spinctrl.h>
 #include <wx/stackwalk.h>
-#include <wx/statbmp.h>
-#include <wx/statbox.h>
 #include <wx/statline.h>
-#include <wx/stattext.h>
 #include <wx/stc/stc.h>
-#include <wx/stdpaths.h>
-#include <wx/stopwatch.h>
 #include <wx/strconv.h>
-#include <wx/string.h>
 #include <wx/sysopt.h>
-#include <wx/textctrl.h>
-#include <wx/textdlg.h>
 #include <wx/textfile.h>
 #include <wx/tglbtn.h>
 #include <wx/thread.h>
-#include <wx/timer.h>
-#include <wx/tipdlg.h>
-#include <wx/tokenzr.h>
-#include <wx/toolbar.h>
 #include <wx/treebook.h>
-#include <wx/utils.h>
+#include <wx/valgen.h>
 #include <wx/validate.h>
-#include <wx/valgen.h>
 #include <wx/valnum.h>
-#include <wx/valgen.h>
-#include <wx/valtext.h>
-#include <wx/window.h>
 
 #ifdef HAVE_OPENGL_GL_H
 #include <OpenGL/gl.h>
