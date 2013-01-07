@@ -38,30 +38,27 @@
 
 #include "ass_dialogue.h"
 #include "ass_file.h"
-#include "compat.h"
 #include "include/aegisub/context.h"
 #include "options.h"
 #include "utils.h"
 
 #include <algorithm>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/xpressive/xpressive.hpp>
 #include <utility>
-
-#include <wx/regex.h>
 
 SubtitlesGrid::SubtitlesGrid(wxWindow *parent, agi::Context *context)
 : BaseGrid(parent, context, wxDefaultSize, wxWANTS_CHARS | wxSUNKEN_BORDER)
 {
 }
 
-static std::string trim_text(std::string const& text) {
-	static wxRegEx start("^( |\t|\\\\[nNh])+");
-	static wxRegEx end("( |\t|\\\\[nNh])+$");
+static std::string trim_text(std::string text) {
+	auto start = boost::xpressive::sregex::compile("^( |\t|\\\\[nNh])+");
+	auto end = boost::xpressive::sregex::compile("( |\t|\\\\[nNh])+$");
 
-	wxString str(to_wx(text));
-	start.ReplaceFirst(&str, wxEmptyString);
-	end.ReplaceFirst(&str, wxEmptyString);
-	return from_wx(str);
+	regex_replace(text, start, "", boost::xpressive::regex_constants::format_first_only);
+	regex_replace(text, end, "", boost::xpressive::regex_constants::format_first_only);
+	return text;
 }
 
 static void expand_times(AssDialogue *src, AssDialogue *dst) {
