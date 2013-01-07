@@ -63,7 +63,7 @@
 #include "dialog_version_check.h"
 #include "help_button.h"
 #include "libresrc/libresrc.h"
-#include "main.h"
+#include "options.h"
 #include "standard_paths.h"
 #include "subs_edit_box.h"
 #include "subs_edit_ctrl.h"
@@ -231,7 +231,6 @@ FrameMain::FrameMain (wxArrayString args)
 	StartupLog("Initializing context frames");
 	context->parent = this;
 	context->previousFocus = 0;
-	wxGetApp().frame = this;
 
 	StartupLog("Install PNG handler");
 	wxImage::AddHandler(new wxPNGHandler);
@@ -333,8 +332,6 @@ static bool delete_children(wxWindow *window, wxWindow *keep) {
 }
 
 FrameMain::~FrameMain () {
-	wxGetApp().frame = 0;
-
 	context->videoController->SetVideo("");
 	context->audioController->CloseAudio();
 
