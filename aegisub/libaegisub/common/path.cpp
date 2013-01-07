@@ -147,4 +147,8 @@ std::string Path::StripExtension(std::string const& path) {
 	return norm;
 }
 
+std::string Path::Extension(std::string const& path) {
+	return path;
+}
+
 }
