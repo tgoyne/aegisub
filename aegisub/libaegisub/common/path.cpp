@@ -148,7 +148,13 @@ std::string Path::StripExtension(std::string const& path) {
 }
 
 std::string Path::Extension(std::string const& path) {
-	return path;
+	std::string norm(FileName(path));
+	size_t pos = norm.rfind('.');
+	if (pos == std::string::npos)
+		norm.clear();
+	else
+		norm.erase(0, pos + 1);
+	return norm;
 }
 
 }
