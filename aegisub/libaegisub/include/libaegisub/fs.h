@@ -19,6 +19,8 @@
 #include <memory>
 #include <string>
 
+#undef CreateDirectory
+
 namespace agi {
 	namespace fs {
 		bool Exists(std::string const& path);
@@ -47,7 +49,7 @@ namespace agi {
 		/// @throws agi::FileNotFound if path does not exist
 		/// @throws agi::acs::NotAFile if path is a directory
 		/// @throws agi::acs::Read if path exists but could not be read
-		uint64_t ModifiedTime(std::string const& path);
+		int64_t ModifiedTime(std::string const& path);
 
 		/// Create a directory and all required intermediate directories
 		/// @throws agi::acs::Write if the directory could not be created.
@@ -66,6 +68,11 @@ namespace agi {
 		/// @param to   Destination path
 		void Rename(std::string const& from, std::string const& to);
 
+		/// Copy a file
+		/// @param from Source path
+		/// @param to   Destination path
+		///
+		/// The destination path will be created if it does not exist.
 		void Copy(std::string const& from, std::string const& to);
 
 		/// Delete a file or directory
