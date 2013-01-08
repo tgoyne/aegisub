@@ -48,241 +48,182 @@
 
 #include <libaegisub/of_type_adaptor.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/format.hpp>
+#include <boost/xpressive/xpressive.hpp>
 #include <map>
-#include <wx/regex.h>
+#include <unordered_map>
 
 DEFINE_SIMPLE_EXCEPTION(SRTParseError, SubtitleFormatParseError, "subtitle_io/parse/srt")
 
 namespace {
+
+using boost::xpressive::sregex;
+
 class SrtTagParser {
-	struct FontAttribs {
-		wxString face;
-		wxString size;
-		wxString color;
-	};
-
-	enum TagType {
-		// leave 0 unused so indexing an unknown tag in the map won't clash
-		TAG_BOLD_OPEN = 1,
-		TAG_BOLD_CLOSE,
-		TAG_ITALICS_OPEN,
-		TAG_ITALICS_CLOSE,
-		TAG_UNDERLINE_OPEN,
-		TAG_UNDERLINE_CLOSE,
-		TAG_STRIKEOUT_OPEN,
-		TAG_STRIKEOUT_CLOSE,
-		TAG_FONT_OPEN,
-		TAG_FONT_CLOSE
-	};
-
-	wxRegEx tag_matcher;
-	wxRegEx attrib_matcher;
-	std::map<wxString,TagType> tag_name_cases;
+	std::unordered_map<std::string, std::string> tag_aliases;
+	std::unordered_map<std::string, std::string> font_attributes_to_ass;
 
 public:
-	SrtTagParser()
-	: tag_matcher("^(.*?)<(/?b|/?i|/?u|/?s|/?font)([^>]*)>(.*)$", wxRE_ICASE|wxRE_ADVANCED)
-	, attrib_matcher("^[[:space:]]+(face|size|color)=('[^']*'|\"[^\"]*\"|[^[:space:]]+)", wxRE_ICASE|wxRE_ADVANCED)
-	{
-		if (!tag_matcher.IsValid())
-			throw agi::InternalError("Parsing SRT: Failed compiling tag matching regex", 0);
-		if (!attrib_matcher.IsValid())
-			throw agi::InternalError("Parsing SRT: Failed compiling tag attribute matching regex", 0);
+	SrtTagParser() {
+		tag_aliases["strong"] = "b";
+		tag_aliases["em"] = "i";
+		tag_aliases["strike"] = "s";
+		tag_aliases["del"] = "s";
 
-		tag_name_cases["b"]  = TAG_BOLD_OPEN;
-		tag_name_cases["/b"] = TAG_BOLD_CLOSE;
-		tag_name_cases["i"]  = TAG_ITALICS_OPEN;
-		tag_name_cases["/i"] = TAG_ITALICS_CLOSE;
-		tag_name_cases["u"]  = TAG_UNDERLINE_OPEN;
-		tag_name_cases["/u"] = TAG_UNDERLINE_CLOSE;
-		tag_name_cases["s"]  = TAG_STRIKEOUT_OPEN;
-		tag_name_cases["/s"] = TAG_STRIKEOUT_CLOSE;
-		tag_name_cases["font"] = TAG_FONT_OPEN;
-		tag_name_cases["/font"] = TAG_FONT_CLOSE;
+		font_attributes_to_ass["face"] = "\\fn";
+		font_attributes_to_ass["size"] = "\\fs";
+		font_attributes_to_ass["color"] = "\\c";
+		font_attributes_to_ass["outline-color"] = "\\3c";
+		font_attributes_to_ass["shadow-color"] = "\\4c";
+		font_attributes_to_ass["outline-level"] = "\\bord";
+		font_attributes_to_ass["shadow-level"] = "\\shad";
 	}
 
-	std::string ToAss(wxString srt)
+	std::string ToAss(std::string const& srt)
 	{
-		int bold_level = 0;
-		int italics_level = 0;
-		int underline_level = 0;
-		int strikeout_level = 0;
-		std::vector<FontAttribs> font_stack;
+		std::string font_tags_to_close;
 
-		wxString ass; // result to be built
+		std::string ass;
+		ass.reserve(srt.size());
 
-		while (!srt.empty())
-		{
-			if (!tag_matcher.Matches(srt))
-			{
-				// no more tags could be matched, end of string
-				ass.append(srt);
+		size_t end = 0;
+		for (size_t pos = 0; pos = srt.find('<', end); pos != std::string::npos) {
+			// Append everything between this tag and the end of the last one
+			ass.append(srt.begin() + end, srt.begin() + pos);
+
+			// Find the end of the tag
+			end = srt.find('>', pos);
+			if (end == std::string::npos) {
+				end = pos;
 				break;
 			}
 
-			// we found a tag, translate it
-			wxString pre_text  = tag_matcher.GetMatch(srt, 1);
-			wxString tag_name  = tag_matcher.GetMatch(srt, 2);
-			wxString tag_attrs = tag_matcher.GetMatch(srt, 3);
-			wxString post_text = tag_matcher.GetMatch(srt, 4);
+			// end needs to point at the character after the > for the sake of
+			// the code after the loop
+			++end;
 
-			// the text before the tag goes through unchanged
-			ass.append(pre_text);
-			// the text after the tag is the input for next iteration
-			srt = post_text;
-
-			switch (tag_name_cases[tag_name.Lower()])
-			{
-			case TAG_BOLD_OPEN:
-				if (bold_level == 0)
-					ass.append("{\\b1}");
-				bold_level++;
-				break;
-			case TAG_BOLD_CLOSE:
-				if (bold_level == 1)
-					ass.append("{\\b}");
-				if (bold_level > 0)
-					bold_level--;
-				break;
-			case TAG_ITALICS_OPEN:
-				if (italics_level == 0)
-					ass.append("{\\i1}");
-				italics_level++;
-				break;
-			case TAG_ITALICS_CLOSE:
-				if (italics_level == 1)
-					ass.append("{\\i}");
-				if (italics_level > 0)
-					italics_level--;
-				break;
-			case TAG_UNDERLINE_OPEN:
-				if (underline_level == 0)
-					ass.append("{\\u1}");
-				underline_level++;
-				break;
-			case TAG_UNDERLINE_CLOSE:
-				if (underline_level == 1)
-					ass.append("{\\u}");
-				if (underline_level > 0)
-					underline_level--;
-				break;
-			case TAG_STRIKEOUT_OPEN:
-				if (strikeout_level == 0)
-					ass.append("{\\s1}");
-				strikeout_level++;
-				break;
-			case TAG_STRIKEOUT_CLOSE:
-				if (strikeout_level == 1)
-					ass.append("{\\s}");
-				if (strikeout_level > 0)
-					strikeout_level--;
-				break;
-			case TAG_FONT_OPEN:
-				{
-					// new attributes to fill in
-					FontAttribs new_attribs;
-					FontAttribs old_attribs;
-					// start out with any previous ones on stack
-					if (font_stack.size() > 0)
-					{
-						old_attribs = font_stack.back();
-					}
-					new_attribs = old_attribs;
-					// now find all attributes on this font tag
-					while (attrib_matcher.Matches(tag_attrs))
-					{
-						// get attribute name and values
-						wxString attr_name = attrib_matcher.GetMatch(tag_attrs, 1);
-						wxString attr_value = attrib_matcher.GetMatch(tag_attrs, 2);
-						// clean them
-						attr_name.MakeLower();
-						if ((attr_value.StartsWith("'") && attr_value.EndsWith("'")) ||
-							(attr_value.StartsWith("\"") && attr_value.EndsWith("\"")))
-						{
-							attr_value = attr_value.Mid(1, attr_value.Len()-2);
-						}
-						// handle the attributes
-						if (attr_name == "face")
-						{
-							new_attribs.face = wxString::Format("{\\fn%s}", attr_value);
-						}
-						else if (attr_name == "size")
-						{
-							new_attribs.size = wxString::Format("{\\fs%s}", attr_value);
-						}
-						else if (attr_name == "color")
-						{
-							new_attribs.color = wxString::Format("{\\c%s}", to_wx(agi::Color(from_wx(attr_value)).GetAssOverrideFormatted()));
-						}
-						// remove this attribute to prepare for the next
-						size_t attr_pos, attr_len;
-						attrib_matcher.GetMatch(&attr_pos, &attr_len, 0);
-						tag_attrs.erase(attr_pos, attr_len);
-					}
-					// the attributes changed from old are then written out
-					if (new_attribs.face != old_attribs.face)
-						ass.append(new_attribs.face);
-					if (new_attribs.size != old_attribs.size)
-						ass.append(new_attribs.size);
-					if (new_attribs.color != old_attribs.color)
-						ass.append(new_attribs.color);
-					// lastly dump the new attributes state onto the stack
-					font_stack.push_back(new_attribs);
-				}
-				break;
-			case TAG_FONT_CLOSE:
-				{
-					// this requires a font stack entry
-					if (font_stack.empty())
-						break;
-					// get the current attribs
-					FontAttribs cur_attribs = font_stack.back();
-					// remove them from the stack
-					font_stack.pop_back();
-					// grab the old attributes if there are any
-					FontAttribs old_attribs;
-					if (font_stack.size() > 0)
-						old_attribs = font_stack.back();
-					// then restore the attributes to previous settings
-					if (cur_attribs.face != old_attribs.face)
-					{
-						if (old_attribs.face.empty())
-							ass.append("{\\fn}");
-						else
-							ass.append(old_attribs.face);
-					}
-					if (cur_attribs.size != old_attribs.size)
-					{
-						if (old_attribs.size.empty())
-							ass.append("{\\fs}");
-						else
-							ass.append(old_attribs.size);
-					}
-					if (cur_attribs.color != old_attribs.color)
-					{
-						if (old_attribs.color.empty())
-							ass.append("{\\c}");
-						else
-							ass.append(old_attribs.color);
-					}
-				}
-				break;
-			default:
-				// unknown tag, replicate it in the output
-				ass.append("<").append(tag_name).append(tag_attrs).append(">");
-				break;
+			// This is not at all a correct check for HTML comments, but it's
+			// what VSFilter does
+			if (end - pos > 4 && !strncmp(&srt[pos + 1], "!--", 3)) {
+				ass +='{';
+				ass.append(
+					// Skipping <!--
+					srt.begin() + pos + 4,
+					// Skipping -->, if present
+					srt.begin() + end - (strncmp(&srt[end - 4], "--", 2) ? 1 : 3));
+				ass += '}';
+				continue;
 			}
+
+			// Check if this is a closing tag
+			size_t tag_name_start = pos + 1;
+			bool closing_tag = false;
+			if (srt[tag_name_start] == '/') {
+				++tag_name_start;
+				closing_tag = true;
+			}
+
+			// Yes, VSFilter accepts things like </// b>
+			tag_name_start = srt.find_first_not_of("/ ", tag_name_start);
+
+			// Again, not correct HTML (tag name could end with other
+			// whitespace), but what VSFilter does
+			size_t tag_name_end = srt.find(' ', tag_name_start, end - tag_name_start - 1);
+			if (tag_name_end == std::string::npos)
+				tag_name_end = end - 1;
+
+			std::string tag_name = srt.substr(tag_name_start, tag_name_end - tag_name_start);
+			boost::to_lower(tag_name);
+
+			auto alias_it = tag_aliases.find(tag_name);
+			if (alias_it != tag_aliases.end())
+				tag_name = *alias_it;
+
+			if (tag_name.size() == 1 && boost::is_any_of("bisu")(tag_name)) {
+				ass += "{\\";
+				ass += tag_name;
+				if (!closing_tag)
+					ass += '1';
+				ass += '}';
+				continue;
+			}
+
+			if (tag_name == "font") {
+				if (closing_tag) {
+					// This is incorrect for nested font tags, but it's what
+					// VSFilter does
+					if (!font_tags_to_close.empty()) {
+						ass += '{';
+						ass += font_tags_to_close;
+						ass += '}';
+						font_tags_to_close.clear();
+					}
+					continue;
+				}
+
+				size_t attr_name_start = tag_name_end;
+				size_t attr_name_end;
+				while ((attr_name_end = srt.find('=', attr_name_start) != std::string::npos) {
+					std::string attr_name = srt.substr(attr_name_start, attr_name_end - attr_name_start);
+					boost::trim(attr_name);
+					boost::to_lower(attr_name);
+
+					size_t attr_value_start = attr_name_end;
+					while (isspace(++attr_value_start)) ;
+
+					size_t attr_value_end;
+					if (srt[attr_value_start] == '"') {
+						++attr_value_start;
+						attr_value_end = srt.find('"', attr_value_start);
+					}
+					else
+						attr_value_end = srt.find(' ', attr_value_start);
+
+					if (attr_value_end >= end)
+						attr_value_end = end - 1;
+
+					attr_name_start = attr_value_end;
+
+					auto attr_it = font_attributes_to_ass.find(attr_name);
+					if (attr_it == font_attributes_to_ass.end())
+						continue;
+
+					boost::iterator_range<std::string::iterator> attr_value(srt.begin() + attr_value_start, srt.begin() + attr_value_end);
+					boost::trim(attr_value);
+					// VSFilter also lowercases the value for some reason, but
+					// that makes font names ugly
+
+					font_tags_to_close += *attr_it;
+					ass += '{';
+					ass += *attr_it;
+
+					if (attr_name.back() == 'c') {
+						ass += agi::Color(attr_value).GetAssOverrideFormatted();
+					}
+					else
+						ass.append(attr_value.begin(), attr_value.end());
+
+					ass += '}';
+				}
+			}
+
+			// Unrecognized tag, so just append it
+			ass.append(srt.begin() + pos, srt.begin() + end + 1);
 		}
 
-		// make it a little prettier, join tag groups
-		ass.Replace("}{", "", true);
+		// Append everything after the last tag
+		ass.append(srt.begin() + end, srt.end());
 
-		return from_wx(ass);
+		// Join adjacent override blocks
+		boost::replace_all(ass, "}{", "");
+
+		return ass;
 	}
 };
 
-AssTime ReadSRTTime(wxString const& ts)
+AssTime ReadSRTTime(std::string const& ts)
 {
 	// For the sake of your sanity, please do not read this function.
 
