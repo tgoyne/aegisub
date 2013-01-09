@@ -104,8 +104,10 @@ public:
 			// the code after the loop
 			++end;
 
-			// This is not at all a correct check for HTML comments, but it's
-			// what VSFilter does
+			// Things below marked as VSFilter compatibility are incorrect for
+			// parsing HTML, but match VSFilter's (very broken) parsing
+
+			// Incorrect for VSFilter compatibility
 			if (end - pos > 4 && !strncmp(&srt[pos + 1], "!--", 3)) {
 				ass +='{';
 				ass.append(
@@ -125,11 +127,10 @@ public:
 				closing_tag = true;
 			}
 
-			// Yes, VSFilter accepts things like </// b>
+			// Incorrect for VSFilter compatibility
 			tag_name_start = srt.find_first_not_of("/ ", tag_name_start);
 
-			// Again, not correct HTML (tag name could end with other
-			// whitespace), but what VSFilter does
+			// Incorrect for VSFilter compatibility
 			size_t tag_name_end = srt.find(' ', tag_name_start, end - tag_name_start - 1);
 			if (tag_name_end == std::string::npos)
 				tag_name_end = end - 1;
@@ -152,8 +153,7 @@ public:
 
 			if (tag_name == "font") {
 				if (closing_tag) {
-					// This is incorrect for nested font tags, but it's what
-					// VSFilter does
+					// Incorrect for VSFilter compatibility
 					if (!font_tags_to_close.empty()) {
 						ass += '{';
 						ass += font_tags_to_close;
@@ -199,9 +199,10 @@ public:
 					ass += '{';
 					ass += *attr_it;
 
-					if (attr_name.back() == 'c') {
+					if (attr_name.back() == 'c')
+						// Doesn't support HTML color names, while VSFilter
+						// does. Not really worth caring about.
 						ass += agi::Color(attr_value).GetAssOverrideFormatted();
-					}
 					else
 						ass.append(attr_value.begin(), attr_value.end());
 
