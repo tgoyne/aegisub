@@ -513,7 +513,7 @@ class DialogColorPicker : public wxDialog {
 	std::function<void (agi::Color)> callback;
 
 public:
-	DialogColorPicker(wxWindow *parent, agi::Color initial_color, std::function<void (agi::Color)> callback);
+	DialogColorPicker(wxWindow *parent, agi::Color initial_color, std::function<void (agi::Color)> callback, bool alpha);
 	~DialogColorPicker();
 
 	void SetColor(agi::Color new_color);
@@ -531,7 +531,7 @@ static wxBitmap make_slider(Func func) {
 	return wxBitmap(img);
 }
 
-DialogColorPicker::DialogColorPicker(wxWindow *parent, agi::Color initial_color, std::function<void (agi::Color)> callback)
+DialogColorPicker::DialogColorPicker(wxWindow *parent, agi::Color initial_color, std::function<void (agi::Color)> callback, bool alpha)
 : wxDialog(parent, -1, _("Select Color"))
 , callback(callback)
 {
@@ -602,6 +602,7 @@ DialogColorPicker::DialogColorPicker(wxWindow *parent, agi::Color initial_color,
 	spectop_sizer->Add(colorspace_choice, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT);
 	spectop_sizer->Add(5, 5, 1, wxEXPAND);
 	spectop_sizer->Add(preview_box, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT);
+
 	wxSizer *spectrum_sizer = new wxFlexGridSizer(3, 5, 5);
 	spectrum_sizer->Add(spectop_sizer, wxEXPAND);
 	spectrum_sizer->AddStretchSpacer(1);
@@ -609,6 +610,9 @@ DialogColorPicker::DialogColorPicker(wxWindow *parent, agi::Color initial_color,
 	spectrum_sizer->Add(spectrum);
 	spectrum_sizer->Add(slider);
 	spectrum_sizer->Add(alpha_slider);
+	if (!alpha)
+		spectrum_sizer->Hide(alpha_slider);
+
 	spectrum_box->Add(spectrum_sizer, 0, wxALL, 3);
 
 	wxString rgb_labels[] = { _("Red:"), _("Green:"), _("Blue:") };
@@ -616,7 +620,10 @@ DialogColorPicker::DialogColorPicker(wxWindow *parent, agi::Color initial_color,
 
 	wxString ass_labels[] = { "ASS:", "HTML:", _("Alpha:") };
 	wxControl *ass_ctrls[] = { ass_input, html_input, alpha_input };
-	rgb_box->Add(MakeColorInputSizer(ass_labels, ass_ctrls), 0, wxALL|wxCENTER|wxEXPAND, 3);
+	auto ass_colors_sizer = MakeColorInputSizer(ass_labels, ass_ctrls);
+	if (!alpha)
+		ass_colors_sizer->Hide(alpha_input);
+	rgb_box->Add(ass_colors_sizer, 0, wxALL|wxCENTER|wxEXPAND, 3);
 
 	wxString hsl_labels[] = { _("Hue:"), _("Sat.:"), _("Lum.:") };
 	hsl_box->Add(MakeColorInputSizer(hsl_labels, hsl_input), 0, wxALL|wxEXPAND, 3);
@@ -1105,8 +1112,8 @@ void DialogColorPicker::OnCaptureLost(wxMouseCaptureLostEvent&) {
 
 }
 
-bool GetColorFromUser(wxWindow* parent, agi::Color original, std::function<void (agi::Color)> callback) {
-	DialogColorPicker dialog(parent, original, callback);
+bool GetColorFromUser(wxWindow* parent, agi::Color original, bool alpha, std::function<void (agi::Color)> callback) {
+	DialogColorPicker dialog(parent, original, callback, alpha);
 	bool ok = dialog.ShowModal() == wxID_OK;
 	if (!ok)
 		callback(original);
