@@ -33,11 +33,11 @@
 ///
 
 #ifdef WITH_OSS
+#include <atomic>
+#include <fcntl.h>
 #include <sys/ioctl.h>
-
 #include <wx/thread.h>
 
-#include <fcntl.h>
 #ifdef HAVE_SOUNDCARD_H
 #   include <soundcard.h>
 #else
@@ -75,25 +75,25 @@ class OSSPlayer : public AudioPlayer {
     OSSPlayerThread *thread;
 
     /// Is the player currently playing?
-    volatile bool playing;
+    std::atomic<bool> playing;
 
     /// Current volume level
-    volatile float volume;
+    std::atomic<float> volume;
 
     /// first frame of playback
-    volatile unsigned long start_frame;
+    std::atomic<unsigned long> start_frame;
 
     /// last written frame + 1
-    volatile unsigned long cur_frame;
+    std::atomic<unsigned long> cur_frame;
 
     /// last frame to play
-    volatile unsigned long end_frame;
+    std::atomic<unsigned long> end_frame;
 
     /// bytes per frame
     unsigned long bpf;
 
     /// OSS audio device handle
-    volatile int dspdev;
+    std::atomic<int> dspdev;
 
     void OpenStream();
 

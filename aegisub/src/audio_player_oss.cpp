@@ -33,11 +33,6 @@
 #include "config.h"
 
 #ifdef WITH_OSS
-
-#include <sys/param.h>
-
-#include <libaegisub/log.h>
-
 #include "audio_player_oss.h"
 
 #include "audio_controller.h"
@@ -45,6 +40,10 @@
 #include "include/aegisub/audio_provider.h"
 #include "options.h"
 #include "utils.h"
+
+#include <libaegisub/log.h>
+
+#include <sys/param.h>
 
 DEFINE_SIMPLE_EXCEPTION(OSSError, agi::AudioPlayerOpenError, "audio/player/open/oss")
 
