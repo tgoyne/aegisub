@@ -130,3 +130,29 @@ TEST(lagi_path, platform_paths_have_values_and_exist) {
 	TEST_PLATFORM_PATH_TOKEN("?local");
 	TEST_PLATFORM_PATH_TOKEN("?temp");
 }
+
+TEST(lagi_path, making_empty_absolute_gives_empty) {
+	Path p;
+	ASSERT_NO_THROW(p.MakeAbsolute("", "?data"));
+	EXPECT_TRUE(p.MakeAbsolute("", "?data").empty());
+}
+
+TEST(lagi_path, making_empty_relative_gives_empty) {
+	Path p;
+	ASSERT_NO_THROW(p.MakeRelative("", "?data"));
+	EXPECT_TRUE(p.MakeRelative("", "?data").empty());
+}
+
+#ifdef _WIN32
+TEST(lagi_path, make_absolute_on_network_path) {
+	Path p;
+	ASSERT_NO_THROW(p.MakeAbsolute("//foo/bar", "?data"));
+	EXPECT_STREQ("\\\\foo\\bar", p.MakeAbsolute("//foo/bar", "?data").string().c_str());
+}
+
+TEST(lagi_path, make_relative_on_network_path) {
+	Path p;
+	ASSERT_NO_THROW(p.MakeRelative("\\\\foo\\bar", "?data"));
+	EXPECT_STREQ("\\\\foo\\bar", p.MakeRelative("\\\\foo\\bar", "?data").string().c_str());
+}
+#endif
