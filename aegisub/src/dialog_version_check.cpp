@@ -47,6 +47,7 @@
 #include "string_codec.h"
 #include "version.h"
 
+#include <libaegisub/cajun/reader.h>
 #include <libaegisub/dispatch.h>
 #include <libaegisub/exception.h>
 #include <libaegisub/line_iterator.h>
@@ -67,8 +68,6 @@
 
 #include <algorithm>
 #include <ctime>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/format.hpp>
 #include <functional>
@@ -334,24 +333,20 @@ void DoCheck(bool interactive) {
 	for (auto const& header : agi::line_iterator<std::string>(stream))
 		if (header.empty()) break;
 
+	json::UnknownElement updates;
+	try {
+		json::Reader::Read(updates, stream);
+	}
+	catch (json::Exception const& e) {
+		throw VersionCheckError(e.what());
+	}
+
 	std::vector<AegisubUpdateDescription> results;
-	for (auto const& line : agi::line_iterator<std::string>(stream)) {
-		if (line.empty()) continue;
-
-		std::vector<std::string> parsed;
-		boost::split(parsed, line, boost::is_any_of("|"));
-		if (parsed.size() != 6) continue;
-
-		// 0 and 2 being things that never got used
-		std::string revision = parsed[1];
-		std::string url = inline_string_decode(parsed[3]);
-		std::string friendlyname = inline_string_decode(parsed[4]);
-		std::string description = inline_string_decode(parsed[5]);
-
-		if (atoi(revision.c_str()) <= GetSVNRevision())
+	for (json::Object& update : static_cast<json::Array&>(updates)) {
+		if ((int64_t)update["revision"] <= GetSVNRevision())
 			continue;
 
-		results.emplace_back(url, friendlyname, description);
+		results.emplace_back(update["url"], update["title"], update["description"]);
 	}
 
 	if (!results.empty() || interactive) {
