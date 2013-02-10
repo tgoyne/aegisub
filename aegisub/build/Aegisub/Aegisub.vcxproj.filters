@@ -687,6 +687,9 @@
     <ClInclude Include="$(SrcDir)subs_controller.h">
       <Filter>ASS</Filter>
     </ClInclude>
+    <ClInclude Include="$(SrcDir)visual_tool_color_picker.h">
+      <Filter>Video\Visual tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)ass_dialogue.cpp">
@@ -1234,6 +1237,9 @@
     </ClCompile>
     <ClCompile Include="$(SrcDir)subs_controller.cpp">
       <Filter>ASS</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SrcDir)visual_tool_color_picker.cpp">
+      <Filter>Video\Visual tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

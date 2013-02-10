@@ -261,6 +261,7 @@
     <ClInclude Include="$(SrcDir)visual_feature.h" />
     <ClInclude Include="$(SrcDir)visual_tool.h" />
     <ClInclude Include="$(SrcDir)visual_tool_clip.h" />
+    <ClInclude Include="$(SrcDir)visual_tool_color_picker.h" />
     <ClInclude Include="$(SrcDir)visual_tool_cross.h" />
     <ClInclude Include="$(SrcDir)visual_tool_drag.h" />
     <ClInclude Include="$(SrcDir)visual_tool_rotatexy.h" />
@@ -453,6 +454,7 @@
     <ClCompile Include="$(SrcDir)visual_feature.cpp" />
     <ClCompile Include="$(SrcDir)visual_tool.cpp" />
     <ClCompile Include="$(SrcDir)visual_tool_clip.cpp" />
+    <ClCompile Include="$(SrcDir)visual_tool_color_picker.cpp" />
     <ClCompile Include="$(SrcDir)visual_tool_cross.cpp" />
     <ClCompile Include="$(SrcDir)visual_tool_drag.cpp" />
     <ClCompile Include="$(SrcDir)visual_tool_rotatexy.cpp" />

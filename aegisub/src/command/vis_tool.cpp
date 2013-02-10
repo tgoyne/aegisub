@@ -28,6 +28,7 @@
 #include "../video_context.h"
 #include "../video_display.h"
 #include "../visual_tool_clip.h"
+#include "../visual_tool_color_picker.h"
 #include "../visual_tool_cross.h"
 #include "../visual_tool_drag.h"
 #include "../visual_tool_rotatexy.h"
@@ -105,6 +106,13 @@ namespace {
 		STR_DISP("Vector Clip")
 		STR_HELP("Clip subtitles to a vectorial area")
 	};
+
+	struct visual_mode_color_picker : public visual_tool_command<VisualToolColorPicker> {
+		CMD_NAME("video/tool/color_picker")
+		STR_MENU("Color Picker")
+		STR_DISP("Color Picker")
+		STR_HELP("Set subtitle colors from video pixels")
+	};
 }
 
 /// @}
@@ -118,5 +126,6 @@ namespace cmd {
 		reg(new visual_mode_scale);
 		reg(new visual_mode_clip);
 		reg(new visual_mode_vector_clip);
+		reg(new visual_mode_color_picker);
 	}
 }
