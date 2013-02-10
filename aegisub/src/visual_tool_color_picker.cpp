@@ -19,7 +19,7 @@
 #include "visual_tool_color_picker.h"
 
 #include "command/command.h"
-#include "main.h"
+#include "options.h"
 
 VisualToolColorPicker::VisualToolColorPicker(VideoDisplay *parent, agi::Context *context)
 : VisualTool<VisualDraggableFeature>(parent, context)
