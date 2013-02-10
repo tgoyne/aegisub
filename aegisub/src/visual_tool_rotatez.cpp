@@ -115,11 +115,11 @@ void VisualToolRotateZ::UpdateHold() {
 
 	angle = fmodf(angle + 360.f, 360.f);
 
-	SetSelectedOverride("\\frz", str(boost::format("%.4g") % angle));
+	SetSelectedOverride("frz", str(boost::format("%.4g") % angle));
 }
 
 void VisualToolRotateZ::UpdateDrag(feature_iterator feature) {
-	SetOverride(active_line, "\\org", ToScriptCoords(feature->pos).PStr());
+	SetOverride(active_line, "org", ToScriptCoords(feature->pos).PStr());
 }
 
 void VisualToolRotateZ::DoRefresh() {

@@ -29,6 +29,7 @@
 #include "libresrc/libresrc.h"
 #include "video_context.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/of_type_adaptor.h>
 
 #include <algorithm>
@@ -153,68 +154,54 @@ namespace {
 		double ar;
 	};
 
-	void resample_tags(std::string const& name, AssOverrideParameter *cur, void *ud) {
-		resample_state *state = static_cast<resample_state *>(ud);
-
+	void resample_param(resample_state *state, agi::ass::OverrideParameter& p) {
 		double resizer = 1.0;
 		int shift = 0;
 
-		switch (cur->classification) {
-			case AssParameterClass::ABSOLUTE_SIZE:
+		switch (p.classification) {
+			case agi::ass::ParameterClass::ABSOLUTE_SIZE:
 				resizer = state->ry;
 				break;
 
-			case AssParameterClass::ABSOLUTE_POS_X:
+			case agi::ass::ParameterClass::POS_X:
 				resizer = state->rx;
 				shift = state->margin[LEFT];
 				break;
 
-			case AssParameterClass::ABSOLUTE_POS_Y:
+			case agi::ass::ParameterClass::POS_Y:
 				resizer = state->ry;
 				shift = state->margin[TOP];
 				break;
 
-			case AssParameterClass::RELATIVE_SIZE_X:
+			case agi::ass::ParameterClass::SIZE_X:
 				resizer = state->ar;
 				break;
 
-			case AssParameterClass::RELATIVE_SIZE_Y:
-				//resizer = ry;
-				break;
-
-			case AssParameterClass::DRAWING: {
-				AssDialogueBlockDrawing block(cur->Get<std::string>(), 1);
-				block.TransformCoords(state->margin[LEFT], state->margin[TOP], state->rx, state->ry);
-				cur->Set(block.GetText());
+			case agi::ass::ParameterClass::DRAWING:
+				Set(p, agi::ass::TransformDrawing(p.value, state->margin[LEFT], state->margin[TOP], state->rx, state->ry));
 				return;
-			}
 
 			default:
 				return;
 		}
 
-		VariableDataType curType = cur->GetType();
-		if (curType == VariableDataType::FLOAT)
-			cur->Set((cur->Get<double>() + shift) * resizer);
-		else if (curType == VariableDataType::INT)
-			cur->Set<int>((cur->Get<int>() + shift) * resizer + 0.5);
+		Set(p, (agi::ass::Get<double>(p) + shift) * resizer);
 	}
 
 	void resample_line(resample_state *state, AssEntry &line) {
 		AssDialogue *diag = dynamic_cast<AssDialogue*>(&line);
 		if (diag && !(diag->Comment && (boost::starts_with(diag->Effect.get(), "template") || boost::starts_with(diag->Effect.get(), "code")))) {
-			boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
+			auto blocks = agi::ass::Parse(diag->Text);
 
-			for (auto block : blocks | agi::of_type<AssDialogueBlockOverride>())
-				block->ProcessParameters(resample_tags, state);
+			VisitParameters(blocks, [&](agi::ass::OverrideParameter& param, bool *) { resample_param(state, param); });
 
-			for (auto drawing : blocks | agi::of_type<AssDialogueBlockDrawing>())
-				drawing->TransformCoords(state->margin[LEFT], state->margin[TOP], state->rx, state->ry);
+			for (auto drawing : blocks | agi::of_type<agi::ass::DrawingBlock>())
+				drawing.text = agi::ass::TransformDrawing(drawing.text, state->margin[LEFT], state->margin[TOP], state->rx, state->ry);
 
 			for (size_t i = 0; i < 3; ++i)
 				diag->Margin[i] = int((diag->Margin[i] + state->margin[i]) * (i < 2 ? state->rx : state->ry) + 0.5);
 
-			diag->UpdateText(blocks);
+			diag->Text = GetText(blocks);
 		}
 		else if (AssStyle *style = dynamic_cast<AssStyle*>(&line)) {
 			style->fontsize = int(style->fontsize * state->ry + 0.5);

@@ -36,6 +36,7 @@
 #include "visual_tool_drag.h"
 #include "visual_tool_vector_clip.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/of_type_adaptor.h>
 
 #include <algorithm>
@@ -350,36 +351,35 @@ void VisualTool<FeatureType>::RemoveSelection(feature_iterator feat) {
 
 //////// PARSERS
 
-typedef const std::vector<AssOverrideParameter> * param_vec;
+namespace {
+using agi::ass::Get;
 
 // Find a tag's parameters in a line or return nullptr if it's not found
-static param_vec find_tag(boost::ptr_vector<AssDialogueBlock>& blocks, std::string const& tag_name) {
-	for (auto ovr : blocks | agi::of_type<AssDialogueBlockOverride>()) {
-		for (auto const& tag : ovr->Tags) {
-			if (tag.Name == tag_name)
-				return &tag.Params;
+agi::ass::OverrideTag* find_tag(std::vector<agi::ass::DialogueBlock>& blocks, std::string const& tag_name) {
+	agi::ass::OverrideTag *ret = nullptr;
+	VisitTags(blocks, [&](agi::ass::OverrideTag& tag, bool *stop) {
+		if (tag.name == tag_name) {
+			ret = &tag;
+			*stop = true;
 		}
-	}
+	});
 
-	return 0;
+	return ret;
 }
 
 // Get a Vector2D from the given tag parameters, or Vector2D::Bad() if they are not valid
-static Vector2D vec_or_bad(param_vec tag, size_t x_idx, size_t y_idx) {
-	if (!tag ||
-		tag->size() <= x_idx || tag->size() <= y_idx ||
-		(*tag)[x_idx].omitted || (*tag)[y_idx].omitted)
-	{
+Vector2D vec_or_bad(agi::ass::OverrideTag* tag, size_t x_idx, size_t y_idx) {
+	if (!tag || tag->params.size() <= std::max(x_idx, y_idx))
 		return Vector2D();
-	}
-	return Vector2D((*tag)[x_idx].Get<float>(), (*tag)[y_idx].Get<float>());
+	return Vector2D(Get<float>(*tag, x_idx), Get<float>(*tag, y_idx));
+}
 }
 
 Vector2D VisualToolBase::GetLinePosition(AssDialogue *diag) {
-	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
+	auto blocks = agi::ass::Parse(diag->Text);
 
-	if (Vector2D ret = vec_or_bad(find_tag(blocks, "\\pos"), 0, 1)) return ret;
-	if (Vector2D ret = vec_or_bad(find_tag(blocks, "\\move"), 0, 1)) return ret;
+	if (Vector2D ret = vec_or_bad(find_tag(blocks, "pos"), 0, 1)) return ret;
+	if (Vector2D ret = vec_or_bad(find_tag(blocks, "move"), 0, 1)) return ret;
 
 	// Get default position
 	int margin[3];
@@ -394,12 +394,11 @@ Vector2D VisualToolBase::GetLinePosition(AssDialogue *diag) {
 		}
 	}
 
-	param_vec align_tag;
 	int ovr_align = 0;
-	if ((align_tag = find_tag(blocks, "\\an")))
-		ovr_align = (*align_tag)[0].Get<int>(ovr_align);
-	else if ((align_tag = find_tag(blocks, "\\a")))
-		ovr_align = AssStyle::SsaToAss((*align_tag)[0].Get<int>(2));
+	if (auto align_tag = find_tag(blocks, "an"))
+		ovr_align = Get(*align_tag, 0, ovr_align);
+	else if (auto align_tag = find_tag(blocks, "a"))
+		ovr_align = AssStyle::SsaToAss(Get(*align_tag, 0, 2));
 
 	if (ovr_align > 0 && ovr_align <= 9)
 		align = ovr_align;
@@ -428,22 +427,21 @@ Vector2D VisualToolBase::GetLinePosition(AssDialogue *diag) {
 }
 
 Vector2D VisualToolBase::GetLineOrigin(AssDialogue *diag) {
-	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
-	return vec_or_bad(find_tag(blocks, "\\org"), 0, 1);
+	return vec_or_bad(find_tag(agi::ass::Parse(diag->Text), "org"), 0, 1);
 }
 
 bool VisualToolBase::GetLineMove(AssDialogue *diag, Vector2D &p1, Vector2D &p2, int &t1, int &t2) {
-	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
+	auto blocks = agi::ass::Parse(diag->Text);
 
-	param_vec tag = find_tag(blocks, "\\move");
+	auto tag = find_tag(blocks, "move");
 	if (!tag)
 		return false;
 
 	p1 = vec_or_bad(tag, 0, 1);
 	p2 = vec_or_bad(tag, 2, 3);
 	// VSFilter actually defaults to -1, but it uses <= 0 to check for default and 0 seems less bug-prone
-	t1 = (*tag)[4].Get<int>(0);
-	t2 = (*tag)[5].Get<int>(0);
+	t1 = Get(*tag, 4, 0);
+	t2 = Get(*tag, 5, 0);
 
 	return p1 && p2;
 }
@@ -454,16 +452,16 @@ void VisualToolBase::GetLineRotation(AssDialogue *diag, float &rx, float &ry, fl
 	if (AssStyle *style = c->ass->GetStyle(diag->Style))
 		rz = style->angle;
 
-	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
+	auto blocks = agi::ass::Parse(diag->Text);
 
-	if (param_vec tag = find_tag(blocks, "\\frx"))
-		rx = tag->front().Get(rx);
-	if (param_vec tag = find_tag(blocks, "\\fry"))
-		ry = tag->front().Get(ry);
-	if (param_vec tag = find_tag(blocks, "\\frz"))
-		rz = tag->front().Get(rz);
-	else if ((tag = find_tag(blocks, "\\fr")))
-		rz = tag->front().Get(rz);
+	if (auto tag = find_tag(blocks, "frx"))
+		rx = Get(*tag, 0, rx);
+	if (auto tag = find_tag(blocks, "fry"))
+		ry = Get(*tag, 0, ry);
+	if (auto tag = find_tag(blocks, "frz"))
+		rz = Get(*tag, 0, rz);
+	else if (auto tag = find_tag(blocks, "fr"))
+		rz = Get(*tag, 0, rz);
 }
 
 void VisualToolBase::GetLineScale(AssDialogue *diag, Vector2D &scale) {
@@ -474,12 +472,12 @@ void VisualToolBase::GetLineScale(AssDialogue *diag, Vector2D &scale) {
 		y = style->scaley;
 	}
 
-	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
+	auto blocks = agi::ass::Parse(diag->Text);
 
-	if (param_vec tag = find_tag(blocks, "\\fscx"))
-		x = tag->front().Get(x);
-	if (param_vec tag = find_tag(blocks, "\\fscy"))
-		y = tag->front().Get(y);
+	if (auto tag = find_tag(blocks, "fscx"))
+		x = Get(*tag, 0, x);
+	if (auto tag = find_tag(blocks, "fscy"))
+		y = Get(*tag, 0, y);
 
 	scale = Vector2D(x, y);
 }
@@ -487,14 +485,14 @@ void VisualToolBase::GetLineScale(AssDialogue *diag, Vector2D &scale) {
 void VisualToolBase::GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, bool &inverse) {
 	inverse = false;
 
-	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
-	param_vec tag = find_tag(blocks, "\\iclip");
+	auto blocks = agi::ass::Parse(diag->Text);
+	auto tag = find_tag(blocks, "iclip");
 	if (tag)
 		inverse = true;
 	else
-		tag = find_tag(blocks, "\\clip");
+		tag = find_tag(blocks, "clip");
 
-	if (tag && tag->size() == 4) {
+	if (tag && tag->params.size() == 4) {
 		p1 = vec_or_bad(tag, 0, 1);
 		p2 = vec_or_bad(tag, 2, 3);
 	}
@@ -505,30 +503,33 @@ void VisualToolBase::GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, 
 }
 
 std::string VisualToolBase::GetLineVectorClip(AssDialogue *diag, int &scale, bool &inverse) {
-	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
+	auto blocks = agi::ass::Parse(diag->Text);
 
 	scale = 1;
 	inverse = false;
 
-	param_vec tag = find_tag(blocks, "\\iclip");
+	auto tag = find_tag(blocks, "iclip");
 	if (tag)
 		inverse = true;
 	else
-		tag = find_tag(blocks, "\\clip");
+		tag = find_tag(blocks, "clip");
 
-	if (tag && tag->size() == 4) {
+	if (!tag || tag->params.empty()) return "";
+
+	if (tag->params.size() == 4) {
 		return str(boost::format("m %d %d l %d %d %d %d %d %d")
-			% (*tag)[0].Get<int>() % (*tag)[1].Get<int>()
-			% (*tag)[2].Get<int>() % (*tag)[1].Get<int>()
-			% (*tag)[2].Get<int>() % (*tag)[3].Get<int>()
-			% (*tag)[0].Get<int>() % (*tag)[3].Get<int>());
-	}
-	if (tag) {
-		scale = std::max((*tag)[0].Get(scale), 1);
-		return (*tag)[1].Get<std::string>("");
+			% Get<int>(*tag, 0) % Get<int>(*tag, 1)
+			% Get<int>(*tag, 2) % Get<int>(*tag, 1)
+			% Get<int>(*tag, 2) % Get<int>(*tag, 3)
+			% Get<int>(*tag, 0) % Get<int>(*tag, 3));
 	}
 
-	return "";
+	if (tag->params.size() == 2) {
+		scale = std::max(Get(*tag, 0, scale), 1);
+		return Get<std::string>(*tag, 1);
+	}
+
+	return Get<std::string>(*tag, 0);
 }
 
 void VisualToolBase::SetSelectedOverride(std::string const& tag, std::string const& value) {
@@ -539,33 +540,7 @@ void VisualToolBase::SetSelectedOverride(std::string const& tag, std::string con
 void VisualToolBase::SetOverride(AssDialogue* line, std::string const& tag, std::string const& value) {
 	if (!line) return;
 
-	std::string removeTag;
-	if (tag == "\\1c") removeTag = "\\c";
-	else if (tag == "\\frz") removeTag = "\\fr";
-	else if (tag == "\\pos") removeTag = "\\move";
-	else if (tag == "\\move") removeTag = "\\pos";
-	else if (tag == "\\clip") removeTag = "\\iclip";
-	else if (tag == "\\iclip") removeTag = "\\clip";
-
-	// Get block at start
-	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
-	AssDialogueBlock *block = &blocks.front();
-
-	if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride*>(block)) {
-		// Remove old of same
-		for (size_t i = 0; i < ovr->Tags.size(); i++) {
-			std::string const& name = ovr->Tags[i].Name;
-			if (tag == name || removeTag == name) {
-				ovr->Tags.erase(ovr->Tags.begin() + i);
-				i--;
-			}
-		}
-		ovr->AddTag(tag + value);
-
-		line->UpdateText(blocks);
-	}
-	else
-		line->Text = "{" + tag + value + "}" + line->Text.get();
+	line->Text = agi::ass::SetTag(line->Text, 0, tag, value);
 }
 
 // If only export worked

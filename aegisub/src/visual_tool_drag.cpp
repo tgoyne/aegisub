@@ -88,13 +88,13 @@ void VisualToolDrag::OnSubTool(wxCommandEvent &) {
 		bool has_move = GetLineMove(line, p1, p2, t1, t2);
 
 		if (has_move)
-			SetOverride(line, "\\pos", p1.PStr());
+			SetOverride(line, "pos", p1.PStr());
 		else {
 			p1 = GetLinePosition(line);
 			// Round the start and end times to exact frames
 			int start = vc->TimeAtFrame(vc->FrameAtTime(line->Start, agi::vfr::START)) - line->Start;
 			int end = vc->TimeAtFrame(vc->FrameAtTime(line->Start, agi::vfr::END)) - line->Start;
-			SetOverride(line, "\\move", str(boost::format("(%s,%s,%d,%d)") % p1.Str() % p1.Str() % start % end));
+			SetOverride(line, "move", str(boost::format("(%s,%s,%d,%d)") % p1.Str() % p1.Str() % start % end));
 		}
 	}
 
@@ -281,7 +281,7 @@ bool VisualToolDrag::InitializeDrag(feature_iterator feature) {
 
 void VisualToolDrag::UpdateDrag(feature_iterator feature) {
 	if (feature->type == DRAG_ORIGIN) {
-		SetOverride(feature->line, "\\org", ToScriptCoords(feature->pos).PStr());
+		SetOverride(feature->line, "org", ToScriptCoords(feature->pos).PStr());
 		return;
 	}
 
@@ -290,9 +290,9 @@ void VisualToolDrag::UpdateDrag(feature_iterator feature) {
 		std::swap(feature, end_feature);
 
 	if (feature->parent == features.end())
-		SetOverride(feature->line, "\\pos", ToScriptCoords(feature->pos).PStr());
+		SetOverride(feature->line, "pos", ToScriptCoords(feature->pos).PStr());
 	else
-		SetOverride(feature->line, "\\move",
+		SetOverride(feature->line, "move",
 			str(boost::format("(%s,%s,%d,%d)")
 				% ToScriptCoords(feature->pos).Str()
 				% ToScriptCoords(end_feature->pos).Str()
@@ -307,15 +307,15 @@ void VisualToolDrag::OnDoubleClick() {
 		int t1, t2;
 		if (GetLineMove(line, p1, p2, t1, t2)) {
 			if (t1 > 0 || t2 > 0)
-				SetOverride(line, "\\move", str(boost::format("(%s,%s,%d,%d)") % (p1 + d).Str() % (p2 + d).Str() % t1 % t2));
+				SetOverride(line, "move", str(boost::format("(%s,%s,%d,%d)") % (p1 + d).Str() % (p2 + d).Str() % t1 % t2));
 			else
-				SetOverride(line, "\\move", str(boost::format("(%s,%s)") % (p1 + d).Str() % (p2 + d).Str()));
+				SetOverride(line, "move", str(boost::format("(%s,%s)") % (p1 + d).Str() % (p2 + d).Str()));
 		}
 		else
-			SetOverride(line, "\\pos", (GetLinePosition(line) + d).PStr());
+			SetOverride(line, "pos", (GetLinePosition(line) + d).PStr());
 
 		if (Vector2D org = GetLineOrigin(line))
-			SetOverride(line, "\\org", (org + d).PStr());
+			SetOverride(line, "org", (org + d).PStr());
 	}
 
 	Commit(_("positioning"));

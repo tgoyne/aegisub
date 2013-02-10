@@ -43,6 +43,7 @@
 #include "utils.h"
 #include "video_context.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/of_type_adaptor.h>
 
 #include <utility>
@@ -59,14 +60,9 @@ AssTransformFramerateFilter::AssTransformFramerateFilter()
 : AssExportFilter(from_wx(_("Transform Framerate")),
 	from_wx(_("Transform subtitle times, including those in override tags, from an input framerate to an output framerate.\n\nThis is useful for converting regular time subtitles to VFRaC time subtitles for hardsubbing.\nIt can also be used to convert subtitles to a different speed video, such as NTSC to PAL speedup.")),
 	1000)
-, c(0)
-, line(0)
-, newStart(0)
-, newEnd(0)
-, newK(0)
-, oldK(0)
-, Input(0)
-, Output(0)
+, c(nullptr)
+, Input(nullptr)
+, Output(nullptr)
 {
 }
 
@@ -169,73 +165,64 @@ int FORCEINLINE trunc_cs(int time) {
 	return (time / 10) * 10;
 }
 
-void AssTransformFramerateFilter::TransformTimeTags(std::string const& name, AssOverrideParameter *curParam, void *curData) {
-	VariableDataType type = curParam->GetType();
-	if (type != VariableDataType::INT && type != VariableDataType::FLOAT) return;
-
-	AssTransformFramerateFilter *instance = static_cast<AssTransformFramerateFilter*>(curData);
-	AssDialogue *curDiag = instance->line;
-
-	int parVal = curParam->Get<int>();
-
-	switch (curParam->classification) {
-		case AssParameterClass::RELATIVE_TIME_START: {
-			int value = instance->ConvertTime(trunc_cs(curDiag->Start) + parVal) - instance->newStart;
-
-			// An end time of 0 is actually the end time of the line, so ensure
-			// nonzero is never converted to 0
-			// Needed here rather than the end case because start/end here mean
-			// which end of the line the time is relative to, not whether it's
-			// the start or end time (compare \move and \fad)
-			if (value == 0 && parVal != 0) value = 1;
-			curParam->Set(value);
-			break;
-		}
-		case AssParameterClass::RELATIVE_TIME_END:
-			curParam->Set(instance->newEnd - instance->ConvertTime(trunc_cs(curDiag->End) - parVal));
-			break;
-		case AssParameterClass::KARAOKE: {
-			int start = curDiag->Start / 10 + instance->oldK + parVal;
-			int value = (instance->ConvertTime(start * 10) - instance->newStart) / 10 - instance->newK;
-			instance->oldK += parVal;
-			instance->newK += value;
-			curParam->Set(value);
-			break;
-		}
-		default:
-			return;
-	}
-}
-
 void AssTransformFramerateFilter::TransformFrameRate(AssFile *subs) {
 	if (!Input->IsLoaded() || !Output->IsLoaded()) return;
-	for (auto curDialogue : subs->Line | agi::of_type<AssDialogue>()) {
-		line = curDialogue;
-		newK = 0;
-		oldK = 0;
-		newStart = trunc_cs(ConvertTime(curDialogue->Start));
-		newEnd = trunc_cs(ConvertTime(curDialogue->End) + 9);
+	for (auto line : subs->Line | agi::of_type<AssDialogue>()) {
+		int new_k = 0;
+		int old_k = 0;
+		const int new_start = trunc_cs(ConvertTime(line->Start));
+		const int new_end = trunc_cs(ConvertTime(line->End));
 
-		// Process stuff
-		boost::ptr_vector<AssDialogueBlock> blocks;
-		for (auto block : blocks | agi::of_type<AssDialogueBlockOverride>())
-			block->ProcessParameters(TransformTimeTags, this);
-		curDialogue->Start = newStart;
-		curDialogue->End = newEnd;
-		curDialogue->UpdateText(blocks);
+		auto blocks = agi::ass::Parse(line->Text);
+		VisitParameters(blocks, [&](agi::ass::OverrideParameter& param, bool *) {
+			const int value = agi::ass::Get<int>(param);
+
+			switch (param.classification) {
+				case agi::ass::ParameterClass::TIME_START: {
+					int new_value = ConvertTime(trunc_cs(line->Start) + value) - new_start;
+
+					// An end time of 0 is actually the end time of the line, so ensure
+					// nonzero is never converted to 0
+					// Needed here rather than the end case because start/end here mean
+					// which end of the line the time is relative to, not whether it's
+					// the start or end time (compare \move and \fad)
+					if (new_value == 0 && value != 0) new_value = 1;
+					Set(param, new_value);
+					break;
+				}
+				case agi::ass::ParameterClass::TIME_END:
+					Set(param, new_end - ConvertTime(trunc_cs(line->End) - value));
+					break;
+				case agi::ass::ParameterClass::KARAOKE: {
+					const int start = line->Start / 10 + old_k + value;
+					const int new_value = (ConvertTime(start * 10) - new_start) / 10 - new_k;
+					old_k += value;
+					new_k += new_value;
+					Set(param, new_value);
+					break;
+				}
+				default:
+					return;
+			}
+		});
+
+		line->Start = new_start;
+		line->End = new_end;
+
+		line->Text = GetText(blocks);
 	}
 }
 
 int AssTransformFramerateFilter::ConvertTime(int time) {
-	int frame = Output->FrameAtTime(time);
-	int frameStart = Output->TimeAtFrame(frame);
-	int frameEnd = Output->TimeAtFrame(frame + 1);
-	int frameDur = frameEnd - frameStart;
-	double dist = double(time - frameStart) / frameDur;
+	const int frame = Output->FrameAtTime(time);
+	const int frameStart = Output->TimeAtFrame(frame);
+	const int frameEnd = Output->TimeAtFrame(frame + 1);
+	const int frameDur = frameEnd - frameStart;
+	const double dist = double(time - frameStart) / frameDur;
 
-	int newStart = Input->TimeAtFrame(frame);
-	int newEnd = Input->TimeAtFrame(frame + 1);
-	int newDur = newEnd - newStart;
+	const int newStart = Input->TimeAtFrame(frame);
+	const int newEnd = Input->TimeAtFrame(frame + 1);
+	const int newDur = newEnd - newStart;
 
 	return newStart + newDur * dist;
 }

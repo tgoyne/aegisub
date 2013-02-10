@@ -60,83 +60,58 @@
 #include "utils.h"
 #include "validators.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/of_type_adaptor.h>
 
-/// Style rename helper that walks a file searching for a style and optionally
-/// updating references to it
-class StyleRenamer {
-	agi::Context *c;
-	bool found_any;
-	bool do_replace;
-	std::string source_name;
-	std::string new_name;
+namespace {
+bool StyleIsUsed(agi::Context *c, std::string const& name) {
+	bool found_any = false;
 
-	/// Process a single override parameter to check if it's \r with this style name
-	static void ProcessTag(std::string const& tag, AssOverrideParameter* param, void *userData) {
-		StyleRenamer *self = static_cast<StyleRenamer*>(userData);
-		if (tag == "\\r" && param->GetType() == VariableDataType::TEXT && param->Get<std::string>() == self->source_name) {
-			if (self->do_replace)
-				param->Set(self->new_name);
-			else
-				self->found_any = true;
-		}
-	}
+	for (auto diag : c->ass->Line | agi::of_type<AssDialogue>()) {
+		if (diag->Style == name)
+			return true;
 
-	void Walk(bool replace) {
-		found_any = false;
-		do_replace = replace;
-
-		for (auto diag : c->ass->Line | agi::of_type<AssDialogue>()) {
-			if (diag->Style == source_name) {
-				if (replace)
-					diag->Style = new_name;
-				else
-					found_any = true;
+		auto blocks = agi::ass::Parse(diag->Text);
+		VisitTags(blocks, [&](agi::ass::OverrideTag& tag, bool *stop) {
+			if (tag.name == "r" && agi::ass::Get<std::string>(tag, 0, "") == name) {
+				found_any = true;
+				*stop = true;
 			}
-
-			boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
-			for (auto block : blocks | agi::of_type<AssDialogueBlockOverride>())
-				block->ProcessParameters(&StyleRenamer::ProcessTag, this);
-			if (replace)
-				diag->UpdateText(blocks);
-
-			if (found_any) return;
-		}
+		});
+		if (found_any)
+			return true;
 	}
 
-public:
-	StyleRenamer(agi::Context *c, std::string const& source_name, std::string const& new_name)
-	: c(c)
-	, found_any(false)
-	, do_replace(false)
-	, source_name(source_name)
-	, new_name(new_name)
-	{
-	}
+	return false;
+}
 
-	/// Check if there are any uses of the original style name in the file
-	bool NeedsReplace() {
-		Walk(false);
-		return found_any;
-	}
+bool RenameStyle(agi::Context *c, std::string const& old_name, std::string const& new_name) {
+	for (auto diag : c->ass->Line | agi::of_type<AssDialogue>()) {
+		if (diag->Style == old_name)
+			diag->Style = new_name;
 
-	/// Replace all uses of the original style name with the new one
-	void Replace() {
-		Walk(true);
+		auto blocks = agi::ass::Parse(diag->Text);
+		VisitTags(blocks, [&](agi::ass::OverrideTag& tag, bool *) {
+			if (tag.name == "r" && agi::ass::Get<std::string>(tag, 0, "") == old_name)
+				Set(tag, 0, new_name);
+		});
+		diag->Text = GetText(blocks);
 	}
-};
+}
 
-static void add_with_label(wxSizer *sizer, wxWindow *parent, wxString const& label, wxWindow *ctrl) {
+void add_with_label(wxSizer *sizer, wxWindow *parent, wxString const& label, wxWindow *ctrl) {
 	sizer->Add(new wxStaticText(parent, -1, label), wxSizerFlags().Center().Right().Border(wxLEFT | wxRIGHT));
 	sizer->Add(ctrl, wxSizerFlags(1).Left().Expand());
 }
 
-static wxSpinCtrl *spin_ctrl(wxWindow *parent, float value, int max_value) {
+wxSpinCtrl *spin_ctrl(wxWindow *parent, float value, int max_value) {
 	return new wxSpinCtrl(parent, -1, AegiFloatToString(value), wxDefaultPosition, wxSize(60, -1), wxSP_ARROW_KEYS, 0, max_value, value);
 }
 
-static wxTextCtrl *num_text_ctrl(wxWindow *parent, double value, bool allow_negative, wxSize size = wxSize(70, 20)) {
+wxTextCtrl *num_text_ctrl(wxWindow *parent, double value, bool allow_negative, wxSize size = wxSize(70, 20)) {
 	return new wxTextCtrl(parent, -1, "", wxDefaultPosition, size, 0, NumValidator(value, allow_negative));
+}
+
 }
 
 DialogStyleEditor::DialogStyleEditor(wxWindow *parent, AssStyle *style, agi::Context *c, AssStyleStorage *store, std::string const& new_name)
@@ -425,8 +400,7 @@ void DialogStyleEditor::Apply(bool apply, bool close) {
 		bool did_rename = false;
 		if (work->name != new_name) {
 			if (!store && !is_new) {
-				StyleRenamer renamer(c, work->name, new_name);
-				if (renamer.NeedsReplace()) {
+				if (StyleIsUsed(c, work->name)) {
 					// See if user wants to update style name through script
 					int answer = wxMessageBox(
 						_("Do you want to change all instances of this style in the script to this new name?"),
@@ -437,7 +411,7 @@ void DialogStyleEditor::Apply(bool apply, bool close) {
 
 					if (answer == wxYES) {
 						did_rename = true;
-						renamer.Replace();
+						RenameStyle(c, work->name, new_name);
 					}
 				}
 			}

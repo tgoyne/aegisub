@@ -156,7 +156,7 @@ AssDialogue *paste_over(wxWindow *parent, std::vector<bool>& pasteOverOptions, A
 
 template<class T>
 T get_value(boost::ptr_vector<AssDialogueBlock> const& blocks, int blockn, T initial, std::string const& tag_name, std::string alt = "") {
-	for (auto ovr : blocks | sliced(0, blockn + 1) | reversed | agi::of_type<AssDialogueBlockOverride>()) {
+	for (auto ovr : blocks | sliced(0, blockn + 1) | reversed | agi::of_type<AssOverrideBlock>()) {
 		for (auto const& tag : ovr->Tags | reversed) {
 			if (tag.Name == tag_name || tag.Name == alt)
 				return tag.Params[0].Get<T>(initial);
@@ -179,38 +179,13 @@ int block_at_pos(std::string const& text, int pos) {
 	return n;
 }
 
-void set_tag(AssDialogue *line, boost::ptr_vector<AssDialogueBlock> &blocks, std::string const& tag, std::string const& value, int &sel_start, int &sel_end, bool at_end = false) {
-	if (blocks.empty())
-		blocks = line->ParseTags();
-
+void set_tag(AssDialogue *line, std::string const& tag, std::string const& value, int &sel_start, int &sel_end, bool at_end = false) {
 	int start = at_end ? sel_end : sel_start;
-	int blockn = block_at_pos(line->Text, start);
+	std::pair<size_t, size_t> insert_pos;
 
-	AssDialogueBlockPlain *plain = 0;
-	AssDialogueBlockOverride *ovr = 0;
-	while (blockn >= 0) {
-		AssDialogueBlock *block = &blocks[blockn];
-		if (dynamic_cast<AssDialogueBlockDrawing*>(block))
-			--blockn;
-		else if (dynamic_cast<AssDialogueBlockComment*>(block)) {
-			// Cursor is in a comment block, so try the previous block instead
-			--blockn;
-			start = line->Text.get().rfind('{', start);
-		}
-		else if ((plain = dynamic_cast<AssDialogueBlockPlain*>(block)))
-			break;
-		else {
-			ovr = dynamic_cast<AssDialogueBlockOverride*>(block);
-			assert(ovr);
-			break;
-		}
-	}
+	line->Text = agi::ass::SetTag(line->Text, tag, value, start, &insert_pos);
 
-	// If we didn't hit a suitable block for inserting the override just put
-	// it at the beginning of the line
-	if (blockn < 0)
-		start = 0;
-
+#if 0
 	std::string insert(tag + value);
 	int shift = insert.size();
 	if (plain || blockn < 0) {
@@ -237,18 +212,13 @@ void set_tag(AssDialogue *line, boost::ptr_vector<AssDialogueBlock> &blocks, std
 				}
 			}
 		}
-		if (!found)
-			ovr->AddTag(insert);
-
-		line->UpdateText(blocks);
 	}
-	else
-		assert(false);
 
 	if (!at_end) {
 		sel_start += shift;
 		sel_end += shift;
 	}
+#endif
 }
 
 void commit_text(agi::Context const * const c, wxString const& desc, int sel_start = -1, int sel_end = -1, int *commit_id = 0) {
@@ -268,16 +238,16 @@ void toggle_override_tag(const agi::Context *c, bool (AssStyle::*field), const c
 	AssStyle const* const style = c->ass->GetStyle(line->Style);
 	bool state = style ? style->*field : AssStyle().*field;
 
-	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
+	auto blocks = agi::ass::Parse(line->Text);
 	int sel_start = c->textSelectionController->GetSelectionStart();
 	int sel_end = c->textSelectionController->GetSelectionEnd();
 	int blockn = block_at_pos(line->Text, sel_start);
 
 	state = get_value(blocks, blockn, state, tag);
 
-	set_tag(line, blocks, tag, state ? "0" : "1", sel_start, sel_end);
+	set_tag(line, tag, state ? "0" : "1", sel_start, sel_end);
 	if (sel_start != sel_end)
-		set_tag(line, blocks, tag, state ? "1" : "0", sel_start, sel_end, true);
+		set_tag(line, tag, state ? "1" : "0", sel_start, sel_end, true);
 
 	commit_text(c, undo_msg, sel_start, sel_end);
 }

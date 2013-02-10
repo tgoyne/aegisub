@@ -100,7 +100,6 @@
     <ClInclude Include="$(SrcDir)ass_file.h" />
     <ClInclude Include="$(SrcDir)ass_info.h" />
     <ClInclude Include="$(SrcDir)ass_karaoke.h" />
-    <ClInclude Include="$(SrcDir)ass_override.h" />
     <ClInclude Include="$(SrcDir)ass_parser.h" />
     <ClInclude Include="$(SrcDir)ass_style.h" />
     <ClInclude Include="$(SrcDir)ass_style_storage.h" />
@@ -288,7 +287,6 @@
     <ClCompile Include="$(SrcDir)ass_exporter.cpp" />
     <ClCompile Include="$(SrcDir)ass_file.cpp" />
     <ClCompile Include="$(SrcDir)ass_karaoke.cpp" />
-    <ClCompile Include="$(SrcDir)ass_override.cpp" />
     <ClCompile Include="$(SrcDir)ass_parser.cpp" />
     <ClCompile Include="$(SrcDir)ass_style.cpp" />
     <ClCompile Include="$(SrcDir)ass_style_storage.cpp" />

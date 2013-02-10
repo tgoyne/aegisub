@@ -49,6 +49,8 @@
 #include "selection_controller.h"
 #include "utils.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
+
 #include <deque>
 
 #include <wx/checkbox.h>
@@ -344,7 +346,7 @@ void KaraokeLineMatchDisplay::SetInputData(AssDialogue *src, AssDialogue *dst)
 		source_sel_length = 1;
 	}
 
-	unmatched_destination = dst ? dst->GetStrippedText() : "";
+	unmatched_destination = dst ? agi::ass::StripTags(dst->Text) : "";
 	destination_sel_length = std::max<size_t>(1, unmatched_destination.size());
 
 	Refresh(true);

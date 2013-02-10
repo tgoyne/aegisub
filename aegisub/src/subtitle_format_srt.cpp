@@ -44,6 +44,7 @@
 #include "text_file_reader.h"
 #include "text_file_writer.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/of_type_adaptor.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
@@ -489,7 +490,7 @@ void SRTSubtitleFormat::WriteFile(const AssFile *src, agi::fs::path const& filen
 }
 
 bool SRTSubtitleFormat::CanSave(const AssFile *file) const {
-	std::string supported_tags[] = { "\\b", "\\i", "\\s", "\\u" };
+	std::string supported_tags[] = { "b", "i", "s", "u" };
 
 	AssStyle defstyle;
 	for (auto const& line : file->Line) {
@@ -504,14 +505,15 @@ bool SRTSubtitleFormat::CanSave(const AssFile *file) const {
 
 		// Check dialogue
 		if (const AssDialogue *curdiag = dynamic_cast<const AssDialogue*>(&line)) {
-			boost::ptr_vector<AssDialogueBlock> blocks(curdiag->ParseTags());
-			for (auto ovr : blocks | agi::of_type<AssDialogueBlockOverride>()) {
-				// Verify that all overrides used are supported
-				for (auto const& tag : ovr->Tags) {
-					if (!std::binary_search(supported_tags, std::end(supported_tags), tag.Name))
-						return false;
+			bool all_supported = true;
+			VisitTags(agi::ass::Parse(curdiag->Text), [&](agi::ass::OverrideTag& t, bool *stop) {
+				if (!std::binary_search(supported_tags, std::end(supported_tags), t.name)) {
+					*stop = true;
+					all_supported = false;
 				}
-			}
+			});
+			if (!all_supported)
+				return false;
 		}
 	}
 
@@ -526,16 +528,15 @@ std::string SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
 	tag_states['u'] = false;
 	tag_states['s'] = false;
 
-	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
+	auto blocks = agi::ass::Parse(diag->Text);
 
 	for (auto& block : blocks) {
-		if (AssDialogueBlockOverride* ovr = dynamic_cast<AssDialogueBlockOverride*>(&block)) {
-			// Iterate through overrides
+		if (auto ovr = boost::get<agi::ass::OverrideBlock>(&block)) {
 			for (auto const& tag : ovr->Tags) {
-				if (tag.Name.size() == 2 && !tag.Params.empty()) {
-					auto it = tag_states.find(tag.Name[1]);
+				if (tag.name.size() == 1 && !tag.params.empty()) {
+					auto it = tag_states.find(tag.name[0]);
 					if (it != tag_states.end()) {
-						bool temp = tag.Params[0].Get(false);
+						bool temp = Get(tag, 0, false);
 						if (temp && !it->second)
 							final += str(boost::format("<%c>") % it->first);
 						if (!temp && it->second)
@@ -545,9 +546,8 @@ std::string SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
 				}
 			}
 		}
-		// Plain text
-		else if (AssDialogueBlockPlain *plain = dynamic_cast<AssDialogueBlockPlain*>(&block))
-			final += plain->GetText();
+		else if (auto plain = boost::get<agi::ass::PlainBlock>(&block))
+			final += plain->text;
 	}
 
 	// Ensure all tags are closed

@@ -39,8 +39,11 @@
 #include "utils.h"
 #include "video_context.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
+
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include <wx/checkbox.h>
 #include <wx/msgdlg.h>
@@ -54,8 +57,8 @@ static void add_hotkey(wxSizer *sizer, wxWindow *parent, const char *command, wx
 }
 
 // Skip over override blocks, comments, and whitespace between blocks
-static bool bad_block(AssDialogueBlock &block) {
-	return block.GetType() != BLOCK_PLAIN || boost::all(block.GetText(), boost::is_space());
+static bool bad_block(agi::ass::DialogueBlock &block) {
+	return !boost::get<agi::ass::PlainBlock>(&block) || boost::all(GetText(block), boost::is_space());
 }
 
 DialogTranslation::DialogTranslation(agi::Context *c)
@@ -156,7 +159,7 @@ DialogTranslation::DialogTranslation(agi::Context *c)
 
 	Bind(wxEVT_KEY_DOWN, &DialogTranslation::OnKeyDown, this);
 
-	blocks = active_line->ParseTags();
+	blocks = agi::ass::Parse(active_line->Text);
 	if (bad_block(blocks[0])) {
 		if (!NextBlock())
 			throw NothingToTranslate(from_wx(_("There is nothing to translate in the file.")));
@@ -172,7 +175,7 @@ void DialogTranslation::OnActiveLineChanged(AssDialogue *new_line) {
 	if (switching_lines) return;
 
 	active_line = new_line;
-	blocks = active_line->ParseTags();
+	blocks = agi::ass::Parse(active_line->Text);
 	cur_block = 0;
 	line_number = count_if(c->ass->Line.begin(), c->ass->Line.iterator_to(*new_line), cast<AssDialogue*>()) + 1;
 
@@ -201,7 +204,7 @@ bool DialogTranslation::NextBlock() {
 			if (active_line == new_line || !new_line) return false;
 
 			active_line = new_line;
-			blocks = active_line->ParseTags();
+			blocks = agi::ass::Parse(active_line->Text);
 			cur_block = 0;
 			++line_number;
 		}
@@ -223,7 +226,7 @@ bool DialogTranslation::PrevBlock() {
 			if (active_line == new_line || !new_line) return false;
 
 			active_line = new_line;
-			blocks = active_line->ParseTags();
+			blocks = agi::ass::Parse(active_line->Text);
 			cur_block = blocks.size() - 1;
 			--line_number;
 		}
@@ -243,17 +246,15 @@ void DialogTranslation::UpdateDisplay() {
 	original_text->ClearAll();
 
 	size_t i = 0;
+	int pos = 0;
 	for (auto& block : blocks) {
-		if (block.GetType() == BLOCK_PLAIN) {
-			int cur_size = original_text->GetReverseUnicodePosition(original_text->GetLength());
-			original_text->AppendTextRaw(block.GetText().c_str());
-			if (i == cur_block) {
-				original_text->StartUnicodeStyling(cur_size);
-				original_text->SetUnicodeStyling(cur_size, block.GetText().size(), 1);
-			}
+		auto text = GetText(block);
+		original_text->AppendTextRaw(text.c_str(), text.size());
+		if (i == cur_block) {
+			original_text->StartStyling(pos, 1);
+			original_text->SetStyling(text.size(), 1);
 		}
-		else
-			original_text->AppendTextRaw(block.GetText().c_str());
+		pos += text.size();
 		++i;
 	}
 
@@ -266,12 +267,12 @@ void DialogTranslation::UpdateDisplay() {
 }
 
 void DialogTranslation::Commit(bool next) {
-	wxString new_value = translated_text->GetValue();
-	new_value.Replace("\r\n", "\\N");
-	new_value.Replace("\r", "\\N");
-	new_value.Replace("\n", "\\N");
-	blocks[cur_block] = AssDialogueBlockPlain(from_wx(new_value));
-	active_line->UpdateText(blocks);
+	std::string new_value = translated_text->GetTextRaw().data();
+	boost::replace_all(new_value, "\r\n", "\\N");
+	boost::replace_all(new_value, "\n", "\\N");
+	boost::replace_all(new_value, "\r", "\\N");
+	blocks[cur_block] = new_value;
+	active_line->Text = GetText(blocks);
 
 	file_change_connection.Block();
 	c->ass->Commit(_("translation assistant"), AssFile::COMMIT_DIAG_TEXT);
@@ -289,7 +290,7 @@ void DialogTranslation::Commit(bool next) {
 }
 
 void DialogTranslation::InsertOriginal() {
-	translated_text->AddText(to_wx(blocks[cur_block].GetText()));
+	translated_text->AddTextRaw(GetText(blocks[cur_block]).c_str());
 }
 
 

@@ -56,6 +56,7 @@
 #include "utils.h"
 #include "video_context.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/fs.h>
 #include <libaegisub/of_type_adaptor.h>
 
@@ -102,7 +103,7 @@ bool SubtitleFormat::CanSave(const AssFile *subs) const {
 
 		// Check dialog
 		if (const AssDialogue *curdiag = dynamic_cast<const AssDialogue*>(&line)) {
-			if (curdiag->GetStrippedText() != curdiag->Text)
+			if (agi::ass::StripTags(curdiag->Text) != curdiag->Text)
 				return false;
 		}
 	}
@@ -176,7 +177,7 @@ agi::vfr::Framerate SubtitleFormat::AskForFPS(bool allow_vfr, bool show_smpte) {
 
 void SubtitleFormat::StripTags(AssFile &file) {
 	for (auto current : file.Line | agi::of_type<AssDialogue>())
-		current->StripTags();
+		current->Text = agi::ass::StripTags(current->Text);
 }
 
 void SubtitleFormat::ConvertNewlines(AssFile &file, std::string const& newline, bool mergeLineBreaks) {

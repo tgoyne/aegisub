@@ -198,7 +198,7 @@ void VisualToolVectorClip::Save() {
 		// This check is technically not correct as it could be outside of an
 		// override block... but that's rather unlikely
 		bool has_iclip = line->Text.get().find("\\iclip") != std::string::npos;
-		SetOverride(line, has_iclip ? "\\iclip" : "\\clip", value);
+		SetOverride(line, has_iclip ? "iclip" : "clip", value);
 	}
 }
 

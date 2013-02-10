@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include <libaegisub/ass/dialogue_block.h>
+
 #undef ERROR
 
 namespace agi {
@@ -80,5 +82,9 @@ namespace agi {
 		void SplitWords(std::string const& str, std::vector<DialogueToken> &tokens);
 
 		std::vector<DialogueToken> SyntaxHighlight(std::string const& text, std::vector<DialogueToken> const& tokens, SpellChecker *spellchecker);
+
+		std::vector<DialogueBlock> Parse(std::string const& str);
+
+		std::string StripTags(std::string const& str);
 	}
 }

@@ -157,12 +157,12 @@ void VisualToolRotateXY::UpdateHold() {
 	angle_x = fmodf(angle_x + 360.f, 360.f);
 	angle_y = fmodf(angle_y + 360.f, 360.f);
 
-	SetSelectedOverride("\\frx", str(boost::format("%.4g") % angle_x));
-	SetSelectedOverride("\\fry", str(boost::format("%.4g") % angle_y));
+	SetSelectedOverride("frx", str(boost::format("%.4g") % angle_x));
+	SetSelectedOverride("fry", str(boost::format("%.4g") % angle_y));
 }
 
 void VisualToolRotateXY::UpdateDrag(feature_iterator feature) {
-	SetOverride(active_line, "\\org", ToScriptCoords(feature->pos).PStr());
+	SetOverride(active_line, "org", ToScriptCoords(feature->pos).PStr());
 }
 
 void VisualToolRotateXY::DoRefresh() {

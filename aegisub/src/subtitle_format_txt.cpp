@@ -45,6 +45,7 @@
 #include "utils.h"
 #include "version.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/of_type_adaptor.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -156,7 +157,7 @@ void TXTSubtitleFormat::WriteFile(const AssFile *src, agi::fs::path const& filen
 		if (write_actors)
 			out_line += dia->Actor.get() + ": ";
 
-		std::string out_text = strip_formatting ? dia->GetStrippedText() : dia->Text;
+		std::string out_text = strip_formatting ? agi::ass::StripTags(dia->Text) : dia->Text;
 		out_line += out_text;
 
 		if (!out_text.empty())

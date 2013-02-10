@@ -46,11 +46,6 @@ class wxTextCtrl;
 /// @brief Transform subtitle times, including those in override tags, from an input framerate to an output framerate
 class AssTransformFramerateFilter : public AssExportFilter {
 	agi::Context *c;
-	AssDialogue *line;
-	int newStart;
-	int newEnd;
-	int newK;
-	int oldK;
 
 	// Yes, these are backwards
 	const agi::vfr::Framerate *Input;  ///< Destination frame rate
@@ -69,11 +64,6 @@ class AssTransformFramerateFilter : public AssExportFilter {
 	/// @brief Apply the transformation to a file
 	/// @param subs File to process
 	void TransformFrameRate(AssFile *subs);
-	/// @brief Transform a single tag
-	/// @param name Name of the tag
-	/// @param curParam Current parameter being processed
-	/// @param userdata Filter instance
-	static void TransformTimeTags(std::string const& name, AssOverrideParameter *curParam, void *userdata);
 
 	/// @brief Convert a time from the input frame rate to the output frame rate
 	/// @param time Time in ms to convert

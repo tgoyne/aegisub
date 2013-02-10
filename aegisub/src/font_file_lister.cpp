@@ -29,6 +29,7 @@
 #include "compat.h"
 #include "utils.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/of_type_adaptor.h>
 
 #include <algorithm>
@@ -72,37 +73,37 @@ FontCollector::FontCollector(FontCollectorStatusCallback status_callback, FontFi
 void FontCollector::ProcessDialogueLine(const AssDialogue *line, int index) {
 	if (line->Comment) return;
 
-	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
+	auto blocks = agi::ass::Parse(line->Text);
 	StyleInfo style = styles[line->Style];
 	StyleInfo initial = style;
 
 	bool overriden = false;
 
 	for (auto& block : blocks) {
-		if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride *>(&block)) {
+		if (auto ovr = boost::get<agi::ass::OverrideBlock>(&block)) {
 			for (auto const& tag : ovr->Tags) {
-				std::string const& name = tag.Name;
+				std::string const& name = tag.name;
 
 				if (name == "\\r") {
-					style = styles[tag.Params[0].Get(line->Style.get())];
+					style = styles[Get(tag, 0, line->Style.get())];
 					overriden = false;
 				}
 				else if (name == "\\b") {
-					style.bold = tag.Params[0].Get(initial.bold);
+					style.bold = Get(tag, 0, initial.bold);
 					overriden = true;
 				}
 				else if (name == "\\i") {
-					style.italic = tag.Params[0].Get(initial.italic);
+					style.italic = Get(tag, 0, initial.italic);
 					overriden = true;
 				}
 				else if (name == "\\fn") {
-					style.facename = tag.Params[0].Get(initial.facename);
+					style.facename = Get(tag, 0, initial.facename);
 					overriden = true;
 				}
 			}
 		}
-		else if (AssDialogueBlockPlain *txt = dynamic_cast<AssDialogueBlockPlain *>(&block)) {
-			wxString text(to_wx(txt->GetText()));
+		else if (boost::get<agi::ass::PlainBlock>(&block)) {
+			wxString text(to_wx(GetText(block)));
 
 			if (text.empty())
 				continue;

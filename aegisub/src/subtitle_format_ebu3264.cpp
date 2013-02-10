@@ -25,6 +25,7 @@
 
 #include "subtitle_format_ebu3264.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/charset_conv.h>
 #include <libaegisub/exception.h>
 #include <libaegisub/io.h>
@@ -42,6 +43,7 @@
 #include "text_file_writer.h"
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/functional/overloaded_function.hpp>
 
 namespace
 {
@@ -119,18 +121,18 @@ namespace
 	/// intermediate format
 	class EbuSubtitle
 	{
-		void ProcessOverrides(AssDialogueBlockOverride *ob, bool &underline, bool &italic, int &align, bool style_underline, bool style_italic)
+		void ProcessOverrides(agi::ass::OverrideBlock *ob, bool &underline, bool &italic, int &align, bool style_underline, bool style_italic)
 		{
 			for (auto const& t : ob->Tags)
 			{
-				if (t.Name == "\\u")
-					underline = t.Params[0].Get<bool>(style_underline);
-				else if (t.Name == "\\i")
-					italic = t.Params[0].Get<bool>(style_italic);
-				else if (t.Name == "\\an")
-					align = t.Params[0].Get<int>(align);
-				else if (t.Name == "\\a" && !t.Params[0].omitted)
-					align = AssStyle::SsaToAss(t.Params[0].Get<int>());
+				if (t.name == "u")
+					underline = Get(t, 0, style_underline);
+				else if (t.name == "i")
+					italic = Get(t, 0, style_italic);
+				else if (t.name == "an")
+					align = Get(t, 0, align);
+				else if (t.name == "a" && !t.params.empty())
+					align = AssStyle::SsaToAss(Get(t, 0, 2));
 			}
 		}
 
@@ -262,7 +264,7 @@ namespace
 
 		void SetTextFromAss(AssDialogue *line, bool style_underline, bool style_italic, int align, int wrap_mode)
 		{
-			boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
+			auto blocks = agi::ass::Parse(line->Text);
 
 			text_rows.clear();
 			text_rows.emplace_back();
@@ -275,82 +277,70 @@ namespace
 
 			bool underline = style_underline, italic = style_italic;
 
+			auto block_visitor = agi::ass::AddResultType<void>(boost::make_overloaded_function(
+				[&](agi::ass::PlainBlock& b) {
+					auto text = GetText(b);
+
+					boost::replace_all(text, "\\t", " ");
+
+					size_t start = 0;
+					for (size_t i = 0; i < text.size(); ++i)
+					{
+						if (text[i] != ' ' && (i + 1 >= text.size() || text[i] != '\\' || (text[i + 1] != 'N' && text[i + 1] != 'n')))
+							continue;
+
+						// add first part of text to current part
+						cur_row->back().text.append(&text[start], &text[i]);
+
+						// process special character
+						if (text[i] == '\\' && (text[i + 1] == 'N' || wrap_mode == 1))
+						{
+							// create a new row with current style
+							text_rows.emplace_back();
+							cur_row = &text_rows.back();
+							cur_row->emplace_back("", underline, italic, true);
+						}
+						else // if (substr == " " || substr == "\\n")
+						{
+							cur_row->back().text.append(" ");
+							cur_row->emplace_back("", underline, italic, true);
+						}
+
+						start = i + (text[i] == '\\');
+					}
+
+					// add the remaining text
+					cur_row->back().text.append(text.substr(start));
+
+					// convert \h to regular spaces
+					// done after parsing so that words aren't split on \h
+					boost::replace_all(cur_row->back().text, "\\h", " ");
+				},
+				[&](agi::ass::OverrideBlock& b) {
+					ProcessOverrides(&b, underline, italic, align, style_underline, style_italic);
+
+					// apply any changes
+					if (underline != cur_row->back().underline || italic != cur_row->back().italic)
+					{
+						if (cur_row->back().text.empty())
+						{
+							// current part is empty, we can safely change formatting on it
+							cur_row->back().underline = underline;
+							cur_row->back().italic = italic;
+						}
+						else
+						{
+							// create a new empty part with new style
+							cur_row->emplace_back("", underline, italic, false);
+						}
+					}
+				},
+				[&](agi::ass::CommentBlock&) { },
+				[&](agi::ass::DrawingBlock&) { }
+			));
+
 			for (auto& b : blocks)
-			{
-				switch (b.GetType())
-				{
-					case BLOCK_PLAIN:
-					// find special characters and convert them
-					{
-						std::string text = b.GetText();
-
-						boost::replace_all(text, "\\t", " ");
-
-						size_t start = 0;
-						for (size_t i = 0; i < text.size(); ++i)
-						{
-							if (text[i] != ' ' && (i + 1 >= text.size() || text[i] != '\\' || (text[i + 1] != 'N' && text[i + 1] != 'n')))
-								continue;
-
-							// add first part of text to current part
-							cur_row->back().text.append(text.substr(start, i));
-
-							// process special character
-							if (text[i] == '\\' && (text[i + 1] == 'N' || wrap_mode == 1))
-							{
-								// create a new row with current style
-								text_rows.emplace_back();
-								cur_row = &text_rows.back();
-								cur_row->emplace_back("", underline, italic, true);
-							}
-							else // if (substr == " " || substr == "\\n")
-							{
-								cur_row->back().text.append(" ");
-								cur_row->emplace_back("", underline, italic, true);
-							}
-
-							start = i + (text[i] == '\\');
-						}
-
-						// add the remaining text
-						cur_row->back().text.append(text.substr(start));
-
-						// convert \h to regular spaces
-						// done after parsing so that words aren't split on \h
-						boost::replace_all(cur_row->back().text, "\\h", " ");
-					}
-					break;
-
-					case BLOCK_OVERRIDE:
-					// find relevant tags and process them
-					{
-						AssDialogueBlockOverride *ob = static_cast<AssDialogueBlockOverride*>(&b);
-						ob->ParseTags();
-						ProcessOverrides(ob, underline, italic, align, style_underline, style_italic);
-
-						// apply any changes
-						if (underline != cur_row->back().underline || italic != cur_row->back().italic)
-						{
-							if (cur_row->back().text.empty())
-							{
-								// current part is empty, we can safely change formatting on it
-								cur_row->back().underline = underline;
-								cur_row->back().italic = italic;
-							}
-							else
-							{
-								// create a new empty part with new style
-								cur_row->emplace_back("", underline, italic, false);
-							}
-						}
-					}
-					break;
-
-				default:
-					// ignore block, we don't want to output it (drawing or comment)
-					break;
-				}
-			}
+				boost::apply_visitor(block_visitor, b);
 
 			SetAlignment(align);
 		}

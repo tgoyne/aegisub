@@ -213,7 +213,7 @@ namespace ass {
 			ptrdiff_t len = it->value().end() - it->value().begin();
 			assert(len > 0);
 			if (data.empty() || data.back().type != id)
-				data.push_back(DialogueToken(id, len));
+				data.emplace_back(id, len);
 			else
 				data.back().length += len;
 		}

@@ -28,6 +28,8 @@
 #include "include/aegisub/context.h"
 #include "selection_controller.h"
 
+#include <libaegisub/ass/dialogue_parser.h>
+
 #include <boost/format.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -103,23 +105,23 @@ void AssKaraoke::SetLine(AssDialogue *line, bool auto_split, bool normalize) {
 }
 
 void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
-	boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
+	auto blocks = agi::ass::Parse(line->Text);
 
 	for (auto& block : blocks) {
-		std::string text = block.GetText();
+		std::string text = agi::ass::GetText(block);
 
-		if (dynamic_cast<AssDialogueBlockPlain*>(&block))
+		if (boost::get<agi::ass::PlainBlock>(&block))
 			syl.text += text;
-		else if (dynamic_cast<AssDialogueBlockComment*>(&block))
+		else if (boost::get<agi::ass::CommentBlock>(&block))
 			syl.ovr_tags[syl.text.size()] += text;
-		else if (dynamic_cast<AssDialogueBlockDrawing*>(&block))
+		else if (boost::get<agi::ass::DrawingBlock>(&block))
 			// drawings aren't override tags but they shouldn't show up in the
 			// stripped text so pretend they are
 			syl.ovr_tags[syl.text.size()] += text;
-		else if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride*>(&block)) {
+		else if (auto *ovr = boost::get<agi::ass::OverrideBlock>(&block)) {
 			bool in_tag = false;
 			for (auto& tag : ovr->Tags) {
-				if (!tag.Params.empty() && boost::istarts_with(tag.Name, "\\k")) {
+				if (!tag.params.empty() && boost::istarts_with(tag.name, "\\k")) {
 					if (in_tag) {
 						syl.ovr_tags[syl.text.size()] += "}";
 						in_tag = false;
@@ -127,7 +129,7 @@ void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
 
 					// Dealing with both \K and \kf is mildly annoying so just
 					// convert them both to \kf
-					if (tag.Name == "\\K") tag.Name = "\\kf";
+					if (tag.name == "\\K") tag.name = "\\kf";
 
 					// Don't bother including zero duration zero length syls
 					if (syl.duration > 0 || !syl.text.empty()) {
@@ -136,9 +138,9 @@ void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
 						syl.ovr_tags.clear();
 					}
 
-					syl.tag_type = tag.Name;
+					syl.tag_type = tag.name;
 					syl.start_time += syl.duration;
-					syl.duration = tag.Params[0].Get(0) * 10;
+					syl.duration = Get(tag, 0, 0) * 10;
 				}
 				else {
 					std::string& otext = syl.ovr_tags[syl.text.size()];
@@ -148,7 +150,7 @@ void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
 						otext += "{";
 
 					in_tag = true;
-					otext += tag;
+					otext += agi::ass::GetText(tag);
 				}
 			}
 
