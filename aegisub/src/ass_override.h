@@ -87,11 +87,8 @@ public:
 	}
 };
 
-class AssOverrideTag : boost::noncopyable {
-	bool valid;
-
-public:
-	AssOverrideTag();
+struct AssOverrideTag : boost::noncopyable {
+	AssOverrideTag() { }
 	AssOverrideTag(AssOverrideTag&&);
 	AssOverrideTag(std::string const& text);
 	AssOverrideTag& operator=(AssOverrideTag&&);
@@ -99,8 +96,5 @@ public:
 	std::string Name;
 	std::vector<AssOverrideParameter> Params;
 
-	bool IsValid() const { return valid; }
-	void Clear();
-	void SetText(const std::string &text);
 	operator std::string() const;
 };

@@ -532,7 +532,7 @@ std::string SRTSubtitleFormat::ConvertTags(const AssDialogue *diag) const {
 		if (AssDialogueBlockOverride* ovr = dynamic_cast<AssDialogueBlockOverride*>(&block)) {
 			// Iterate through overrides
 			for (auto const& tag : ovr->Tags) {
-				if (tag.IsValid() && tag.Name.size() == 2) {
+				if (tag.Name.size() == 2 && !tag.Params.empty()) {
 					auto it = tag_states.find(tag.Name[1]);
 					if (it != tag_states.end()) {
 						bool temp = tag.Params[0].Get(false);

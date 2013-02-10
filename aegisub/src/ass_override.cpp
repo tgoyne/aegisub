@@ -389,8 +389,6 @@ std::vector<std::string> tokenize(const std::string &text) {
 }
 
 void parse_parameters(AssOverrideTag *tag, const std::string &text, AssOverrideTagProto::iterator proto_it) {
-	tag->Clear();
-
 	// Tokenize text, attempting to find all parameters
 	std::vector<std::string> paramList = tokenize(text);
 	size_t totalPars = paramList.size();
@@ -463,44 +461,30 @@ void AssDialogueBlockOverride::ProcessParameters(ProcessParametersCallback callb
 	}
 }
 
-AssOverrideTag::AssOverrideTag() : valid(false) { }
 AssOverrideTag::AssOverrideTag(std::string const& text) {
-	SetText(text);
-}
-AssOverrideTag::AssOverrideTag(AssOverrideTag&& rhs)
-: valid(rhs.valid)
-, Name(std::move(rhs.Name))
-, Params(std::move(rhs.Params))
-{
-}
-
-AssOverrideTag& AssOverrideTag::operator=(AssOverrideTag&& rhs) {
-	valid = rhs.valid;
-	Name = std::move(rhs.Name);
-	Params = std::move(rhs.Params);
-	return *this;
-}
-
-void AssOverrideTag::Clear() {
-	Params.clear();
-	Params.reserve(6);
-	valid = false;
-}
-
-void AssOverrideTag::SetText(const std::string &text) {
 	load_protos();
 	for (auto cur = proto.begin(); cur != proto.end(); ++cur) {
 		if (boost::starts_with(text, cur->name)) {
 			Name = cur->name;
 			parse_parameters(this, text.substr(Name.size()), cur);
-			valid = true;
 			return;
 		}
 	}
 
 	// Junk tag
 	Name = text;
-	valid = false;
+}
+
+AssOverrideTag::AssOverrideTag(AssOverrideTag&& rhs)
+: Name(std::move(rhs.Name))
+, Params(std::move(rhs.Params))
+{
+}
+
+AssOverrideTag& AssOverrideTag::operator=(AssOverrideTag&& rhs) {
+	Name = std::move(rhs.Name);
+	Params = std::move(rhs.Params);
+	return *this;
 }
 
 static std::string param_str(AssOverrideParameter const& p) { return p.Get<std::string>(); }

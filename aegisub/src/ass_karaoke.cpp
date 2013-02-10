@@ -119,7 +119,7 @@ void AssKaraoke::ParseSyllables(AssDialogue *line, Syllable &syl) {
 		else if (AssDialogueBlockOverride *ovr = dynamic_cast<AssDialogueBlockOverride*>(&block)) {
 			bool in_tag = false;
 			for (auto& tag : ovr->Tags) {
-				if (tag.IsValid() && boost::istarts_with(tag.Name, "\\k")) {
+				if (!tag.Params.empty() && boost::istarts_with(tag.Name, "\\k")) {
 					if (in_tag) {
 						syl.ovr_tags[syl.text.size()] += "}";
 						in_tag = false;
