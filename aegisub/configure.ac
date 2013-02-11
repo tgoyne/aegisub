@@ -203,20 +203,22 @@ AS_IF([test x$with_libc__ != xno], [
 ######################################
 # Check Headers / Features / Libraries
 ######################################
-AC_HEADER_STDC
-AC_HEADER_STDBOOL
-AC_C_CONST
-AC_C_INLINE
-AC_C_VOLATILE
 AC_CHECK_LIB([m], [main])
 
 AC_AGI_COMPILE([pragma once], [pragma_once], [], [],[
 #pragma once
-int main(void) {}
+int main() {}
 ])
 
-AS_IF([test x$agi_cv_pragma_once = xno],
+AS_IF([test x$agi_cv__with_pragma_once = xno],
       [AC_MSG_FAILURE([Aegisub requires #pragma once to work correctly.])])
+
+AC_AGI_COMPILE([C++11 lambdas], [lambda], [], [],[
+int main() { return @<:@ @:>@ { return 0; }(); }
+])
+
+AS_IF([test x$agi_cv_with_lambda = xno],
+      [AC_MSG_FAILURE([Aegisub requires a C++ compiler which supports C++11.])])
 
 AC_CHECK_HEADER([wchar.h],,[AC_MSG_FAILURE([aegisub requires wide character support])])
 
@@ -228,7 +230,6 @@ AC_CHECK_HEADERS([sys/time.h])
 #########################
 ### Required Dependencies
 #########################
-
 AC_PATH_XTRA
 AS_IF([test x$no_x = xyes && test x$build_darwin != xyes],
       [AC_MSG_FAILURE([You must have a working copy of X installed.])])
