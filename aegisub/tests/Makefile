@@ -17,28 +17,7 @@ SRC = \
 		support/main.cpp \
 		support/util.cpp \
 		support/util_unix.cpp \
-		tests/access.cpp \
-		tests/cajun.cpp \
-		tests/color.cpp \
 		tests/dialogue_block.cpp \
-		tests/dialogue_lexer.cpp \
-		tests/fs.cpp \
-		tests/hotkey.cpp \
-		tests/iconv.cpp \
-		tests/ifind.cpp \
-		tests/keyframe.cpp \
-		tests/line_iterator.cpp \
-		tests/line_wrap.cpp \
-		tests/mru.cpp \
-		tests/option.cpp \
-		tests/path.cpp \
-		tests/signals.cpp \
-		tests/syntax_highlight.cpp \
-		tests/thesaurus.cpp \
-		tests/util.cpp \
-		tests/uuencode.cpp \
-		tests/vfr.cpp \
-		tests/word_split.cpp \
 		${GTEST_ROOT}/src/gtest-all.cc
 
 HEADER = support/*.h tests/*.h
