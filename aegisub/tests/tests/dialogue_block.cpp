@@ -89,3 +89,30 @@ TEST_ROUNDTRIP(xshad, "1.1")
 TEST_ROUNDTRIP(ybord, "1.1")
 TEST_ROUNDTRIP(yshad, "1.1")
 
+TEST(lagi_dialogue_block, t_optional_params) {
+	using detail::tag_type;
+	std::vector<std::string> toks;
+
+	toks = { "a" };
+	EXPECT_EQ(tag_type<tags::t>::type(0, 0, 1.0, "a"), parse<tags::t>(toks));
+
+	toks = { "1.5", "a" };
+	EXPECT_EQ(tag_type<tags::t>::type(0, 0, 1.5, "a"), parse<tags::t>(toks));
+
+	toks = { "3", "4", "a" };
+	EXPECT_EQ(tag_type<tags::t>::type(3, 4, 1.0, "a"), parse<tags::t>(toks));
+
+	toks = { "2", "3", "4", "a" };
+	EXPECT_EQ(tag_type<tags::t>::type(2, 3, 4.0, "a"), parse<tags::t>(toks));
+}
+
+TEST(lagi_dialogue_block, move_optional_params) {
+	using detail::tag_type;
+	std::vector<std::string> toks;
+
+	toks = { "0", "0", "10", "10" };
+	EXPECT_EQ(tag_type<tags::move>::type(0, 0, 10, 10, 0, 0), parse<tags::move>(toks));
+
+	toks = { "0", "0", "10", "10", "1", "2" };
+	EXPECT_EQ(tag_type<tags::move>::type(0, 0, 10, 10, 1, 2), parse<tags::move>(toks));
+}
