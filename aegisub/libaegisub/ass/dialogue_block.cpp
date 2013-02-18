@@ -42,79 +42,8 @@ namespace {
 
 using namespace boost::adaptors;
 
-template<> std::string Get<std::string>(OverrideParameter const& p) {
-	return p.value;
-}
-
-template<> int Get<int>(OverrideParameter const& p) {
-	if (p.classification == ParameterClass::ALPHA)
-		// &Hxx&, but vsfilter lets you leave everything out
-			return util::mid<int>(0, strtol(std::find_if(p.value.c_str(), p.value.c_str() + p.value.size(), isxdigit), nullptr, 16), 255);
-	return atoi(Get<std::string>(p).c_str());
-}
-
-template<> double Get<double>(OverrideParameter const& p) {
-	return atof(Get<std::string>(p).c_str());
-}
-
-template<> float Get<float>(OverrideParameter const& p) {
-	return static_cast<float>(atof(Get<std::string>(p).c_str()));
-}
-
-template<> bool Get<bool>(OverrideParameter const& p) {
-	return Get<int>(p) != 0;
-}
-
-template<> agi::Color Get<agi::Color>(OverrideParameter const& p) {
-	return Get<std::string>(p);
-}
-
-template<> OverrideBlock Get<OverrideBlock>(OverrideParameter const& p) {
-	//return OverrideBlock(Get<std::string>());
-	return OverrideBlock();
-}
-
-template<> void Set<std::string>(OverrideParameter& p, std::string const& new_value) {
-	p.value = new_value;
-}
-
-template<> void Set<int>(OverrideParameter& p, int const& new_value) {
-	if (p.classification == ParameterClass::ALPHA)
-		p.value = str(boost::format("&H%02X&") % util::mid(0, new_value, 255));
-	else
-		p.value = std::to_string(new_value);
-}
-
-template<> void Set<double>(OverrideParameter& p, double const& new_value) {
-	p.value = std::to_string(new_value);
-}
-
-template<> void Set<bool>(OverrideParameter& p, bool const& new_value) {
-	p.value = std::to_string((int)new_value);
-}
-
-template<> void Set<OverrideBlock>(OverrideParameter& p, OverrideBlock const& b) {
-	p.value = join(b.Tags | transformed((std::string(*)(OverrideTag const&))GetText), std::string());
-}
-
 std::string GetText(DialogueBlock const& block) {
 	return apply_visitor(get_text_visitor(), block);
-}
-
-std::string GetText(OverrideTag const& tag) {
-	std::string result = "\\" + tag.name;
-
-	bool parentheses = tag.params.size() > 1;
-	if (parentheses) result += "(";
-
-	result += join(tag.params | transformed((std::string (*)(OverrideParameter const&))Get<std::string>), ",");
-
-	if (parentheses) result += ")";
-	return result;
-}
-
-std::string GetText(OverrideBlock const& b) {
-	return "{" + join(b.Tags | transformed((std::string(*)(OverrideTag const&))GetText), std::string()) + "}";
 }
 
 std::string TransformDrawing(std::string const& text, int mx, int my, double x, double y) {
@@ -152,22 +81,6 @@ struct block_end : public boost::static_visitor<size_t> {
 
 	size_t operator()(OverrideBlock const& b) const { return b.end + 1; }
 };
-
-std::string get_alternate(std::string const& tag_name) {
-	static std::map<std::string, std::string> alternates;
-	if (alternates.empty()) {
-		alternates["1c"] = "c";
-		alternates["c"] = "1c";
-		alternates["frz"] = "fr";
-		alternates["fr"] = "frz";
-		alternates["pos"] = "move";
-		alternates["move"] = "pos";
-		alternates["clip"] = "iclip";
-		alternates["iclip"] = "clip";
-	}
-	auto it = alternates.find(tag_name);
-	return it == end(alternates) ? "" : it->second;
-}
 
 std::string SetTag(std::string const& text, size_t position, std::string const& tag_name, std::string const& value, std::pair<size_t, size_t> *tag_pos) {
 	auto blocks = Parse(text);

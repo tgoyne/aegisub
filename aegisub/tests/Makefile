@@ -20,6 +20,7 @@ SRC = \
 		tests/access.cpp \
 		tests/cajun.cpp \
 		tests/color.cpp \
+		tests/dialogue_block.cpp \
 		tests/dialogue_lexer.cpp \
 		tests/fs.cpp \
 		tests/hotkey.cpp \
