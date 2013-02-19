@@ -352,6 +352,15 @@ void parse_param(Tuple& ret, std::vector<std::string> const& toks, size_t N) {
 	iterate_tuple(ret, parser);
 }
 
+template<>
+void parse_param<tags::move>(tag_type<tags::move>::type& ret, std::vector<std::string> const& toks, size_t N) {
+	parse_tuple<tags::move> parser(toks);
+	iterate_tuple(ret, parser);
+
+	if (toks.size() == 6 && std::get<4>(ret) > std::get<5>(ret))
+		std::swap(std::get<4>(ret), std::get<5>(ret));
+}
+
 // Parameter unparsers
 #define DIALOGUE_BLOCK_H_UNPARSER(type, expr) \
 	void unparse_param(std::string& out, type const& v) { \

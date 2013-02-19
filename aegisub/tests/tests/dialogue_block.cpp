@@ -117,6 +117,13 @@ TEST(lagi_dialogue_block, move_optional_params) {
 	EXPECT_EQ(tag_type<tags::move>::type(0, 0, 10, 10, 1, 2), parse<tags::move>(toks));
 }
 
+TEST(lagi_dialogue_block, move_should_swap_unordered_times) {
+	std::vector<std::string> toks = { "0", "0", "0", "0", "2000", "1000" };
+	auto ret = parse<tags::move>(toks);
+	EXPECT_EQ(1000, std::get<4>(ret));
+	EXPECT_EQ(2000, std::get<5>(ret));
+}
+
 #define DEFAULT_PARAM_VALUES(tag, value) \
 	TEST(lagi_dialogue_block, tag ## _should_set_to_default_if_param_is_missing) { \
 		EXPECT_EQ(value, parse<tags::tag>(std::vector<std::string>())); \
