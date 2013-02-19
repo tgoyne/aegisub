@@ -25,7 +25,7 @@
 using namespace agi::ass;
 
 #define TEST_ROUNDTRIP_TN(tag_name, args, tag) \
-	TEST(lagi_dialogue_block, roundtrip_##tag) { \
+	TEST(lagi_dialogue_block, tag##_should_roundtrip_through_parse_unparse) { \
 		std::vector<std::string> toks; \
 		if (args[0] == '(') { \
 			std::string argstr(args + 1, args + sizeof(args) - 1); \
@@ -116,3 +116,54 @@ TEST(lagi_dialogue_block, move_optional_params) {
 	toks = { "0", "0", "10", "10", "1", "2" };
 	EXPECT_EQ(tag_type<tags::move>::type(0, 0, 10, 10, 1, 2), parse<tags::move>(toks));
 }
+
+#define DEFAULT_PARAM_VALUES(tag, value) \
+	TEST(lagi_dialogue_block, tag ## _should_set_to_default_if_param_is_missing) { \
+		EXPECT_EQ(value, parse<tags::tag>(std::vector<std::string>())); \
+	}
+
+DEFAULT_PARAM_VALUES(be, 0)
+DEFAULT_PARAM_VALUES(blur, 0)
+DEFAULT_PARAM_VALUES(fax, 0)
+DEFAULT_PARAM_VALUES(fay, 0)
+DEFAULT_PARAM_VALUES(frx, 0)
+DEFAULT_PARAM_VALUES(fry, 0)
+DEFAULT_PARAM_VALUES(fn, std::string(""))
+DEFAULT_PARAM_VALUES(fs_minus, 0)
+DEFAULT_PARAM_VALUES(fs_plus, 0)
+DEFAULT_PARAM_VALUES(k, 0)
+DEFAULT_PARAM_VALUES(kf, 0)
+DEFAULT_PARAM_VALUES(ko, 0)
+DEFAULT_PARAM_VALUES(p, 0)
+DEFAULT_PARAM_VALUES(pbo, 0)
+DEFAULT_PARAM_VALUES(r, std::string(""))
+
+#define MISSING_PARAM_VALUES(tag) \
+	TEST(lagi_dialogue_block, tag ## _should_return_none_if_param_is_missing) { \
+		EXPECT_FALSE(parse<tags::tag>(std::vector<std::string>())); \
+	}
+
+MISSING_PARAM_VALUES(alpha)
+MISSING_PARAM_VALUES(an)
+MISSING_PARAM_VALUES(bord)
+MISSING_PARAM_VALUES(fe)
+MISSING_PARAM_VALUES(frz)
+MISSING_PARAM_VALUES(fs)
+MISSING_PARAM_VALUES(fscx)
+MISSING_PARAM_VALUES(fscy)
+MISSING_PARAM_VALUES(fsp)
+MISSING_PARAM_VALUES(i)
+MISSING_PARAM_VALUES(outline_alpha)
+MISSING_PARAM_VALUES(outline_color)
+MISSING_PARAM_VALUES(primary_alpha)
+MISSING_PARAM_VALUES(primary_color)
+MISSING_PARAM_VALUES(q)
+MISSING_PARAM_VALUES(s)
+MISSING_PARAM_VALUES(secondary_alpha)
+MISSING_PARAM_VALUES(secondary_color)
+MISSING_PARAM_VALUES(u)
+MISSING_PARAM_VALUES(xbord)
+MISSING_PARAM_VALUES(xshad)
+MISSING_PARAM_VALUES(ybord)
+MISSING_PARAM_VALUES(yshad)
+

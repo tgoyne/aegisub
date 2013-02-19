@@ -23,6 +23,7 @@
 #include <boost/spirit/include/karma_generate.hpp>
 #include <boost/spirit/include/karma_int.hpp>
 #include <boost/spirit/include/karma_real.hpp>
+#include <boost/optional.hpp>
 #include <boost/variant.hpp>
 #include <string>
 #include <vector>
@@ -196,64 +197,76 @@ template<> struct tag_alias<tags::kf>   { static const char *name() { return "K"
 template<> struct tag_alias<tags::pos>  { static const char *name() { return "move"; } };
 template<> struct tag_alias<tags::move> { static const char *name() { return "pos";  } };
 
+using boost::optional;
+
 // Tag data types
-template<> struct tag_type<tags::alpha>           { typedef parameter_type::alpha type; };
-template<> struct tag_type<tags::an>              { typedef int type; };
-template<> struct tag_type<tags::b>               { typedef int type; };
+template<> struct tag_type<tags::alpha>           { typedef optional<parameter_type::alpha> type; };
+template<> struct tag_type<tags::an>              { typedef optional<int> type; };
+template<> struct tag_type<tags::b>               { typedef optional<int> type; };
 template<> struct tag_type<tags::be>              { typedef int type; };
 template<> struct tag_type<tags::blur>            { typedef double type; };
-template<> struct tag_type<tags::bord>            { typedef parameter_type::absolute_size type; };
+template<> struct tag_type<tags::bord>            { typedef optional<parameter_type::absolute_size> type; };
 template<> struct tag_type<tags::clip>            { typedef parameter_type::clip type; };
 template<> struct tag_type<tags::fad>             { typedef std::tuple<parameter_type::time_start, parameter_type::time_end> type; };
 template<> struct tag_type<tags::fade>            { typedef std::tuple<parameter_type::alpha, parameter_type::alpha, parameter_type::alpha, parameter_type::time_start, parameter_type::time_start, parameter_type::time_start, parameter_type::time_start> type; };
 template<> struct tag_type<tags::fax>             { typedef double type; };
 template<> struct tag_type<tags::fay>             { typedef double type; };
-template<> struct tag_type<tags::fe>              { typedef int type; };
+template<> struct tag_type<tags::fe>              { typedef optional<int> type; };
 template<> struct tag_type<tags::fn>              { typedef std::string type; };
 template<> struct tag_type<tags::frx>             { typedef double type; };
 template<> struct tag_type<tags::fry>             { typedef double type; };
-template<> struct tag_type<tags::frz>             { typedef double type; };
-template<> struct tag_type<tags::fs>              { typedef parameter_type::absolute_size type; };
+template<> struct tag_type<tags::frz>             { typedef optional<double> type; };
+template<> struct tag_type<tags::fs>              { typedef optional<parameter_type::absolute_size> type; };
 template<> struct tag_type<tags::fs_minus>        { typedef int type; };
 template<> struct tag_type<tags::fs_plus>         { typedef int type; };
-template<> struct tag_type<tags::fscx>            { typedef parameter_type::size_x type; };
-template<> struct tag_type<tags::fscy>            { typedef parameter_type::size_y type; };
-template<> struct tag_type<tags::fsp>             { typedef parameter_type::absolute_size type; };
-template<> struct tag_type<tags::i>               { typedef int type; };
+template<> struct tag_type<tags::fscx>            { typedef optional<parameter_type::size_x> type; };
+template<> struct tag_type<tags::fscy>            { typedef optional<parameter_type::size_y> type; };
+template<> struct tag_type<tags::fsp>             { typedef optional<parameter_type::absolute_size> type; };
+template<> struct tag_type<tags::i>               { typedef optional<int> type; };
 template<> struct tag_type<tags::iclip>           { typedef parameter_type::clip type; };
 template<> struct tag_type<tags::k>               { typedef parameter_type::karaoke type; };
 template<> struct tag_type<tags::kf>              { typedef parameter_type::karaoke type; };
 template<> struct tag_type<tags::ko>              { typedef parameter_type::karaoke type; };
 template<> struct tag_type<tags::move>            { typedef std::tuple<parameter_type::pos_x, parameter_type::pos_y, parameter_type::pos_x, parameter_type::pos_y, parameter_type::time_start, parameter_type::time_start> type; };
 template<> struct tag_type<tags::org>             { typedef std::tuple<parameter_type::pos_x, parameter_type::pos_y> type; };
-template<> struct tag_type<tags::outline_alpha>   { typedef parameter_type::alpha type; };
-template<> struct tag_type<tags::outline_color>   { typedef agi::Color type; };
+template<> struct tag_type<tags::outline_alpha>   { typedef optional<parameter_type::alpha> type; };
+template<> struct tag_type<tags::outline_color>   { typedef optional<agi::Color> type; };
 template<> struct tag_type<tags::p>               { typedef int type; };
 template<> struct tag_type<tags::pbo>             { typedef parameter_type::pos_y type; };
 template<> struct tag_type<tags::pos>             { typedef std::tuple<parameter_type::pos_x, parameter_type::pos_y> type; };
-template<> struct tag_type<tags::primary_alpha>   { typedef parameter_type::alpha type; };
-template<> struct tag_type<tags::primary_color>   { typedef agi::Color type; };
-template<> struct tag_type<tags::q>               { typedef int type; };
+template<> struct tag_type<tags::primary_alpha>   { typedef optional<parameter_type::alpha> type; };
+template<> struct tag_type<tags::primary_color>   { typedef optional<agi::Color> type; };
+template<> struct tag_type<tags::q>               { typedef optional<int> type; };
 template<> struct tag_type<tags::r>               { typedef std::string type; };
-template<> struct tag_type<tags::s>               { typedef int type; };
-template<> struct tag_type<tags::secondary_alpha> { typedef parameter_type::alpha type; };
-template<> struct tag_type<tags::secondary_color> { typedef agi::Color type; };
-template<> struct tag_type<tags::shad>            { typedef parameter_type::absolute_size type; };
-template<> struct tag_type<tags::shadow_alpha>    { typedef parameter_type::alpha type; };
-template<> struct tag_type<tags::shadow_color>    { typedef agi::Color type; };
+template<> struct tag_type<tags::s>               { typedef optional<int> type; };
+template<> struct tag_type<tags::secondary_alpha> { typedef optional<parameter_type::alpha> type; };
+template<> struct tag_type<tags::secondary_color> { typedef optional<agi::Color> type; };
+template<> struct tag_type<tags::shad>            { typedef optional<parameter_type::absolute_size> type; };
+template<> struct tag_type<tags::shadow_alpha>    { typedef optional<parameter_type::alpha> type; };
+template<> struct tag_type<tags::shadow_color>    { typedef optional<agi::Color> type; };
 template<> struct tag_type<tags::t>               { typedef std::tuple<parameter_type::time_start, parameter_type::time_end, double, std::string> type; };
-template<> struct tag_type<tags::u>               { typedef int type; };
-template<> struct tag_type<tags::xbord>           { typedef parameter_type::size_x type; };
-template<> struct tag_type<tags::xshad>           { typedef parameter_type::size_x type; };
-template<> struct tag_type<tags::ybord>           { typedef parameter_type::size_y type; };
-template<> struct tag_type<tags::yshad>           { typedef parameter_type::size_y type; };
+template<> struct tag_type<tags::u>               { typedef optional<int> type; };
+template<> struct tag_type<tags::xbord>           { typedef optional<parameter_type::size_x> type; };
+template<> struct tag_type<tags::xshad>           { typedef optional<parameter_type::size_x> type; };
+template<> struct tag_type<tags::ybord>           { typedef optional<parameter_type::size_y> type; };
+template<> struct tag_type<tags::yshad>           { typedef optional<parameter_type::size_y> type; };
 
 // Parameter parsers
+template<typename Type> Type default_value() { return 0; }
+template<> std::string default_value<std::string>() { return ""; }
+template<> parameter_type::drawing default_value<parameter_type::drawing>() { return std::string(); }
+template<> agi::Color default_value<agi::Color>() { return agi::Color(); }
+
 #define DIALOGUE_BLOCK_H_PARSER(type, expr) \
 	template<typename Tag> \
 	void parse_param(type& ret, std::vector<std::string> const& toks, size_t N) { \
-		auto const& p = toks[N]; \
-		ret = expr; \
+		if (N < toks.size()) { \
+			auto const& p = toks[N]; \
+			ret = expr; \
+		} \
+		else { \
+			ret = default_value<type>(); \
+		} \
 	}
 
 DIALOGUE_BLOCK_H_PARSER(int, atoi(p.c_str()))
@@ -276,6 +289,15 @@ DIALOGUE_BLOCK_H_PARSER(parameter_type::drawing, p)
 DIALOGUE_BLOCK_H_PARSER(parameter_type::alpha, util::mid<int>(0, strtol(std::find_if(p.c_str(), p.c_str() + p.size(), isxdigit), nullptr, 16), 255))
 
 #undef DIALOGUE_BLOCK_H_PARSER
+
+template<typename Tag, typename Type>
+void parse_param(optional<Type>& ret, std::vector<std::string> const& toks, size_t N) {
+	if (N < toks.size()) {
+		Type v;
+		parse_param<Tag>(v, toks, N);
+		ret = v;
+	}
+}
 
 namespace iterate_tuple_detail {
 	template <size_t N, typename Tuple, typename Func>
@@ -303,8 +325,7 @@ struct parse_tuple {
 
 	template<typename ValueType>
 	void operator()(ValueType& value) {
-		if (i < toks.size())
-			parse_param<Tag>(value, toks, i++);
+		parse_param<Tag>(value, toks, i++);
 	}
 };
 
@@ -363,7 +384,6 @@ DIALOGUE_BLOCK_H_UNPARSER_ALIAS(parameter_type::string, double)
 DIALOGUE_BLOCK_H_UNPARSER_ALIAS(parameter_type::time_end, double)
 DIALOGUE_BLOCK_H_UNPARSER_ALIAS(parameter_type::time_start, double)
 
-
 DIALOGUE_BLOCK_H_UNPARSER(std::string, out += v)
 DIALOGUE_BLOCK_H_UNPARSER(parameter_type::drawing, out += v)
 DIALOGUE_BLOCK_H_UNPARSER(agi::Color, out += v.GetAssOverrideFormatted())
@@ -389,6 +409,12 @@ template<typename Tuple>
 void unparse_param(std::string& out, Tuple const& v) {
 	tuple_unparser unparser(out);
 	iterate_tuple(v, unparser);
+}
+
+template<typename Type>
+void unparse_param(std::string& out, optional<Type> const& v) {
+	if (v)
+		unparse_param(out, *v);
 }
 
 struct variant_unparser : boost::static_visitor<void> {
