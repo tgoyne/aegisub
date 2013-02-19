@@ -488,19 +488,6 @@ typedef boost::variant<PlainBlock, CommentBlock, DrawingBlock, OverrideBlock> Di
 std::string GetText(DialogueBlock const& block);
 std::string GetText(OverrideTag const& tag);
 
-#if 0
-template<typename T> T Get(OverrideTag const& tag, size_t idx) { return Get<T>(tag.params[idx]); }
-template<typename T> T Get(OverrideTag const& tag, size_t idx, T const& def) {
-	return idx >= tag.params.size() ? def : Get<T>(tag.params[idx]);
-}
-template<typename T> void Set(OverrideTag& tag, size_t idx, T const& value) { Set(tag.params[idx], value); }
-
-template<typename T> T Get(OverrideParameter const& parameter);
-template<typename T> void Set(OverrideParameter& parameter, T const& value);
-
-std::string TransformDrawing(std::string const& str, int shift_x, int shift_y, double scale_x, double scale_y);
-std::string SetTag(std::string const& text, size_t position, std::string const& tag_name, std::string const& value, std::pair<size_t, size_t> *tag_pos = nullptr);
-
 template<typename Range, typename Func>
 void VisitTags(Range& r, Func f) {
 	bool stop = false;
@@ -513,6 +500,19 @@ void VisitTags(Range& r, Func f) {
 		}
 	}
 }
+
+#if 0
+template<typename T> T Get(OverrideTag const& tag, size_t idx) { return Get<T>(tag.params[idx]); }
+template<typename T> T Get(OverrideTag const& tag, size_t idx, T const& def) {
+	return idx >= tag.params.size() ? def : Get<T>(tag.params[idx]);
+}
+template<typename T> void Set(OverrideTag& tag, size_t idx, T const& value) { Set(tag.params[idx], value); }
+
+template<typename T> T Get(OverrideParameter const& parameter);
+template<typename T> void Set(OverrideParameter& parameter, T const& value);
+
+std::string TransformDrawing(std::string const& str, int shift_x, int shift_y, double scale_x, double scale_y);
+std::string SetTag(std::string const& text, size_t position, std::string const& tag_name, std::string const& value, std::pair<size_t, size_t> *tag_pos = nullptr);
 
 template<typename Range, typename Func>
 void VisitParameters(Range& r, Func f) {
@@ -533,40 +533,25 @@ template<typename ResultType, typename Impl>
 Visitor<ResultType, Impl> AddResultType(Impl impl) {
 	return impl;
 }
-
-namespace tags {
-	struct move;
-	struct pos {
-		typedef move alternate;
-		typedef std::tuple<double, double> value_type;
-		static const char *name() { return "pos"; }
-	};
-	struct move {
-		typedef pos alternate;
-		typedef std::tuple<double, double, double, double, int, int> value_type;
-		static const char *name() { return "move"; }
-	};
-}
+#endif
 
 template<typename Tag>
-auto GetValue(std::string const& text, AssStyle *style, size_t position, Tag) -> typename Tag::value_type {
+typename Tag::value_type GetValue(std::string const& text, size_t position) {
+	using namespace detail;
 	auto blocks = Parse(text);
-	Tag::value_type ret;
-	bool got_value = false;
+	typename tag_type<Tag>::type ret;
 	VisitTags(blocks, [&](OverrideTag& tag, bool *stop) {
-		if (tag.name == tag_name<Tag>() || tag.name == alternate_name<Tag>())
-			parse_tag<Tag>(ret, tag);
+		if (tag.name == tag_name<Tag>() || tag.name == tag_name<alternate_name<Tag>::type>()) {
+			parse<Tag>(ret, tag.params);
 			*stop = true;
-			got_value = true;
 		}
 	});
 
-	if (!got_value)
-		set_default<Tag>(ret, style);
+	// if (!got_value)
+	// 	set_default<Tag>(ret, style);
 
 	return ret;
 }
 
-#endif
 
 } }
