@@ -29,6 +29,33 @@
 #include <vector>
 #include <tuple>
 
+struct Style {
+	std::string name;
+	std::string font;
+	double fontsize;
+
+	agi::Color primary;
+	agi::Color secondary;
+	agi::Color outline;
+	agi::Color shadow;
+
+	bool bold;
+	bool italic;
+	bool underline;
+	bool strikeout;
+
+	double scalex;
+	double scaley;
+	double spacing;
+	double angle;
+	int borderstyle;
+	double outline_w;
+	double shadow_w;
+	int alignment;
+	std::array<int, 3> Margin;
+	int encoding;
+};
+
 namespace agi { namespace ass {
 
 namespace detail {
@@ -121,8 +148,9 @@ template<typename Tag> struct tag_name;
 // Get will read the value of this tag, but Set won't replace it.
 template<typename Tag> struct tag_parent { typedef tags::none type; };
 
-// The alternate name for this tage, which is identical to the primary name
-template<typename Tag> struct tag_alias { typedef tags::none type; };
+// The alternate tag for this tag, which is either purely an alias, or just
+// another tag which is mutually-exclusive with this one
+template<typename Tag> struct tag_alternate { typedef tags::none type; };
 
 // The data type of this tag
 template<typename Tag> struct tag_type;
@@ -190,12 +218,12 @@ template<> struct tag_parent<tags::xshad>           { typedef tags::shad type; }
 template<> struct tag_parent<tags::ybord>           { typedef tags::bord type; };
 template<> struct tag_parent<tags::yshad>           { typedef tags::shad type; };
 
-// Tag aliases
-template<> struct tag_alias<tags::an>   { static const char *name() { return "a";    } };
-template<> struct tag_alias<tags::frz>  { static const char *name() { return "fr";   } };
-template<> struct tag_alias<tags::kf>   { static const char *name() { return "K";    } };
-template<> struct tag_alias<tags::pos>  { static const char *name() { return "move"; } };
-template<> struct tag_alias<tags::move> { static const char *name() { return "pos";  } };
+// Tag alternates
+template<> struct tag_alternate<tags::an>   { static const char *name() { return "a";    } };
+template<> struct tag_alternate<tags::frz>  { static const char *name() { return "fr";   } };
+template<> struct tag_alternate<tags::kf>   { static const char *name() { return "K";    } };
+template<> struct tag_alternate<tags::pos>  { static const char *name() { return "move"; } };
+template<> struct tag_alternate<tags::move> { static const char *name() { return "pos";  } };
 
 using boost::optional;
 
@@ -535,20 +563,24 @@ Visitor<ResultType, Impl> AddResultType(Impl impl) {
 }
 #endif
 
+std::vector<DialogueBlock> Parse(std::string const& str);
+
 template<typename Tag>
 typename Tag::value_type GetValue(std::string const& text, size_t position) {
 	using namespace detail;
 	auto blocks = Parse(text);
 	typename tag_type<Tag>::type ret;
+	set_default<Tag>(ret, style);
 	VisitTags(blocks, [&](OverrideTag& tag, bool *stop) {
-		if (tag.name == tag_name<Tag>() || tag.name == tag_name<alternate_name<Tag>::type>()) {
+		if (tag.name == tag_name<Tag>::name() || tag.name == tag_name<typename tag_parent<Tag>::type>::name()) {
 			parse<Tag>(ret, tag.params);
 			*stop = true;
 		}
+		else if (tag.name == tag_name<typename tag_alternate<Tag>::type>::name()) {
+			parse<Tag, typename tag_alternate<Tag>::type>(ret, tag.params);
+			*stop = true;
+		}
 	});
-
-	// if (!got_value)
-	// 	set_default<Tag>(ret, style);
 
 	return ret;
 }
