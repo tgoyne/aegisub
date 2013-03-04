@@ -31,16 +31,11 @@
 
 #include "option_visit.h"
 
-#include <boost/range/adaptor/map.hpp>
 #include <cassert>
 #include <memory>
 #include <sstream>
 
 namespace {
-	/// @brief Write an option to a json object
-	/// @param[out] obj  Parent object
-	/// @param[in] path  Path option should be stored in.
-	/// @param[in] value Value to write.
 	void put_option(json::Object &obj, const std::string &path, const json::UnknownElement &value) {
 		std::string::size_type pos = path.find('/');
 		// Not having a '/' denotes it is a leaf.
@@ -92,7 +87,6 @@ void Options::ConfigUser() {
 	catch (fs::FileNotFound const&) {
 		return;
 	}
-	/// @todo Handle other errors such as parsing and notifying the user.
 }
 
 void Options::LoadConfig(std::istream& stream, bool ignore_errors) {
@@ -100,10 +94,11 @@ void Options::LoadConfig(std::istream& stream, bool ignore_errors) {
 
 	try {
 		json::Reader::Read(config_root, stream);
-	} catch (json::Reader::ParseException& e) {
+	}
+	catch (json::Reader::ParseException& e) {
 		LOG_E("option/load") << "json::ParseException: " << e.what() << ", Line/offset: " << e.m_locTokenBegin.m_nLine + 1 << '/' << e.m_locTokenBegin.m_nLineOffset + 1;
-	} catch (json::Exception& e) {
-		/// @todo Do something better here, maybe print the exact error
+	}
+	catch (json::Exception& e) {
 		LOG_E("option/load") << "json::Exception: " << e.what();
 	}
 
@@ -114,60 +109,40 @@ void Options::LoadConfig(std::istream& stream, bool ignore_errors) {
 OptionValue* Options::Get(const std::string &name) {
 	auto index = values.find(name);
 	if (index != values.end())
-		return index->second.get();
+		return &index->second;
 
 	LOG_E("option/get") << "agi::Options::Get Option not found: (" << name << ")";
 	throw OptionErrorNotFound("Option value not found: " + name);
 }
 
-void Options::Flush() const {
+struct flush_visitor : boost::static_visitor<void> {
 	json::Object obj_out;
+	const std::string *name;
 
-	for (auto const& ov : values) {
-		switch (ov.second->GetType()) {
-			case OptionValue::Type_String:
-				put_option(obj_out, ov.first, ov.second->GetString());
-				break;
-
-			case OptionValue::Type_Int:
-				put_option(obj_out, ov.first, ov.second->GetInt());
-				break;
-
-			case OptionValue::Type_Double:
-				put_option(obj_out, ov.first, ov.second->GetDouble());
-				break;
-
-			case OptionValue::Type_Color:
-				put_option(obj_out, ov.first, ov.second->GetColor().GetRgbFormatted());
-				break;
-
-			case OptionValue::Type_Bool:
-				put_option(obj_out, ov.first, ov.second->GetBool());
-				break;
-
-			case OptionValue::Type_List_String:
-				put_array(obj_out, ov.first, "string", ov.second->GetListString());
-				break;
-
-			case OptionValue::Type_List_Int:
-				put_array(obj_out, ov.first, "int", ov.second->GetListInt());
-				break;
-
-			case OptionValue::Type_List_Double:
-				put_array(obj_out, ov.first, "double", ov.second->GetListDouble());
-				break;
-
-			case OptionValue::Type_List_Color:
-				put_array(obj_out, ov.first, "color", ov.second->GetListColor());
-				break;
-
-			case OptionValue::Type_List_Bool:
-				put_array(obj_out, ov.first, "bool", ov.second->GetListBool());
-				break;
-		}
+	template<typename T>
+	void operator()(T const& value) {
+		put_option(obj_out, *name, value);
 	}
 
-	json::Writer::Write(obj_out, io::Save(config_file).Get());
+	void operator()(agi::Color const& value) {
+		put_option(obj_out, *name, value.GetRgbFormatted());
+	}
+
+	template<typename T>
+	void operator()(std::vector<T> const& value) {
+		put_array(obj_out, *name, "dongs", value);
+	}
+};
+
+void Options::Flush() const {
+	flush_visitor visitor;
+
+	for (auto const& ov : values) {
+		visitor.name = &ov.first;
+		boost::apply_visitor(visitor, ov.second);
+	}
+
+	json::Writer::Write(visitor.obj_out, io::Save(config_file).Get());
 }
 
 } // namespace agi

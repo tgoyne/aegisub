@@ -74,7 +74,7 @@ std::unique_ptr<OptionValue> ConfigVisitor::ReadArray(json::Array const& src, st
 			return 0;
 		}
 
-		arr.push_back(ValueType(obj.begin()->second));
+		arr.emplace_back(ValueType(obj.begin()->second));
 	}
 
 	return util::make_unique<OptionValueType>(name, arr);
@@ -150,7 +150,7 @@ void ConfigVisitor::AddOptionValue(std::unique_ptr<OptionValue>&& opt) {
 		it->second = std::move(opt);
 	else {
 		try {
-			values[name]->Set(opt.get());
+			it->second->Set(opt.get());
 		}
 		catch (agi::OptionValueError const& e) {
 			if (ignore_errors)
