@@ -42,6 +42,48 @@ class wxCheckBox;
 class wxRadioButton;
 class wxTextCtrl;
 
+struct FramerateTransformSettings {
+	agi::vfr::Framerate source;
+	agi::vfr::Framerate dest;
+};
+
+int ConvertTime(int time, FramerateTransformSettings const& settings) {
+	int frame_number   = settings.source.FrameAtTime(time);
+	int frame_start    = settings.source.TimeAtFrame(frame_number);
+	int frame_end      = settings.source.TimeAtFrame(frame_number + 1);
+	int frame_duration = frame_end - frame_start;
+	double dist = double(time - frame_start) / frame_duration;
+
+	int frame_start_new    = settings.dest.TimeAtFrame(frame_number);
+	int frame_end_new      = settings.dest.TimeAtFrame(frame_number + 1);
+	int frame_duration_new = frame_end_new - frame_start_new;
+
+	// Match the same relative position between the frames as the old time had
+	return frame_start_new + frame_duration_new * double(time - frame_start) / frame_duration;
+}
+
+int TruncateToCentiseconds(int time) {
+	return (time / 10) * 10;
+}
+
+void TransformLine(AssDialogue *line, FramerateTransformSettings const& settings) {
+	AssTime new_start_time = TruncateToCentiseconds(ConvertTime(line->Start, settings));
+	AssTime new_end_time   = TruncateToCentiseconds(ConvertTime(line->End, settings));
+		newK = 0;
+		oldK = 0;
+		newStart = trunc_cs(ConvertTime(curDialogue->Start));
+		newEnd = trunc_cs(ConvertTime(curDialogue->End) + 9);
+
+		// Process stuff
+		boost::ptr_vector<AssDialogueBlock> blocks;
+		for (auto block : blocks | agi::of_type<AssDialogueBlockOverride>())
+			block->ProcessParameters(TransformTimeTags, this);
+		curDialogue->Start = newStart;
+		curDialogue->End = newEnd;
+		curDialogue->UpdateText(blocks);
+
+}
+
 /// @class AssTransformFramerateFilter
 /// @brief Transform subtitle times, including those in override tags, from an input framerate to an output framerate
 class AssTransformFramerateFilter : public AssExportFilter {
