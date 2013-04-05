@@ -21,6 +21,9 @@
     <Filter Include="ASS">
       <UniqueIdentifier>{c97bd8a3-ebb7-4c43-9ca0-4ab8479d9388}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Adaptors">
+      <UniqueIdentifier>{bd09269c-9885-41af-9fdb-534acd8ea95f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(SrcDir)common\charset_6937.h">
@@ -128,9 +131,6 @@
     <ClInclude Include="$(SrcDir)common\parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(SrcDir)include\libaegisub\of_type_adaptor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="$(SrcDir)include\libaegisub\calltip_provider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -154,6 +154,9 @@
     </ClInclude>
     <ClInclude Include="$(SrcDir)include\libaegisub\ass\uuencode.h">
       <Filter>ASS</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SrcDir)include\libaegisub\adaptor\of_type.h">
+      <Filter>Adaptors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

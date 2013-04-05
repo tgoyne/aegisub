@@ -37,7 +37,7 @@
 #include "subtitle_format.h"
 #include "utils.h"
 
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 #include <libaegisub/split.h>
 
 #include <boost/algorithm/string/predicate.hpp>

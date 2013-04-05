@@ -44,7 +44,7 @@
 #include "ass_time.h"
 #include "text_file_writer.h"
 
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/path.hpp>

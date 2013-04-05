@@ -62,7 +62,7 @@
 #include "video_context.h"
 #include "video_slider.h"
 
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 
 enum {
 	GRID_SCROLLBAR = 1730,

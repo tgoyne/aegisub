@@ -60,7 +60,7 @@
 #include "utils.h"
 #include "validators.h"
 
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 
 /// Style rename helper that walks a file searching for a style and optionally
 /// updating references to it

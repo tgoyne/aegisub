@@ -44,7 +44,7 @@
 #include "compat.h"
 #include "options.h"
 
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 #include <boost/range/adaptor/reversed.hpp>
 
 DEFINE_SIMPLE_EXCEPTION(TTXTParseError, SubtitleFormatParseError, "subtitle_io/parse/ttxt")

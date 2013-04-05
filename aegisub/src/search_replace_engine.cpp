@@ -24,7 +24,7 @@
 #include "selection_controller.h"
 #include "text_selection_controller.h"
 
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 #include <libaegisub/util.h>
 
 #include <boost/locale.hpp>

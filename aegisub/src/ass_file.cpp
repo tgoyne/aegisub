@@ -42,8 +42,8 @@
 #include "options.h"
 #include "utils.h"
 
+#include <libaegisub/adaptor/of_type.h>
 #include <libaegisub/dispatch.h>
-#include <libaegisub/of_type_adaptor.h>
 
 #include <algorithm>
 #include <boost/algorithm/string/case_conv.hpp>

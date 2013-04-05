@@ -50,7 +50,7 @@
 #include "options.h"
 #include "utils.h"
 
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 
 DialogAttachments::DialogAttachments(wxWindow *parent, AssFile *ass)
 : wxDialog(parent, -1, _("Attachment List"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)

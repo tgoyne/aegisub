@@ -38,7 +38,7 @@
 #include <libaegisub/fs.h>
 #include <libaegisub/io.h>
 #include <libaegisub/log.h>
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 #include <libaegisub/path.h>
 
 #include <libaegisub/cajun/elements.h>

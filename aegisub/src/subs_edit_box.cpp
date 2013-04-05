@@ -56,7 +56,7 @@
 #include "video_context.h"
 
 #include <libaegisub/dispatch.h>
-#include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/adaptor/of_type.h>
 
 #include <boost/lexical_cast.hpp>
 #include <functional>
