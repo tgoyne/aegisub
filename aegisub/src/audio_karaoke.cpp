@@ -276,15 +276,12 @@ void AudioKaraoke::OnMouse(wxMouseEvent &event) {
 
 	// Check if the mouse is over a scroll arrow
 	int client_width = split_area->GetClientSize().GetWidth();
-	if (scroll_x > 0 && mouse_pos < 20) {
+	if (scroll_x > 0 && mouse_pos < 20)
 		scroll_dir = -1;
-	}
-	else if (scroll_x + client_width < rendered_line.GetWidth() && mouse_pos > client_width - 20) {
+	else if (scroll_x + client_width < rendered_line.GetWidth() && mouse_pos > client_width - 20)
 		scroll_dir = 1;
-	}
-	else {
+	else
 		scroll_dir = 0;
-	}
 
 	if (scroll_dir) {
 		mouse_pos = -1;
@@ -318,12 +315,10 @@ void AudioKaraoke::OnMouse(wxMouseEvent &event) {
 		return;
 	}
 
-	if (click_will_remove_split) {
+	if (click_will_remove_split)
 		kara->RemoveSplit(syl + (click_left && !click_right));
-	}
-	else {
+	else
 		kara->AddSplit(syl, split_pos - syl_start_points[syl]);
-	}
 
 	SetDisplayText();
 	accept_button->Enable(true);
@@ -352,13 +347,27 @@ void AudioKaraoke::LoadFromLine() {
 	cancel_button->Enable(false);
 }
 
+#include <boost/locale/boundary.hpp>
+
 void AudioKaraoke::SetDisplayText() {
+	using namespace boost::locale::boundary;
+	std::vector<size_t> char_to_byte;
+	std::vector<size_t> byte_to_char;
+
 	// Insert spaces between each syllable to avoid crowding
 	spaced_text.clear();
 	syl_start_points.clear();
 	syl_start_points.reserve(kara->size());
 	for (auto const& syl : *kara) {
 		syl_start_points.push_back(spaced_text.size());
+
+		const ssegment_index characters(character, begin(syl.text), end(syl.text));
+		for (auto chr : characters) {
+			for (auto byte : chr)
+				byte_to_char.push_back(char_to_byte.size())
+			char_to_byte.push_back(std::distance(begin(syl.text), begin(chr)));
+		}
+
 		spaced_text += to_wx(" " + syl.text);
 	}
 
