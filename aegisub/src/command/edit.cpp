@@ -58,6 +58,7 @@
 #include "../video_context.h"
 
 #include <libaegisub/adaptor/of_type.h>
+#include <libaegisub/adaptor/pluck.h>
 
 #include <algorithm>
 #include <boost/algorithm/string/join.hpp>
@@ -67,7 +68,6 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/sliced.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 #include <boost/tokenizer.hpp>
 
 #include <wx/clipbrd.h>
@@ -459,13 +459,12 @@ struct edit_find_replace : public Command {
 	}
 };
 
-static std::string get_entry_data(AssDialogue *d) { return d->GetEntryData(); }
 static void copy_lines(agi::Context *c) {
 	SubtitleSelection sel = c->selectionController->GetSelectedSet();
 	SetClipboard(join(c->ass->Line
 		| agi::of_type<AssDialogue>()
 		| filtered([&](AssDialogue *d) { return sel.count(d); })
-		| transformed(get_entry_data),
+		| agi::pluck(&AssDialogue::GetEntryData),
 		"\r\n"));
 }
 
@@ -960,7 +959,7 @@ struct edit_clear_text : public Command {
 		boost::ptr_vector<AssDialogueBlock> blocks(line->ParseTags());
 		line->Text = join(blocks
 			| filtered([](AssDialogueBlock const& b) { return b.GetType() != BLOCK_PLAIN; })
-			| transformed(get_text),
+			| agi::pluck(&AssDialogueBlock::GetText),
 			"");
 		c->ass->Commit(_("clear line"), AssFile::COMMIT_DIAG_TEXT, -1, line);
 	}

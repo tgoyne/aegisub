@@ -21,6 +21,7 @@
 
 #include "config.h"
 
+#include <libaegisub/adaptor/cast.h>
 #include <libaegisub/signal.h>
 
 #include "ass_dialogue.h"
@@ -434,8 +435,8 @@ void AudioTimingControllerKaraoke::OnMarkerDrag(std::vector<AudioMarker*> const&
 
 	if (m.size() > 1) {
 		int delta = m[0]->GetPosition() - old_position;
-		for (AudioMarker *marker : m | boost::adaptors::sliced(1, m.size()))
-			MoveMarker(static_cast<KaraokeMarker *>(marker), marker->GetPosition() + delta);
+		for (auto marker : m | boost::adaptors::sliced(1, m.size()) | agi::cast<KaraokeMaker *>())
+			MoveMarker(marker, marker->GetPosition() + delta);
 		syl = cur_syl;
 	}
 

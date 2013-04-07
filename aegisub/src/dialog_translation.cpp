@@ -41,6 +41,7 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/range/algorithm.hpp>
 
 #include <wx/checkbox.h>
 #include <wx/msgdlg.h>
@@ -65,7 +66,7 @@ DialogTranslation::DialogTranslation(agi::Context *c)
 , active_line_connection(c->selectionController->AddActiveLineListener(&DialogTranslation::OnActiveLineChanged, this))
 , active_line(c->selectionController->GetActiveLine())
 , cur_block(0)
-, line_count(count_if(c->ass->Line.begin(), c->ass->Line.end(), cast<AssDialogue*>()))
+, line_count(boost::count_if(c->ass->Line, cast<AssDialogue*>()))
 , line_number(count_if(c->ass->Line.begin(), c->ass->Line.iterator_to(*active_line), cast<AssDialogue*>()) + 1)
 , switching_lines(false)
 {
@@ -184,7 +185,7 @@ void DialogTranslation::OnActiveLineChanged(AssDialogue *new_line) {
 
 void DialogTranslation::OnExternalCommit(int commit_type) {
 	if (commit_type == AssFile::COMMIT_NEW || commit_type & AssFile::COMMIT_DIAG_ADDREM) {
-		line_count = count_if(c->ass->Line.begin(), c->ass->Line.end(), cast<AssDialogue*>());
+		line_count = boost::count_if(c->ass->Line, cast<AssDialogue*>());
 		line_number_display->SetLabel(wxString::Format(_("Current line: %d/%d"), (int)line_number, (int)line_count));
 	}
 

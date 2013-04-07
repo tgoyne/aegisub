@@ -39,6 +39,8 @@
 
 #include "utils.h"
 
+#include <libaegisub/adaptor/cast.h>
+#include <libaegisub/adaptor/pluck.h>
 #include <libaegisub/color.h>
 
 #include <boost/algorithm/string/join.hpp>
@@ -46,7 +48,6 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/format.hpp>
 #include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 #include <functional>
 
 using namespace boost::adaptors;
@@ -443,17 +444,14 @@ void AssDialogueBlockOverride::AddTag(std::string const& tag) {
 	Tags.emplace_back(tag);
 }
 
-static std::string tag_str(AssOverrideTag const& t) { return t; }
 std::string AssDialogueBlockOverride::GetText() {
-	text = "{" + join(Tags | transformed(tag_str), std::string()) + "}";
+	text = "{" + join(Tags | agi::cast<std::string>(), std::string()) + "}";
 	return text;
 }
 
 void AssDialogueBlockOverride::ProcessParameters(ProcessParametersCallback callback, void *userData) {
 	for (auto& tag : Tags) {
-		for (auto& par : tag.Params) {
-			if (par.omitted) continue;
-
+		for (auto& par : tag.Params | agi::equal(&AssOverrideParameter::omitted, false)) {
 			callback(tag.Name, &par, userData);
 
 			// Go recursive if it's a block parameter
@@ -503,7 +501,6 @@ void AssOverrideTag::SetText(const std::string &text) {
 	valid = false;
 }
 
-static std::string param_str(AssOverrideParameter const& p) { return p.Get<std::string>(); }
 AssOverrideTag::operator std::string() const {
 	std::string result = Name;
 
@@ -514,7 +511,7 @@ AssOverrideTag::operator std::string() const {
 	// Add parameters
 	result += join(Params
 		| filtered([](AssOverrideParameter const& p) { return !p.omitted; } )
-		| transformed(param_str),
+		| agi::pluck(&AssOverrideParameter::Get<std::string>),
 		",");
 
 	if (parentheses) result += ")";

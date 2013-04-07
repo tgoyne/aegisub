@@ -42,8 +42,12 @@
 #include "options.h"
 #include "utils.h"
 
+#include <libaegisub/adaptor/of_type.h>
+
 #include <algorithm>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/range/algorithm_ext.hpp>
+#include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/regex.hpp>
 #include <utility>
 
@@ -137,9 +141,9 @@ void SubtitlesGrid::RecombineLines() {
 
 	// Remove now non-existent lines from the selection
 	Selection lines;
-	transform(context->ass->Line.begin(), context->ass->Line.end(), inserter(lines, lines.begin()), cast<AssDialogue*>());
+	boost::insert(lines, begin(lines), context->ass->Line | agi::of_type<AssDialogue>());
 	Selection newSel;
-	set_intersection(lines.begin(), lines.end(), selectedSet.begin(), selectedSet.end(), inserter(newSel, newSel.begin()));
+	boost::set_intersection(lines, selectedSet, inserter(newSel, newSel.begin()));
 
 	if (newSel.empty())
 		newSel.insert(*lines.begin());

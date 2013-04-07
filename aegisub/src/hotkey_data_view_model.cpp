@@ -23,6 +23,7 @@
 
 #include "hotkey_data_view_model.h"
 
+#include <libaegisub/adaptor/cast.h>
 #include <libaegisub/exception.h>
 #include <libaegisub/hotkey.h>
 
@@ -36,6 +37,7 @@
 #include <wx/regex.h>
 
 #include <algorithm>
+#include <boost/range/algorithm_ext.hpp>
 #include <list>
 #include <set>
 
@@ -168,8 +170,8 @@ public:
 
 	void SetFilter(wxRegEx const& new_filter) {
 		std::set<HotkeyModelCombo*> old_visible;
-		for (auto item : visible_items)
-			old_visible.insert(static_cast<HotkeyModelCombo*>(item.GetID()));
+		boost::insert(old_visible, end(old_visible),
+			visible_items | agi::cast<HotkeyModelCombo*>());
 
 		visible_items.clear();
 
@@ -220,7 +222,7 @@ public:
 		std::map<std::string, HotkeyModelCategory*> cat_map;
 
 		for (auto const& category : hk_map) {
-			std::string cat_name = category.second.Context();
+			const std::string cat_name = category.second.Context();
 			HotkeyModelCategory *cat;
 			auto cat_it = cat_map.find(cat_name);
 			if (cat_it != cat_map.end())
@@ -235,8 +237,8 @@ public:
 	}
 
 	void Apply(Hotkey::HotkeyMap *hk_map) {
-		for_each(categories.begin(), categories.end(),
-			bind(&HotkeyModelCategory::Apply, std::placeholders::_1, hk_map));
+		for (auto& category : categories)
+			category.Apply(hk_map);
 	}
 
 	void SetFilter(wxString filter) {
@@ -246,8 +248,8 @@ public:
 
 		// Using wxRegEx for case-insensitive contains
 		wxRegEx re(filter, wxRE_ADVANCED | wxRE_ICASE | wxRE_NOSUB);
-		for_each(categories.begin(), categories.end(),
-			bind(&HotkeyModelCategory::SetFilter, std::placeholders::_1, std::ref(re)));
+		for (auto& category : categories)
+			category.SetFilter(re);
 	}
 
 	wxDataViewItem GetParent() const { return wxDataViewItem(0); }
@@ -257,8 +259,7 @@ public:
 
 	unsigned int GetChildren(wxDataViewItemArray &out) const {
 		out.reserve(categories.size());
-		for (auto const& category : categories)
-			out.push_back(wxDataViewItem((void*)&category));
+		boost::push_back(out, categories | agi::cast<void*>() | agi::cast<wxDataViewItem>());
 		return out.size();
 	}
 };
@@ -326,7 +327,7 @@ void HotkeyDataViewModel::Delete(wxDataViewItem const& item) {
 
 	if (!has_pending_changes) {
 		has_pending_changes = true;
-		parent->AddPendingChange(std::bind(&HotkeyDataViewModel::Apply, this));
+		parent->AddPendingChange([&]{ Apply(); });
 	}
 }
 

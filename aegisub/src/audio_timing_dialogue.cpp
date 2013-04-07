@@ -31,10 +31,6 @@
 /// @brief Default timing mode for dialogue subtitles
 /// @ingroup audio_ui
 
-
-#include <cstdint>
-#include <wx/pen.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_time.h"
@@ -46,6 +42,12 @@
 #include "pen.h"
 #include "selection_controller.h"
 #include "utils.h"
+
+#include <libaegisub/adaptor/cast.h>
+
+#include <cstdint>
+#include <boost/range/adaptor/dereferenced.hpp>
+#include <wx/pen.h>
 
 class TimeableLine;
 
@@ -687,22 +689,18 @@ void AudioTimingControllerDialogue::SetMarkers(std::vector<AudioMarker*> const& 
 	// Since we're moving markers, the sorted list of markers will need to be
 	// resorted. To avoid resorting the entire thing, find the subrange that
 	// is effected.
-	int min_ms = ms;
-	int max_ms = ms;
-	for (AudioMarker *upd_marker : upd_markers)
-	{
-		DialogueTimingMarker *marker = static_cast<DialogueTimingMarker*>(upd_marker);
-		min_ms = std::min<int>(*marker, min_ms);
-		max_ms = std::max<int>(*marker, max_ms);
-	}
+	auto minmax = std::minmax_element(
+		upd_markers
+		| agi::cast<DialogueTimingMarker*>()
+		| boost::adaptors::dereferenced
+		| agi::cast<int>());
 
-	auto begin = lower_bound(markers.begin(), markers.end(), min_ms, marker_ptr_cmp());
-	auto end = upper_bound(begin, markers.end(), max_ms, marker_ptr_cmp());
+	auto begin = lower_bound(markers.begin(), markers.end(), minmax.first, marker_ptr_cmp());
+	auto end = upper_bound(begin, markers.end(), minmax.second, marker_ptr_cmp());
 
 	// Update the markers
-	for (AudioMarker *upd_marker : upd_markers)
+	for (auto marker : upd_markers | agi::cast<DialogueTimingMarker*>())
 	{
-		DialogueTimingMarker *marker = static_cast<DialogueTimingMarker*>(upd_marker);
 		marker->SetPosition(ms);
 		modified_lines.insert(marker->GetLine());
 	}

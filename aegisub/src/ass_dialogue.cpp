@@ -38,6 +38,7 @@
 #include "utils.h"
 
 #include <libaegisub/adaptor/of_type.h>
+#include <libaegisub/adaptor/pluck.h>
 #include <libaegisub/split.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -168,8 +169,8 @@ std::string AssDialogue::GetData(bool ssa) const {
 	append_str(str, End.GetAssFormated());
 	append_unsafe_str(str, Style);
 	append_unsafe_str(str, Actor);
-	for (int i = 0; i < 3; ++i)
-		append_int(str, Margin[i]);
+	for (int margin : Margin)
+		append_int(str, margin);
 	append_unsafe_str(str, Effect);
 	str += Text.get();
 
@@ -263,10 +264,9 @@ void AssDialogue::StripTags() {
 	Text = GetStrippedText();
 }
 
-static std::string get_text(AssDialogueBlock &d) { return d.GetText(); }
 void AssDialogue::UpdateText(boost::ptr_vector<AssDialogueBlock>& blocks) {
 	if (blocks.empty()) return;
-	Text = join(blocks | transformed(get_text), "");
+	Text = join(blocks | agi::pluck(&AssDialogueBlock::GetText), "");
 }
 
 void AssDialogue::SetMarginString(std::string const& origvalue, int which) {
@@ -284,10 +284,9 @@ bool AssDialogue::CollidesWith(const AssDialogue *target) const {
 	return ((Start < target->Start) ? (target->Start < End) : (Start < target->End));
 }
 
-static std::string get_text_p(AssDialogueBlock *d) { return d->GetText(); }
 std::string AssDialogue::GetStrippedText() const {
 	boost::ptr_vector<AssDialogueBlock> blocks(ParseTags());
-	return join(blocks | agi::of_type<AssDialogueBlockPlain>() | transformed(get_text_p), "");
+	return join(blocks | agi::of_type<AssDialogueBlockPlain>() | agi::pluck(&AssDialogueBlock::GetText), "");
 }
 
 AssEntry *AssDialogue::Clone() const {

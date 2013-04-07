@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BB3FED86-DB7A-4DC7-964A-260FB86CDE61}</ProjectGuid>
     <RootNamespace>libaegisub</RootNamespace>
   </PropertyGroup>
-
   <!-- Aegisub project configuration -->
   <PropertyGroup Label="AegisubConfiguration">
     <AegisubProjectType>lib</AegisubProjectType>
@@ -13,7 +12,6 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(MSBuildThisFileDirectory)..\aegisub.props" />
   </ImportGroup>
-
   <!-- Project specific configuration -->
   <ItemDefinitionGroup>
     <ClCompile>
@@ -33,7 +31,6 @@
       <ForcedIncludeFiles>lagi_pre.h</ForcedIncludeFiles>
     </ClCompile>
   </ItemDefinitionGroup>
-
   <!-- Source files -->
   <ItemGroup>
     <ClInclude Include="$(SrcDir)common\charset_6937.h" />
@@ -80,6 +77,8 @@
     <ClInclude Include="$(SrcDir)include\libaegisub\util_win.h" />
     <ClInclude Include="$(SrcDir)include\libaegisub\vfr.h" />
     <ClInclude Include="$(SrcDir)lagi_pre.h" />
+    <ClInclude Include="..\..\libaegisub\adaptor\pluck.h" />
+    <ClInclude Include="..\..\libaegisub\include\libaegisub\adaptor\cast.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)windows\lagi_pre.cpp">
