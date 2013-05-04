@@ -11,7 +11,7 @@ lagi_pre.h.gch: CXXFLAGS := $(CXXFLAGS)
 common/charset_conv.o: CXXFLAGS += $(CFLAGS_ICONV)
 unix/path.o: CXXFLAGS += -DP_DATA=\"$(P_DATA)\" -DP_DOC=\"$(P_DOC)\" -DP_LOCALE=\"$(P_LOCALE)\"
 
-lua/modules/re.o lua/modules/script_reader.o: CXXFLAGS += $(CFLAGS_LUA)
+lua/modules.o lua/modules/re.o lua/modules/script_reader.o: CXXFLAGS += $(CFLAGS_LUA)
 lua/modules/lpeg.o: CFLAGS += $(CFLAGS_LUA)
 
 SRC += \
@@ -40,6 +40,7 @@ SRC += \
 	common/thesaurus.cpp \
 	common/util.cpp \
 	common/vfr.cpp \
+	lua/modules.o \
 	lua/modules/lpeg.c \
 	lua/modules/re.cpp \
 	lua/script_reader.o \

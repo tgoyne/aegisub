@@ -50,6 +50,7 @@
 #include "utils.h"
 
 #include <libaegisub/access.h>
+#include <libaegisub/lua/modules.h>
 #include <libaegisub/lua/script_reader.h>
 #include <libaegisub/lua/utils.h>
 #include <libaegisub/path.h>
@@ -302,9 +303,6 @@ namespace {
 	}
 }
 
-extern "C" int luaopen_lpeg (lua_State *L);
-namespace agi { namespace lua { int regex_init(lua_State *L); } }
-
 namespace Automation4 {
 	class LuaScript : public Script {
 		lua_State *L;
@@ -368,7 +366,6 @@ namespace Automation4 {
 			// register standard libs
 			push_value(L, luaopen_base); lua_call(L, 0, 0);
 			push_value(L, luaopen_io); lua_call(L, 0, 0);
-			push_value(L, luaopen_lpeg); lua_call(L, 0, 0);
 			push_value(L, luaopen_math); lua_call(L, 0, 0);
 			push_value(L, luaopen_os); lua_call(L, 0, 0);
 			push_value(L, luaopen_package); lua_call(L, 0, 0);
@@ -436,13 +433,16 @@ namespace Automation4 {
 			set_field(L, "decode_path", decode_path);
 			set_field(L, "cancel", cancel_script);
 			set_field(L, "lua_automation_version", 4);
-			set_field(L, "__init_regex", regex_init);
 			set_field(L, "__init_clipboard", clipboard_init);
 			set_field(L, "file_name", get_file_name);
 			set_field(L, "gettext", get_translation);
 
 			// store aegisub table to globals
 			lua_settable(L, LUA_GLOBALSINDEX);
+			_stackcheck.check_stack(0);
+
+			// Preload packaged binary modules
+			preload_modules(L);
 			_stackcheck.check_stack(0);
 
 			// load user script

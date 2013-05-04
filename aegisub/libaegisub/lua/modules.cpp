@@ -11,14 +11,26 @@
 // WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-//
-// Aegisub Project http://www.aegisub.org/
 
 #include "config.h"
 
-#include <libaegisub/lua/modules.h>
+#include "libaegisub/lua/modules.h"
 
-extern "C" int luaopen_aegisub(lua_State *L) {
-	agi::lua::preload_modules(L);
-	return 1;
+#include "libaegisub/lua/utils.h"
+
+extern "C" int luaopen_lpeg (lua_State *L);
+namespace agi { namespace lua {  } }
+
+namespace agi { namespace lua {
+int regex_init(lua_State *L);
+
+void preload_modules(lua_State *L) {
+	lua_getglobal(L, "package");
+	lua_getfield(L, -1, "preload");
+
+	set_field(L, "lpeg", luaopen_lpeg);
+	set_field(L, "aegisub.__re_impl", regex_init);
+
+	lua_pop(L, 2);
 }
+} }
