@@ -14,15 +14,14 @@
 //
 // Aegisub Project http://www.aegisub.org/
 
+#include <libaegisub/fs.h>
 #include <libaegisub/log.h>
 
 #include <lua.hpp>
-
-#include <libaegisub/fs.h>
-
 #include <string>
 #include <type_traits>
-#include <wx/string.h>
+
+namespace agi { namespace lua {
 
 inline void push_value(lua_State *L, bool value) { lua_pushboolean(L, value); }
 inline void push_value(lua_State *L, const char *value) { lua_pushstring(L, value); }
@@ -34,11 +33,7 @@ template<typename Integer>
 typename std::enable_if<std::is_integral<Integer>::value>::type
 push_value(lua_State *L, Integer value) { lua_pushinteger(L, value); }
 
-inline void push_value(lua_State *L, wxString const& value) {
-	lua_pushstring(L, value.utf8_str());
-}
-
-inline void push_value(lua_State *L, agi::fs::path const& value) {
+inline void push_value(lua_State *L, fs::path const& value) {
 	lua_pushstring(L, value.string().c_str());
 }
 
@@ -59,14 +54,6 @@ template<typename T>
 inline void set_field(lua_State *L, const char *name, T value) {
 	push_value(L, value);
 	lua_setfield(L, -2, name);
-}
-
-inline wxString get_wxstring(lua_State *L, int idx) {
-	return wxString::FromUTF8(lua_tostring(L, idx));
-}
-
-inline wxString check_wxstring(lua_State *L, int idx) {
-	return wxString::FromUTF8(luaL_checkstring(L, idx));
 }
 
 inline std::string get_string_or_default(lua_State *L, int idx) {
@@ -123,3 +110,5 @@ struct LuaStackcheck {
 	LuaStackcheck(lua_State*) { }
 };
 #endif
+
+} }

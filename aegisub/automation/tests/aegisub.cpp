@@ -16,14 +16,14 @@
 
 #include "config.h"
 
-#include "auto4_lua_utils.h"
+#include <libaegisub/lua/utils.h>
 
-namespace Automation4 { int regex_init(lua_State *L); }
+namespace agi { namespace lua { int regex_init(lua_State *L); } }
 
 extern "C" int luaopen_aegisub(lua_State *L) {
 	lua_pushstring(L, "aegisub");
 	lua_newtable(L);
-	set_field(L, "__init_regex", Automation4::regex_init);
+	agi::lua::set_field(L, "__init_regex", agi::lua::regex_init);
 	lua_settable(L, LUA_GLOBALSINDEX);
 	return 1;
 }

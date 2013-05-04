@@ -108,8 +108,7 @@ charset_detect.o:              CXXFLAGS += -D_X86_
 font_file_lister_fontconfig.o: CXXFLAGS += $(CFLAGS_FONTCONFIG)
 text_file_reader.o:            CXXFLAGS += -D_X86_
 video_provider_manager.o:      CXXFLAGS += $(CFLAGS_FFMS2)
-auto4_lua.o auto4_lua_assfile.o auto4_lua_dialog.o  auto4_lua_progresssink.o auto4_lua_regex.o auto4_lua_scriptreader.o auto4_regex.o: CXXFLAGS += $(CFLAGS_LUA)
-lpeg.o: CFLAGS += $(CFLAGS_LUA)
+auto4_lua.o auto4_lua_assfile.o auto4_lua_dialog.o  auto4_lua_progresssink.o: CXXFLAGS += $(CFLAGS_LUA)
 
 SRC += \
 	MatroskaParser.c \
@@ -150,8 +149,6 @@ SRC += \
 	auto4_lua_assfile.cpp \
 	auto4_lua_dialog.cpp \
 	auto4_lua_progresssink.cpp \
-	auto4_lua_scriptreader.cpp \
-	auto4_regex.cpp \
 	avisynth_wrap.cpp \
 	base_grid.cpp \
 	charset_detect.cpp \
@@ -201,7 +198,6 @@ SRC += \
 	hotkey_data_view_model.cpp \
 	initial_line_state.cpp \
 	kana_table.cpp \
-	lpeg.c \
 	main.cpp \
 	menu.cpp \
 	mkv_wrap.cpp \

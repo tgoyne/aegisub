@@ -12,15 +12,10 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-/// @file auto4_lua_scriptreader.h
-/// @see auto4_lua_scriptreader.cpp
-/// @ingroup scripting
-///
-
 #include <libaegisub/fs_fwd.h>
 
 struct lua_State;
 
-namespace Automation4 {
+namespace agi { namespace lua {
 	bool LoadFile(lua_State *L, agi::fs::path const& filename);
-}
+} }

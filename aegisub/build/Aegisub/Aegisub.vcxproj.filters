@@ -306,9 +306,6 @@
     <ClInclude Include="$(SrcDir)export_fixstyle.h">
       <Filter>Features\Export</Filter>
     </ClInclude>
-    <ClInclude Include="$(SrcDir)auto4_lua_scriptreader.h">
-      <Filter>Automation\Lua</Filter>
-    </ClInclude>
     <ClInclude Include="$(SrcDir)auto4_lua.h">
       <Filter>Automation\Lua</Filter>
     </ClInclude>
@@ -687,12 +684,6 @@
     <ClInclude Include="$(SrcDir)subs_controller.h">
       <Filter>ASS</Filter>
     </ClInclude>
-    <ClInclude Include="$(SrcDir)auto4_lua_utils.h">
-      <Filter>Automation\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="$(SrcDir)lpeg.h">
-      <Filter>Automation\Lua</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)ass_dialogue.cpp">
@@ -960,9 +951,6 @@
       <Filter>Automation\Lua</Filter>
     </ClCompile>
     <ClCompile Include="$(SrcDir)auto4_lua_progresssink.cpp">
-      <Filter>Automation\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SrcDir)auto4_lua_scriptreader.cpp">
       <Filter>Automation\Lua</Filter>
     </ClCompile>
     <ClCompile Include="$(SrcDir)dialog_automation.cpp">
@@ -1240,12 +1228,6 @@
     </ClCompile>
     <ClCompile Include="$(SrcDir)subs_controller.cpp">
       <Filter>ASS</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SrcDir)auto4_regex.cpp">
-      <Filter>Automation\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SrcDir)lpeg.c">
-      <Filter>Automation\Lua</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

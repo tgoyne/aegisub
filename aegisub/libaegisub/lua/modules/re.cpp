@@ -16,11 +16,13 @@
 
 #include "config.h"
 
-#include "auto4_lua_utils.h"
+#include "libaegisub/lua/utils.h"
 
 #include <boost/regex/icu.hpp>
 
 namespace {
+using namespace agi::lua;
+
 boost::u32regex& get_regex(lua_State *L) {
 	return *static_cast<boost::u32regex*>(luaL_checkudata(L, 1, "aegisub.regex"));
 }
@@ -180,7 +182,7 @@ int regex_init_flags(lua_State *L) {
 
 }
 
-namespace Automation4 {
+namespace agi { namespace lua {
 int regex_init(lua_State *L) {
 	if (luaL_newmetatable(L, "aegisub.regex")) {
 		set_field(L, "__gc", regex_gc);
@@ -203,4 +205,4 @@ int regex_init(lua_State *L) {
 	set_field(L, "init_flags", regex_init_flags);
 	return 1;
 }
-}
+} }

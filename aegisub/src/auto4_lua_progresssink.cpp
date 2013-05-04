@@ -36,8 +36,7 @@
 
 #include "auto4_lua.h"
 
-#include "auto4_lua_utils.h"
-
+#include <lua.hpp>
 #include <wx/filedlg.h>
 
 namespace {
@@ -52,6 +51,11 @@ namespace {
 	{
 		lua_pushnil(L);
 		lua_setfield(L, idx, name);
+	}
+
+	inline wxString check_wxstring(lua_State *L, int idx)
+	{
+		return wxString::FromUTF8(luaL_checkstring(L, idx));
 	}
 }
 

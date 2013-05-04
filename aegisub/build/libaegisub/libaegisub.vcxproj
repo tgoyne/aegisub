@@ -64,6 +64,8 @@
     <ClInclude Include="$(SrcDir)include\libaegisub\line_iterator.h" />
     <ClInclude Include="$(SrcDir)include\libaegisub\line_wrap.h" />
     <ClInclude Include="$(SrcDir)include\libaegisub\log.h" />
+    <ClInclude Include="$(SrcDir)include\libaegisub\lua\script_reader.h" />
+    <ClInclude Include="$(SrcDir)include\libaegisub\lua\utils.h" />
     <ClInclude Include="$(SrcDir)include\libaegisub\mru.h" />
     <ClInclude Include="$(SrcDir)include\libaegisub\of_type_adaptor.h" />
     <ClInclude Include="$(SrcDir)include\libaegisub\option.h" />
@@ -80,6 +82,7 @@
     <ClInclude Include="$(SrcDir)include\libaegisub\util_win.h" />
     <ClInclude Include="$(SrcDir)include\libaegisub\vfr.h" />
     <ClInclude Include="$(SrcDir)lagi_pre.h" />
+    <ClInclude Include="$(SrcDir)lua\modules\lpeg.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)windows\lagi_pre.cpp">
@@ -111,12 +114,18 @@
     <ClCompile Include="$(SrcDir)common\thesaurus.cpp" />
     <ClCompile Include="$(SrcDir)common\util.cpp" />
     <ClCompile Include="$(SrcDir)common\vfr.cpp" />
+    <ClCompile Include="$(SrcDir)lua\modules\re.cpp" />
+    <ClCompile Include="$(SrcDir)lua\script_reader.cpp" />
     <ClCompile Include="$(SrcDir)windows\access.cpp" />
     <ClCompile Include="$(SrcDir)windows\charset_conv_win.cpp" />
     <ClCompile Include="$(SrcDir)windows\fs.cpp" />
     <ClCompile Include="$(SrcDir)windows\log_win.cpp" />
     <ClCompile Include="$(SrcDir)windows\path_win.cpp" />
     <ClCompile Include="$(SrcDir)windows\util_win.cpp" />
+    <ClCompile Include="$(SrcDir)lua\modules\lpeg.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles />
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="$(SrcDir)include\libaegisub\charsets.def" />

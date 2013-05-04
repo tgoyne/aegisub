@@ -10,7 +10,7 @@ CPPFLAGS += $(CPPFLAGS_BOOST)
 LIBS := -L../libaegisub -laegisub $(LIBS)
 LIBS += $(LIBS_WX) $(LIBS_BOOST) $(LIBS_ICU) $(LIBS_LUA)
 
-SRC += tests/aegisub.cpp ../src/auto4_regex.cpp
+SRC += tests/aegisub.cpp
 
 test: $(LIB_SHARED)
 	moon tests/runner.moon

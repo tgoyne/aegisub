@@ -36,12 +36,10 @@
 
 #include "auto4_lua.h"
 
-#include "auto4_lua_utils.h"
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_style.h"
 #include "auto4_lua_factory.h"
-#include "auto4_lua_scriptreader.h"
 #include "compat.h"
 #include "include/aegisub/context.h"
 #include "main.h"
@@ -52,6 +50,8 @@
 #include "utils.h"
 
 #include <libaegisub/access.h>
+#include <libaegisub/lua/script_reader.h>
+#include <libaegisub/lua/utils.h>
 #include <libaegisub/path.h>
 #include <libaegisub/scoped_ptr.h>
 
@@ -72,6 +72,18 @@
 #include <wx/window.h>
 
 namespace {
+	using namespace agi::lua;
+
+	wxString get_wxstring(lua_State *L, int idx)
+	{
+		return wxString::FromUTF8(lua_tostring(L, idx));
+	}
+
+	wxString check_wxstring(lua_State *L, int idx)
+	{
+		return wxString::FromUTF8(luaL_checkstring(L, idx));
+	}
+
 	void set_context(lua_State *L, const agi::Context *c)
 	{
 		// Explicit cast is needed to discard the const
@@ -104,7 +116,7 @@ namespace {
 	int get_translation(lua_State *L)
 	{
 		wxString str(check_wxstring(L, 1));
-		push_value(L, _(str));
+		push_value(L, _(str).utf8_str());
 		return 1;
 	}
 
@@ -291,10 +303,9 @@ namespace {
 }
 
 extern "C" int luaopen_lpeg (lua_State *L);
+namespace agi { namespace lua { int regex_init(lua_State *L); } }
 
 namespace Automation4 {
-	int regex_init(lua_State *L);
-
 	class LuaScript : public Script {
 		lua_State *L;
 

@@ -36,7 +36,6 @@
 
 #include "auto4_lua.h"
 
-#include "auto4_lua_utils.h"
 #include "ass_dialogue.h"
 #include "ass_info.h"
 #include "ass_file.h"
@@ -45,6 +44,7 @@
 #include "utils.h"
 
 #include <libaegisub/exception.h>
+#include <libaegisub/lua/utils.h>
 #include <libaegisub/scoped_ptr.h>
 
 #include <algorithm>
@@ -128,6 +128,8 @@ namespace {
 }
 
 namespace Automation4 {
+	using namespace agi::lua;
+
 	void LuaAssFile::CheckAllowModify()
 	{
 		if (!can_modify)

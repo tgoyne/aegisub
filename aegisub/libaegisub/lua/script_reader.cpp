@@ -12,14 +12,9 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-/// @file auto4_lua_scriptreader.cpp
-/// @brief Script-file reader for Lua 5.1-based scripting engine
-/// @ingroup scripting
-///
-
 #include "config.h"
 
-#include "auto4_lua_scriptreader.h"
+#include "libaegisub/lua/script_reader.h"
 
 #include <libaegisub/io.h>
 #include <libaegisub/fs.h>
@@ -28,7 +23,7 @@
 #include <lua.hpp>
 #include <memory>
 
-namespace Automation4 {
+namespace agi { namespace lua {
 	bool LoadFile(lua_State *L, agi::fs::path const& filename) {
 		std::unique_ptr<std::istream> file(agi::io::Open(filename, true));
 		file->seekg(0, std::ios::end);
@@ -59,4 +54,4 @@ namespace Automation4 {
 		lua_pushlstring(L, &buff[0], buff.size());
 		return lua_pcall(L, 1, 1, 0) == 0; // Leaves script or error message on stack
 	}
-}
+} }

@@ -32,14 +32,13 @@
 /// @ingroup scripting
 ///
 
-#include <deque>
-
-#include <wx/event.h>
-#include <wx/thread.h>
-
 #include "auto4_base.h"
 
 #include "command/command.h"
+
+#include <deque>
+#include <wx/event.h>
+#include <wx/thread.h>
 
 class AssEntry;
 class wxWindow;
