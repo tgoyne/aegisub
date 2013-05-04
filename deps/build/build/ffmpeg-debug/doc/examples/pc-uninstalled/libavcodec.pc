@@ -1,0 +1,12 @@
+prefix=
+exec_prefix=
+libdir=${pcfiledir}/../../../libavcodec
+includedir=/src/aegisub/deps/ffmpeg
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: 55.5.100
+Requires: libavutil = 52.27.100
+Conflicts:
+Libs: -L${libdir} -lavcodec 
+Cflags: -I${includedir}

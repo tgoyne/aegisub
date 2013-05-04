@@ -1,0 +1,4 @@
+LIBAVRESAMPLE_1 {
+        global: av*;
+        local:  *;
+};

@@ -1,0 +1,14 @@
+prefix=/src/aegisub/deps/build/output/debug
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libavformat
+Description: FFmpeg container format library
+Version: 55.3.100
+Requires: 
+Requires.private: libavcodec = 55.5.100
+Conflicts:
+Libs: -L${libdir} -lavformat 
+Libs.private: -liconv -lm -lbz2 -lz
+Cflags: -I${includedir}

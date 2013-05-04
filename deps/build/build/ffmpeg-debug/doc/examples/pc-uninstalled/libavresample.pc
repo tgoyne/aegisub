@@ -1,0 +1,12 @@
+prefix=
+exec_prefix=
+libdir=${pcfiledir}/../../../libavresample
+includedir=/src/aegisub/deps/ffmpeg
+
+Name: libavresample
+Description: Libav audio resampling library
+Version: 1.1.0
+Requires: libavutil = 52.27.100
+Conflicts:
+Libs: -L${libdir} -lavresample 
+Cflags: -I${includedir}

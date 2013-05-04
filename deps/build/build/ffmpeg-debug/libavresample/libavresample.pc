@@ -1,0 +1,14 @@
+prefix=/src/aegisub/deps/build/output/debug
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libavresample
+Description: Libav audio resampling library
+Version: 1.1.0
+Requires: 
+Requires.private: libavutil = 52.27.100
+Conflicts:
+Libs: -L${libdir} -lavresample 
+Libs.private: -liconv -lm -lbz2 -lz
+Cflags: -I${includedir}

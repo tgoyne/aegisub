@@ -1,0 +1,12 @@
+prefix=
+exec_prefix=
+libdir=${pcfiledir}/../../../libavformat
+includedir=/src/aegisub/deps/ffmpeg
+
+Name: libavformat
+Description: FFmpeg container format library
+Version: 55.3.100
+Requires: libavcodec = 55.5.100
+Conflicts:
+Libs: -L${libdir} -lavformat 
+Cflags: -I${includedir}
