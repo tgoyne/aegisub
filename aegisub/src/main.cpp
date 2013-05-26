@@ -70,6 +70,7 @@
 #include <sstream>
 
 #include <wx/config.h>
+#include <wx/evtloop.h>
 #include <wx/msgdlg.h>
 #include <wx/stackwalk.h>
 #include <wx/utils.h>
@@ -272,6 +273,14 @@ bool AegisubApp::OnInit() {
 
 	StartupLog("Initialization complete");
 	return true;
+}
+
+void AegisubApp::OnEventLoopEnter(wxEventLoopBase *event_loop) {
+	static bool initialized = false;
+	if (event_loop->IsMain() && !initialized) {
+		global_scripts->Reload();
+		initialized = true;
+	}
 }
 
 int AegisubApp::OnExit() {

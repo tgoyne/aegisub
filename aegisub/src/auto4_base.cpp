@@ -344,7 +344,6 @@ namespace Automation4 {
 	AutoloadScriptManager::AutoloadScriptManager(std::string const& path)
 	: path(path)
 	{
-		Reload();
 	}
 
 	void AutoloadScriptManager::Reload()
