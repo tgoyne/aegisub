@@ -90,6 +90,7 @@
 
 	"Automation" : {
 		"Autoreload Mode" : 1,
+		"Reload on File Change" : true,
 		"Thread Priority" : 1,
 		"Trace Level" : 3
 	},

@@ -463,6 +463,7 @@ Automation::Automation(wxTreebook *book, Preferences *parent): OptionPage(book, 
 	OptionAdd(general, _("Base path"), "Path/Automation/Base");
 	OptionAdd(general, _("Include path"), "Path/Automation/Include");
 	OptionAdd(general, _("Auto-load path"), "Path/Automation/Autoload");
+	OptionAdd(general, _("Automatically reload scrips on change"), "Automation/Reload on File Change");
 
 	const wxString tl_arr[6] = { _("0: Fatal"), _("1: Error"), _("2: Warning"), _("3: Hint"), _("4: Debug"), _("5: Trace") };
 	wxArrayString tl_choice(6, tl_arr);

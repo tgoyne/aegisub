@@ -43,7 +43,7 @@
 #define wxUSE_DATETIME 1
 #define wxUSE_TIMER 1
 #define wxUSE_STOPWATCH 1
-#define wxUSE_FSWATCHER 0
+#define wxUSE_FSWATCHER 1
 #define wxUSE_CONFIG 0
 #define wxUSE_CONFIG_NATIVE 0
 #define wxUSE_DIALUP_MANAGER 0

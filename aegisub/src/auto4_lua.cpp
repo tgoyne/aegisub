@@ -67,6 +67,7 @@
 #include <wx/clipbrd.h>
 #include <wx/filefn.h>
 #include <wx/filename.h>
+#include <wx/fswatcher.h>
 #include <wx/log.h>
 #include <wx/msgdlg.h>
 #include <wx/window.h>
@@ -306,6 +307,9 @@ namespace Automation4 {
 		std::vector<cmd::Command*> macros;
 		std::vector<ExportFilter*> filters;
 
+		wxFileSystemWatcher fs_watcher;
+		time_t modification_time;
+
 		/// load script and create internal structures etc.
 		void Create();
 		/// destroy internal structures, unreg features and delete environment
@@ -343,11 +347,38 @@ namespace Automation4 {
 	, L(nullptr)
 	{
 		Create();
+
+		if (OPT_GET("Automation/Reload on File Change")->GetBool()) {
+#ifdef __WXMSW__
+			// MSW implementation only supports watching directories and
+			// doesn't bother to report the name of the file which was changed,
+			// so check if our modification time increased
+			fs_watcher.Add(wxFileName(filename.parent_path().c_str()));
+			fs_watcher.Bind(wxEVT_FSWATCHER, [=](wxFileSystemWatcherEvent& evt) {
+				if (agi::fs::ModifiedTime(GetFilename()) > modification_time) {
+					Reload();
+					if (!GetLoadedState())
+						wxLogError(_("An Automation script failed to load. File name: '%s', error reported: %s"), GetFilename().wstring(), GetDescription());
+				}
+			});
+#elif defined(__WXGTK__)
+			fs_watcher.Add(wxFileName(filename.c_str()));
+			fs_watcher.Bind(wxEVT_FSWATCHER, [=](wxFileSystemWatcherEvent& evt) {
+				Reload();
+				if (!GetLoadedState())
+					wxLogError(_("An Automation script failed to load. File name: '%s', error reported: %s"), GetFilename().wstring(), GetDescription());
+			});
+#else
+			// OS X implementation doesn't report file changes at all
+#endif
+		}
 	}
 
 	void LuaScript::Create()
 	{
 		Destroy();
+
+		modification_time = agi::fs::ModifiedTime(GetFilename());
 
 		try {
 			// create lua environment
