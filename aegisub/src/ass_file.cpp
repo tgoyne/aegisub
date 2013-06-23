@@ -185,6 +185,10 @@ AssStyle *AssFile::GetStyle(std::string const& name) {
 	return nullptr;
 }
 
+const AssStyle *AssFile::GetStyle(std::string const& name) const {
+	return const_cast<AssFile*>(this)->GetStyle(name);
+}
+
 int AssFile::Commit(wxString const& desc, int type, int amend_id, AssEntry *single_line) {
 	AssFileCommit c = { desc, &amend_id, single_line };
 	PushState(c);

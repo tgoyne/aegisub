@@ -73,13 +73,13 @@ enum class AssBlockType {
 class AssDialogueBlock {
 protected:
 	/// Text of this block
-	std::string text;
+	mutable std::string text;
 public:
 	AssDialogueBlock(std::string const& text) : text(text) { }
 	virtual ~AssDialogueBlock() { }
 
 	virtual AssBlockType GetType() const = 0;
-	virtual std::string GetText() { return text; }
+	virtual std::string GetText() const { return text; }
 };
 
 class AssDialogueBlockPlain : public AssDialogueBlock {
@@ -111,7 +111,7 @@ public:
 	std::vector<AssOverrideTag> Tags;
 
 	AssBlockType GetType() const override { return AssBlockType::OVERRIDE; }
-	std::string GetText() override;
+	std::string GetText() const override;
 	void ParseTags();
 	void AddTag(std::string const& tag);
 

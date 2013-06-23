@@ -444,7 +444,7 @@ void AssDialogueBlockOverride::AddTag(std::string const& tag) {
 }
 
 static std::string tag_str(AssOverrideTag const& t) { return t; }
-std::string AssDialogueBlockOverride::GetText() {
+std::string AssDialogueBlockOverride::GetText() const {
 	text = "{" + join(Tags | transformed(tag_str), std::string()) + "}";
 	return text;
 }

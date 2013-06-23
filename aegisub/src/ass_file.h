@@ -82,6 +82,7 @@ public:
 	/// @param name Style name
 	/// @return Pointer to style or nullptr
 	AssStyle *GetStyle(std::string const& name);
+	const AssStyle *GetStyle(std::string const& name) const;
 
 	void swap(AssFile &) throw();
 

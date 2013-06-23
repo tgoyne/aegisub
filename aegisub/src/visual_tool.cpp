@@ -27,6 +27,7 @@
 #include "ass_style.h"
 #include "ass_time.h"
 #include "include/aegisub/context.h"
+#include "line_utils.h"
 #include "options.h"
 #include "utils.h"
 #include "video_context.h"
@@ -352,18 +353,6 @@ void VisualTool<FeatureType>::RemoveSelection(feature_iterator feat) {
 
 typedef const std::vector<AssOverrideParameter> * param_vec;
 
-// Find a tag's parameters in a line or return nullptr if it's not found
-static param_vec find_tag(boost::ptr_vector<AssDialogueBlock>& blocks, std::string const& tag_name) {
-	for (auto ovr : blocks | agi::of_type<AssDialogueBlockOverride>()) {
-		for (auto const& tag : ovr->Tags) {
-			if (tag.Name == tag_name)
-				return &tag.Params;
-		}
-	}
-
-	return 0;
-}
-
 // Get a Vector2D from the given tag parameters, or Vector2D::Bad() if they are not valid
 static Vector2D vec_or_bad(param_vec tag, size_t x_idx, size_t y_idx) {
 	if (!tag ||
@@ -378,31 +367,20 @@ static Vector2D vec_or_bad(param_vec tag, size_t x_idx, size_t y_idx) {
 Vector2D VisualToolBase::GetLinePosition(AssDialogue *diag) {
 	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
 
-	if (Vector2D ret = vec_or_bad(find_tag(blocks, "\\pos"), 0, 1)) return ret;
-	if (Vector2D ret = vec_or_bad(find_tag(blocks, "\\move"), 0, 1)) return ret;
+	if (Vector2D ret = vec_or_bad(FindTag(blocks, "\\pos"), 0, 1)) return ret;
+	if (Vector2D ret = vec_or_bad(FindTag(blocks, "\\move"), 0, 1)) return ret;
 
 	// Get default position
 	int margin[3];
 	memcpy(margin, diag->Margin, sizeof margin);
-	int align = 2;
-
 	if (AssStyle *style = c->ass->GetStyle(diag->Style)) {
-		align = style->alignment;
 		for (int i = 0; i < 3; i++) {
 			if (margin[i] == 0)
 				margin[i] = style->Margin[i];
 		}
 	}
 
-	param_vec align_tag;
-	int ovr_align = 0;
-	if ((align_tag = find_tag(blocks, "\\an")))
-		ovr_align = (*align_tag)[0].Get<int>(ovr_align);
-	else if ((align_tag = find_tag(blocks, "\\a")))
-		ovr_align = AssStyle::SsaToAss((*align_tag)[0].Get<int>(2));
-
-	if (ovr_align > 0 && ovr_align <= 9)
-		align = ovr_align;
+	int align = GetAlign(diag, *c->ass);
 
 	// Alignment type
 	int hor = (align - 1) % 3;
@@ -429,13 +407,13 @@ Vector2D VisualToolBase::GetLinePosition(AssDialogue *diag) {
 
 Vector2D VisualToolBase::GetLineOrigin(AssDialogue *diag) {
 	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
-	return vec_or_bad(find_tag(blocks, "\\org"), 0, 1);
+	return vec_or_bad(FindTag(blocks, "\\org"), 0, 1);
 }
 
 bool VisualToolBase::GetLineMove(AssDialogue *diag, Vector2D &p1, Vector2D &p2, int &t1, int &t2) {
 	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
 
-	param_vec tag = find_tag(blocks, "\\move");
+	param_vec tag = FindTag(blocks, "\\move");
 	if (!tag)
 		return false;
 
@@ -456,13 +434,13 @@ void VisualToolBase::GetLineRotation(AssDialogue *diag, float &rx, float &ry, fl
 
 	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
 
-	if (param_vec tag = find_tag(blocks, "\\frx"))
+	if (param_vec tag = FindTag(blocks, "\\frx"))
 		rx = tag->front().Get(rx);
-	if (param_vec tag = find_tag(blocks, "\\fry"))
+	if (param_vec tag = FindTag(blocks, "\\fry"))
 		ry = tag->front().Get(ry);
-	if (param_vec tag = find_tag(blocks, "\\frz"))
+	if (param_vec tag = FindTag(blocks, "\\frz"))
 		rz = tag->front().Get(rz);
-	else if ((tag = find_tag(blocks, "\\fr")))
+	else if ((tag = FindTag(blocks, "\\fr")))
 		rz = tag->front().Get(rz);
 }
 
@@ -476,9 +454,9 @@ void VisualToolBase::GetLineScale(AssDialogue *diag, Vector2D &scale) {
 
 	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
 
-	if (param_vec tag = find_tag(blocks, "\\fscx"))
+	if (param_vec tag = FindTag(blocks, "\\fscx"))
 		x = tag->front().Get(x);
-	if (param_vec tag = find_tag(blocks, "\\fscy"))
+	if (param_vec tag = FindTag(blocks, "\\fscy"))
 		y = tag->front().Get(y);
 
 	scale = Vector2D(x, y);
@@ -488,11 +466,11 @@ void VisualToolBase::GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, 
 	inverse = false;
 
 	boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
-	param_vec tag = find_tag(blocks, "\\iclip");
+	param_vec tag = FindTag(blocks, "\\iclip");
 	if (tag)
 		inverse = true;
 	else
-		tag = find_tag(blocks, "\\clip");
+		tag = FindTag(blocks, "\\clip");
 
 	if (tag && tag->size() == 4) {
 		p1 = vec_or_bad(tag, 0, 1);
@@ -510,11 +488,11 @@ std::string VisualToolBase::GetLineVectorClip(AssDialogue *diag, int &scale, boo
 	scale = 1;
 	inverse = false;
 
-	param_vec tag = find_tag(blocks, "\\iclip");
+	param_vec tag = FindTag(blocks, "\\iclip");
 	if (tag)
 		inverse = true;
 	else
-		tag = find_tag(blocks, "\\clip");
+		tag = FindTag(blocks, "\\clip");
 
 	if (tag && tag->size() == 4) {
 		return str(boost::format("m %d %d l %d %d %d %d %d %d")
