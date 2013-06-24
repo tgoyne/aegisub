@@ -5,7 +5,6 @@
     <ProjectGuid>{9DDDB9E5-E4A1-423D-A224-F6D4E5AAC06A}</ProjectGuid>
     <RootNamespace>Aegisub</RootNamespace>
   </PropertyGroup>
-
   <!-- Aegisub project configuration -->
   <PropertyGroup Label="AegisubConfiguration">
     <AegisubProjectType>exe</AegisubProjectType>
@@ -14,7 +13,6 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(MSBuildThisFileDirectory)..\aegisub.props" />
   </ImportGroup>
-
   <!-- Project specific configuration -->
   <PropertyGroup>
     <TargetName>aegisub$(AegisubPlatformSuffix)</TargetName>
@@ -27,16 +25,10 @@
       <AdditionalOptions>/Zm150 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
-
   <!-- Update git_version.h -->
   <Target Name="UpdateVersion" BeforeTargets="ClCompile">
-    <ExecShellScript
-      Command="$(MSBuildThisFileDirectory)..\version.sh"
-      WorkingDirectory="$(AegisubSourceBase)"
-      Configuration="@(ExecShellScript)"
-      Arguments=".." />
+    <ExecShellScript Command="$(MSBuildThisFileDirectory)..\version.sh" WorkingDirectory="$(AegisubSourceBase)" Configuration="@(ExecShellScript)" Arguments=".." />
   </Target>
-
   <!-- Project References -->
   <ItemGroup>
     <ProjectReference Include="..\boost\boost.vcxproj">
@@ -85,7 +77,6 @@
       <Project>{7b56955d-5162-4698-aa5b-47484edc8783}</Project>
     </ProjectReference>
   </ItemGroup>
-
   <!-- Source files -->
   <ItemGroup>
     <ClInclude Include="$(SrcDir)MatroskaParser.h" />
@@ -267,6 +258,8 @@
     <ClInclude Include="$(SrcDir)visual_tool_rotatez.h" />
     <ClInclude Include="$(SrcDir)visual_tool_scale.h" />
     <ClInclude Include="$(SrcDir)visual_tool_vector_clip.h" />
+    <ClInclude Include="..\..\src\line_utils.h" />
+    <ClInclude Include="..\..\src\subtitle_format_pac.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)aegisublocale.cpp" />
@@ -277,8 +270,9 @@
       </ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="$(SrcDir)MatroskaParser.c">
-        <PrecompiledHeader>NotUsing</PrecompiledHeader>
-        <ForcedIncludeFiles></ForcedIncludeFiles>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="$(SrcDir)ass_attachment.cpp" />
     <ClCompile Include="$(SrcDir)ass_dialogue.cpp" />
@@ -394,8 +388,9 @@
     <ClCompile Include="$(SrcDir)initial_line_state.cpp" />
     <ClCompile Include="$(SrcDir)kana_table.cpp" />
     <ClCompile Include="$(SrcDir)lpeg.c">
-        <PrecompiledHeader>NotUsing</PrecompiledHeader>
-        <ForcedIncludeFiles></ForcedIncludeFiles>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="$(SrcDir)main.cpp" />
     <ClCompile Include="$(SrcDir)menu.cpp" />
@@ -463,6 +458,8 @@
     <ClCompile Include="$(SrcDir)visual_tool_rotatez.cpp" />
     <ClCompile Include="$(SrcDir)visual_tool_scale.cpp" />
     <ClCompile Include="$(SrcDir)visual_tool_vector_clip.cpp" />
+    <ClCompile Include="..\..\src\line_utils.cpp" />
+    <ClCompile Include="..\..\src\subtitle_format_pac.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="$(SrcDir)res.rc" />

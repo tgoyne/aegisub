@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Commands">
@@ -687,6 +687,12 @@
     <ClInclude Include="$(SrcDir)lpeg.h">
       <Filter>Automation\Lua</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\subtitle_format_pac.h">
+      <Filter>Subtitle formats</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\line_utils.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)ass_dialogue.cpp">
@@ -1237,6 +1243,12 @@
     </ClCompile>
     <ClCompile Include="$(SrcDir)lpeg.c">
       <Filter>Automation\Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\subtitle_format_pac.cpp">
+      <Filter>Subtitle formats</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\line_utils.cpp">
+      <Filter>Utilities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
