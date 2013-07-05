@@ -14,31 +14,16 @@
 //
 // Aegisub Project http://www.aegisub.org/
 
-#include <libaegisub/signal.h>
+#include "subtitle_format.h"
 
-#include <memory>
-#include <wx/dialog.h>
-
-namespace agi { struct Context; }
-class AssStyle;
-class PersistLocation;
-class StyleList;
-class StyleManager;
-
-class DialogStyleManager : public wxDialog {
-	agi::Context *c;
-	std::unique_ptr<PersistLocation> persist;
-
-	std::unique_ptr<StyleManager> current_manager;
-	std::unique_ptr<StyleManager> storage_manager;
-
-	StyleList *current_list;
-	StyleList *storage_list;
-
-	void ShowEditor(AssStyle *style, StyleManager *manager, wxListBox *list);
-	void OnChangeCatalog(wxThreadEvent &evt);
-
+class STYSubtitleFormat : public SubtitleFormat {
 public:
-	DialogStyleManager(agi::Context *context);
-	~DialogStyleManager();
+	STYSubtitleFormat();
+	std::vector<std::string> GetReadWildcards() const override;
+	std::vector<std::string> GetWriteWildcards() const override;
+
+	bool CanSave(const AssFile*) const override { return false; }
+
+	void ReadFile(AssFile *target, agi::fs::path const& filename, std::string const& forceEncoding) const override;
+	void WriteFile(const AssFile *src, agi::fs::path const& filename, std::string const& encoding) const override;
 };

@@ -32,12 +32,17 @@
 /// @ingroup custom_control utility
 ///
 
+#include "colour_button.h"
+
 #include <libaegisub/exception.h>
 
 #include <string>
 
 #include <wx/radiobox.h>
 #include <wx/validate.h>
+
+class ColourButton;
+namespace agi { struct Color; }
 
 /// A wx validator that only allows valid numbers
 class NumValidator : public wxValidator {
@@ -94,31 +99,40 @@ public:
 	DECLARE_EVENT_TABLE()
 };
 
-template<typename T>
-class EnumBinder : public wxValidator {
-	T *value;
+/// A base class to cut down on the boilerplate involved in two-way databindings
+template<typename Window, typename Value, typename Derived>
+class BinderHelper : public wxValidator {
+	Value *value;
 
-	wxObject *Clone() const override { return new EnumBinder<T>(value); }
-
-	bool TransferFromWindow() override {
-		if (wxRadioBox *rb = dynamic_cast<wxRadioBox*>(GetWindow()))
-			*value = static_cast<T>(rb->GetSelection());
-		else
-			throw agi::InternalError("Control type not supported by EnumBinder", 0);
-		return true;
-	}
+	wxValidator *Clone() const override { return new Derived(value); }
+	bool Validate(wxWindow*) override { return true; }
 
 	bool TransferToWindow() override {
-		if (wxRadioBox *rb = dynamic_cast<wxRadioBox*>(GetWindow()))
-			rb->SetSelection(static_cast<int>(*value));
-		else
-			throw agi::InternalError("Control type not supported by EnumBinder", 0);
+		static_cast<Derived*>(this)->ToWindow(static_cast<Window*>(GetWindow()), value);
 		return true;
 	}
 
-public:
-	explicit EnumBinder(T *value) : value(value) { }
-	EnumBinder(EnumBinder const& rhs) : value(rhs.value) { }
+	bool TransferFromWindow() override {
+		*value = static_cast<Derived*>(this)->FromWindow(static_cast<Window*>(GetWindow()));
+		return true;
+	}
+
+protected:
+	typedef BinderHelper<Window, Value, Derived> base;
+	BinderHelper(Value *value) : value(value) { }
+};
+
+template<typename T>
+struct EnumBinder : public BinderHelper<wxRadioBox, T, EnumBinder<T>> {
+	T FromWindow(wxRadioBox *ctrl) {
+		return static_cast<T>(ctrl->GetSelection());
+	}
+
+	void ToWindow(wxRadioBox *ctrl, T *value) {
+		ctrl->SetSelection(static_cast<int>(*value));
+	}
+
+	explicit EnumBinder(T *value) : base(value) { }
 };
 
 template<typename T>
@@ -126,14 +140,14 @@ EnumBinder<T> MakeEnumBinder(T *value) {
 	return EnumBinder<T>(value);
 }
 
-class StringBinder : public wxValidator {
-	std::string *value;
+struct StringBinder : public BinderHelper<wxWindow, std::string, StringBinder> {
+	void ToWindow(wxWindow *window, std::string *value);
+	std::string FromWindow(wxWindow *window);
+	explicit StringBinder(std::string *value) : base(value) { }
+};
 
-	wxObject* Clone() const { return new StringBinder(value); }
-	bool Validate(wxWindow*) { return true;}
-	bool TransferToWindow();
-	bool TransferFromWindow();
-
-public:
-	explicit StringBinder(std::string *value) : value(value) { }
+struct ColorBinder : public BinderHelper<ColourButton, agi::Color, ColorBinder> {
+	ColorBinder(agi::Color *color) : base(color) { }
+	void ToWindow(ColourButton *cb, agi::Color *color) { }
+	agi::Color FromWindow(ColourButton *button) { return button->GetColor(); }
 };

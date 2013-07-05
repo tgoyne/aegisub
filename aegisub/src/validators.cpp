@@ -208,24 +208,21 @@ bool NumValidator::TransferFromWindow() {
 	return true;
 }
 
-bool StringBinder::TransferFromWindow() {
-	wxWindow *window = GetWindow();
+	void ToWindow(wxWindow *window, std::string *value);
+	std::string FromWindow(wxWindow *window);
+
+std::string StringBinder::FromWindow(wxWindow *window) {
 	if (wxTextCtrl *ctrl = dynamic_cast<wxTextCtrl*>(window))
-		*value = from_wx(ctrl->GetValue());
-	else if (wxComboBox *ctrl = dynamic_cast<wxComboBox*>(window))
-		*value = from_wx(ctrl->GetValue());
-	else
-		throw agi::InternalError("Unsupported control type", 0);
-	return true;
+		return from_wx(ctrl->GetValue());
+	if (wxComboBox *ctrl = dynamic_cast<wxComboBox*>(window))
+		return from_wx(ctrl->GetValue());
+	throw agi::InternalError("Unsupported control type", 0);
 }
 
-bool StringBinder::TransferToWindow() {
-	wxWindow *window = GetWindow();
+void StringBinder::ToWindow(wxWindow *window, std::string *value) {
 	if (wxTextCtrl *ctrl = dynamic_cast<wxTextCtrl*>(window))
 		ctrl->SetValue(to_wx(*value));
 	else if (wxComboBox *ctrl = dynamic_cast<wxComboBox*>(window))
 		ctrl->SetValue(to_wx(*value));
-	else
-		throw agi::InternalError("Unsupported control type", 0);
-	return true;
+	throw agi::InternalError("Unsupported control type", 0);
 }

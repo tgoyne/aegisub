@@ -50,6 +50,7 @@
 #include "subtitle_format_microdvd.h"
 #include "subtitle_format_mkv.h"
 #include "subtitle_format_srt.h"
+#include "subtitle_format_sty.h"
 #include "subtitle_format_transtation.h"
 #include "subtitle_format_ttxt.h"
 #include "subtitle_format_txt.h"
@@ -316,6 +317,7 @@ void SubtitleFormat::LoadFormats() {
 		new MKVSubtitleFormat;
 		new MicroDVDSubtitleFormat;
 		new SRTSubtitleFormat;
+		new STYSubtitleFormat;
 		new TTXTSubtitleFormat;
 		new TXTSubtitleFormat;
 		new TranStationSubtitleFormat;

@@ -36,6 +36,7 @@
 #include <wx/window.h>
 #include <wx/bitmap.h>
 
+class AssDialogue;
 class AssFile;
 class AssStyle;
 class SubtitlesProvider;

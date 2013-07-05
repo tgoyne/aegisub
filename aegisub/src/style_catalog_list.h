@@ -14,31 +14,15 @@
 //
 // Aegisub Project http://www.aegisub.org/
 
-#include <libaegisub/signal.h>
+#include <wx/event.h>
+#include <wx/sizer.h>
 
-#include <memory>
-#include <wx/dialog.h>
+/// Generated whenever a new style catalog is selected.
+/// Payload is a std::string with the new catalog name.
+wxDECLARE_EVENT(EVT_CATALOG_CHANGED, wxThreadEvent);
 
-namespace agi { struct Context; }
-class AssStyle;
-class PersistLocation;
-class StyleList;
-class StyleManager;
-
-class DialogStyleManager : public wxDialog {
-	agi::Context *c;
-	std::unique_ptr<PersistLocation> persist;
-
-	std::unique_ptr<StyleManager> current_manager;
-	std::unique_ptr<StyleManager> storage_manager;
-
-	StyleList *current_list;
-	StyleList *storage_list;
-
-	void ShowEditor(AssStyle *style, StyleManager *manager, wxListBox *list);
-	void OnChangeCatalog(wxThreadEvent &evt);
-
+class StyleCatalogList : public wxStaticBoxSizer, public wxEvtHandler {
+	void ChangeCatalog(std::string const& new_name);
 public:
-	DialogStyleManager(agi::Context *context);
-	~DialogStyleManager();
+	StyleCatalogList(wxWindow *parent, std::string const& active_catalog);
 };

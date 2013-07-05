@@ -38,7 +38,6 @@
 
 #include "auto4_lua_utils.h"
 #include "ass_style.h"
-#include "colour_button.h"
 #include "compat.h"
 #include "string_codec.h"
 #include "utils.h"
@@ -210,7 +209,7 @@ namespace Automation4 {
 			void UnserialiseValue(const std::string &serialised) { color = inline_string_decode(serialised); }
 
 			wxControl *Create(wxWindow *parent) {
-				wxControl *cw = new ColourButton(parent, wxSize(50*width,10*height), alpha, color, ColorValidator(&color));
+				wxControl *cw = new ColourButton(parent, wxSize(50*width,10*height), alpha, color, ColorBinder(&color));
 				cw->SetToolTip(to_wx(hint));
 				return cw;
 			}
@@ -279,25 +278,19 @@ namespace Automation4 {
 			double step;
 			wxSpinCtrlDouble *scd;
 
-			struct DoubleValidator : public wxValidator {
-				double *value;
-				DoubleValidator(double *value) : value(value) { }
-				wxValidator *Clone() const { return new DoubleValidator(value); }
-				bool Validate(wxWindow*) { return true; }
+			struct DoubleValidator : public BinderHelper<wxSpinCtrlDouble, double, DoubleValidator> {
+				DoubleValidator(double *value) : base(value) { }
 
-				bool TransferToWindow() {
-					static_cast<wxSpinCtrlDouble*>(GetWindow())->SetValue(*value);
-					return true;
+				void ToWindow(wxSpinCtrlDouble *ctrl, double *value) {
+					ctrl->SetValue(*value);
 				}
 
-				bool TransferFromWindow() {
-					auto ctrl = static_cast<wxSpinCtrlDouble*>(GetWindow());
+				double FromWindow(wxSpinCtrlDouble *ctrl) {
 #ifndef wxHAS_NATIVE_SPINCTRLDOUBLE
 					wxFocusEvent evt;
 					ctrl->OnTextLostFocus(evt);
 #endif
-					*value = ctrl->GetValue();
-					return true;
+					return ctrl->GetValue();
 				}
 			};
 

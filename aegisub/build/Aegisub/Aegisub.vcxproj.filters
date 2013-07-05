@@ -690,6 +690,18 @@
     <ClInclude Include="$(SrcDir)resolution_resampler.h">
       <Filter>Features\Resolution resampler</Filter>
     </ClInclude>
+    <ClInclude Include="$(SrcDir)style_manager.h">
+      <Filter>Features\Style editor</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SrcDir)style_list.h">
+      <Filter>Features\Style editor</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SrcDir)style_catalog_list.h">
+      <Filter>Features\Style editor</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SrcDir)subtitle_format_sty.h">
+      <Filter>Subtitle formats</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)ass_dialogue.cpp">
@@ -1243,6 +1255,18 @@
     </ClCompile>
     <ClCompile Include="$(SrcDir)resolution_resampler.cpp">
       <Filter>Features\Resolution resampler</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SrcDir)style_manager.cpp">
+      <Filter>Features\Style editor</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SrcDir)style_list.cpp">
+      <Filter>Features\Style editor</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SrcDir)style_catalog_list.cpp">
+      <Filter>Features\Style editor</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SrcDir)subtitle_format_sty.cpp">
+      <Filter>Subtitle formats</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
