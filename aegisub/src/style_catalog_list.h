@@ -21,8 +21,12 @@
 /// Payload is a std::string with the new catalog name.
 wxDECLARE_EVENT(EVT_CATALOG_CHANGED, wxThreadEvent);
 
+class wxComboBox;
+
 class StyleCatalogList : public wxStaticBoxSizer, public wxEvtHandler {
+	wxComboBox *catalog_list;
 	void ChangeCatalog(std::string const& new_name);
 public:
 	StyleCatalogList(wxWindow *parent, std::string const& active_catalog);
+	std::string GetValue() const;
 };

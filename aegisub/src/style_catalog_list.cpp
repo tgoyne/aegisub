@@ -45,7 +45,7 @@ StyleCatalogList::StyleCatalogList(wxWindow *parent, std::string const& active_c
 		catalogs.push_back("Default");
 	}
 
-	auto catalog_list = new wxComboBox(parent, -1, "", wxDefaultPosition, wxDefaultSize, catalogs, wxCB_READONLY);
+	catalog_list = new wxComboBox(parent, -1, "", wxDefaultPosition, wxDefaultSize, catalogs, wxCB_READONLY);
 	auto new_button = new wxButton(parent, -1, _("New"));
 	auto delete_button = new wxButton(parent, -1, _("Delete"));
 	Add(catalog_list,1,wxEXPAND | wxRIGHT | wxALIGN_RIGHT,5);
@@ -114,4 +114,8 @@ void StyleCatalogList::ChangeCatalog(std::string const& new_name) {
 	auto evt = agi::util::make_unique<wxThreadEvent>();
 	evt->SetPayload(new_name);
 	QueueEvent(evt.release());
+}
+
+std::string StyleCatalogList::GetValue() const {
+	return from_wx(catalog_list->GetStringSelection());
 }
