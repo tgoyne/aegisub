@@ -54,6 +54,11 @@ StyleCatalogList::StyleCatalogList(wxWindow *parent, std::string const& active_c
 
 	delete_button->Enable(catalogs.size() > 1);
 
+	if (std::find(catalogs.begin(), catalogs.end(), to_wx(active_catalog)) != catalogs.end())
+		catalog_list->SetStringSelection(to_wx(active_catalog));
+	else
+		catalog_list->SetSelection(0);
+
 	new_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [=](wxCommandEvent&){
 		wxString name = wxGetTextFromUser(_("New storage name:"), _("New catalog entry"), "", parent);
 		if (!name) return;
