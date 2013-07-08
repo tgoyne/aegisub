@@ -59,6 +59,11 @@ DialogStyleManager::DialogStyleManager(agi::Context *context)
 		false
 	};
 
+    // @todo
+	std::string catalog = "Default";
+	c->ass->SetScriptInfo("Last Style Storage", catalog);
+	storage_manager = StyleManager::Create(config::path->Decode("?user/catalog/" + catalog + ".sty"));
+
 	auto catalog_list = new StyleCatalogList(this, c->ass->GetScriptInfo("Last Style Storage"));
 	catalog_list->Bind(EVT_CATALOG_CHANGED, &DialogStyleManager::OnChangeCatalog, this);
 

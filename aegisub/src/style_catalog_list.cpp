@@ -54,7 +54,7 @@ StyleCatalogList::StyleCatalogList(wxWindow *parent, std::string const& active_c
 
 	delete_button->Enable(catalogs.size() > 1);
 
-	new_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [&](wxCommandEvent&){
+	new_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [=](wxCommandEvent&){
 		wxString name = wxGetTextFromUser(_("New storage name:"), _("New catalog entry"), "", parent);
 		if (!name) return;
 
@@ -84,7 +84,7 @@ StyleCatalogList::StyleCatalogList(wxWindow *parent, std::string const& active_c
 		delete_button->Enable();
 	});
 
-	delete_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [&](wxCommandEvent&){
+	delete_button->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [=](wxCommandEvent&){
 		if (catalog_list->GetCount() == 1) return;
 
 		wxString wxname = catalog_list->GetStringSelection();
@@ -100,7 +100,7 @@ StyleCatalogList::StyleCatalogList(wxWindow *parent, std::string const& active_c
 		ChangeCatalog(name);
 	});
 
-	catalog_list->Bind(wxEVT_COMMAND_COMBOBOX_SELECTED, [&](wxCommandEvent&){
+	catalog_list->Bind(wxEVT_COMMAND_COMBOBOX_SELECTED, [=](wxCommandEvent&){
 		ChangeCatalog(from_wx(catalog_list->GetStringSelection()));
 	});
 }
