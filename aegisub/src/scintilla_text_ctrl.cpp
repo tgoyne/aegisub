@@ -38,41 +38,27 @@
 #include "utils.h"
 
 ScintillaTextCtrl::ScintillaTextCtrl(wxWindow* parent, wxWindowID id, const wxString& value, const wxPoint& pos, const wxSize& size, long style)
-: wxStyledTextCtrl(parent, id, pos, size, style, value)
+: wxTextCtrl(parent, id, value, pos, size, style)
 {
 	Bind(wxEVT_MOUSEWHEEL, &ScintillaTextCtrl::OnMouseWheel, this);
 }
 
-/// @brief Get unicode-compatible position
 int ScintillaTextCtrl::GetUnicodePosition(int pos) {
-	return GetText().Left(pos).utf8_str().length();
+	return pos;
 }
 
-/// @brief Reverse unicode-compatible position
 int ScintillaTextCtrl::GetReverseUnicodePosition(int pos) {
-	wxCharBuffer buffer = GetTextRaw();
-	return wxString::FromUTF8(buffer.data(), std::min<int>(pos, buffer.length())).length();
+	return pos;
 }
 
-/// @brief Start unicode-safe styling
 void ScintillaTextCtrl::StartUnicodeStyling(int start,int mask) {
-	StartStyling(GetUnicodePosition(start),mask);
-	// Cache the text for styling as GetText is hideously slow
-	text = GetText();
 }
 
-/// @brief Unicode-safe styling
 void ScintillaTextCtrl::SetUnicodeStyling(int start,int length,int style) {
-	// Get the real length
-	int len = text.Mid(start, length).utf8_str().length();
-
-	// Set styling
-	SetStyling(len,style);
 }
 
-/// @brief Set selection, unicode-aware
 void ScintillaTextCtrl::SetSelectionU(int start, int end) {
-	SetSelection(GetUnicodePosition(start),GetUnicodePosition(end));
+	SetSelection(start, end);
 }
 
 void ScintillaTextCtrl::OnMouseWheel(wxMouseEvent& evt) {

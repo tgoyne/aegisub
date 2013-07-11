@@ -36,7 +36,7 @@
 
 #include <string>
 
-class ScintillaTextCtrl : public wxStyledTextCtrl {
+class ScintillaTextCtrl : public wxTextCtrl {
 	wxString text;
 
 	void OnMouseWheel(wxMouseEvent& evt);
@@ -47,6 +47,15 @@ public:
 	void StartUnicodeStyling(int start,int mask=31);
 	void SetUnicodeStyling(int start,int length,int style);
 	void SetSelectionU(int start,int end);
+
+    void SetText(std::string const& new_value);
+
+    // blurp durp
+    void SetWrapMode(int) { }
+    void SetMarginWidth(int, int) { }
+    void UsePopUp(bool) { }
+    void CmdKeyClear(int, int) { }
+
 
 	ScintillaTextCtrl(wxWindow* parent, wxWindowID id, const wxString& value = wxString(), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0);
 };

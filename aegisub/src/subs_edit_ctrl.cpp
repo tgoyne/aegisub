@@ -456,7 +456,7 @@ void SubsTextEditCtrl::OnUseSuggestion(wxCommandEvent &event) {
 	// line_text needs to get cleared before SetTextRaw to ensure it gets reparsed
 	std::string new_text;
 	swap(line_text, new_text);
-	SetTextRaw(new_text.replace(currentWordPos.first, currentWordPos.second, suggestion).c_str());
+	SetText(new_text.replace(currentWordPos.first, currentWordPos.second, suggestion).c_str());
 
 	SetSelection(currentWordPos.first, currentWordPos.first + suggestion.size());
 	SetFocus();
