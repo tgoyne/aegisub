@@ -43,6 +43,7 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include <wx/checkbox.h>
 #include <wx/msgdlg.h>
@@ -238,38 +239,33 @@ void DialogTranslation::UpdateDisplay() {
 
 	std::string new_text;
 	size_t active_start = 0, active_end = 0;
-	original_text->SetReadOnly(false);
-	original_text->ClearAll();
 
 	size_t i = 0;
 	for (auto& block : blocks) {
-		if (block.GetType() == AssBlockType::PLAIN) {
-			int cur_size = original_text->GetReverseUnicodePosition(original_text->GetLength());
-			original_text->AppendTextRaw(block.GetText().c_str());
-			if (i == cur_block) {
-				original_text->StartUnicodeStyling(cur_size);
-				original_text->SetUnicodeStyling(cur_size, block.GetText().size(), 1);
-			}
+		if (i == cur_block) {
+			active_start = new_text.size();
+			active_end = active_start + block.GetText().size();
 		}
-		else
-			original_text->AppendTextRaw(block.GetText().c_str());
+		new_text += block.GetText();
 		++i;
 	}
 
-	original_text->SetReadOnly(true);
+	original_text->SetText(new_text);
+	original_text->SetStyle(active_start, active_end);
 
-	if (seek_video->IsChecked()) c->videoController->JumpToTime(active_line->Start);
+	if (seek_video->IsChecked())
+		c->videoController->JumpToTime(active_line->Start);
 
-	translated_text->ClearAll();
+	translated_text->SetText("");
 	translated_text->SetFocus();
 }
 
 void DialogTranslation::Commit(bool next) {
-	wxString new_value = translated_text->GetValue();
-	new_value.Replace("\r\n", "\\N");
-	new_value.Replace("\r", "\\N");
-	new_value.Replace("\n", "\\N");
-	blocks[cur_block] = AssDialogueBlockPlain(from_wx(new_value));
+	std::string new_value = translated_text->GetText();
+	boost::replace_all(new_value, "\r\n", "\\N");
+	boost::replace_all(new_value, "\n", "\\N");
+	boost::replace_all(new_value, "\r", "\\N");
+	blocks[cur_block] = AssDialogueBlockPlain(new_value);
 	active_line->UpdateText(blocks);
 
 	file_change_connection.Block();
@@ -288,7 +284,7 @@ void DialogTranslation::Commit(bool next) {
 }
 
 void DialogTranslation::InsertOriginal() {
-	translated_text->AddText(to_wx(blocks[cur_block].GetText()));
+	translated_text->Insert(blocks[cur_block].GetText());
 }
 
 
