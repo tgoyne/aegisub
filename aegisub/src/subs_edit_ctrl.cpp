@@ -259,20 +259,9 @@ void SubsTextEditCtrl::UpdateCallTip() {
 	CallTipSetHighlight(new_calltip.highlight_start, new_calltip.highlight_end);
 }
 
-void SubsTextEditCtrl::SetTextTo(wxString const& text) {
-	SetEvtHandlerEnabled(false);
-	Freeze();
-
-	int from = GetReverseUnicodePosition(GetSelectionStart());
-	int to = GetReverseUnicodePosition(GetSelectionEnd());
-
+void SubsTextEditCtrl::SetText(std::string const& new_text) {
+	ScintillaTextCtrl::SetText(new_text, true);
 	line_text.clear();
-	SetText(text);
-
-	SetSelectionU(from, to);
-
-	SetEvtHandlerEnabled(true);
-	Thaw();
 }
 
 void SubsTextEditCtrl::Paste() {
@@ -282,22 +271,18 @@ void SubsTextEditCtrl::Paste() {
 	boost::replace_all(data, "\n", "\\N");
 	boost::replace_all(data, "\r", "\\N");
 
-	wxCharBuffer old = GetTextRaw();
-	data.insert(0, old.data(), GetSelectionStart());
-	int sel_start = data.size();
-	data.append(old.data() + GetSelectionEnd());
+	auto old = GetText();
+	SetText(old.substr(0, GetSelectionStart()) + data + old.substr(GetSelectionEnd()));
 
-	SetTextRaw(data.c_str());
-
-	SetSelectionStart(sel_start);
-	SetSelectionEnd(sel_start);
+	int sel = GetSelectionStart() + data.size();
+	SetSelection(sel, sel);
 }
 
 void SubsTextEditCtrl::OnContextMenu(wxContextMenuEvent &event) {
 	wxPoint pos = event.GetPosition();
 	int activePos;
 	if (pos == wxDefaultPosition)
-		activePos = GetCurrentPos();
+		activePos = GetInsertionPoint();
 	else
 		activePos = PositionFromPoint(ScreenToClient(pos));
 

@@ -122,7 +122,7 @@ public:
 	SubsTextEditCtrl(wxWindow* parent, wxSize size, long style, agi::Context *context);
 	~SubsTextEditCtrl();
 
-	void SetTextTo(wxString const& text);
+	void SetText(std::string const& text);
 	void Paste();
 
 	std::pair<int, int> GetBoundsOfWordAtPosition(int pos);

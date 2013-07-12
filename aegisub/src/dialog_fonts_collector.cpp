@@ -216,10 +216,7 @@ DialogFontsCollector::DialogFontsCollector(agi::Context *c)
 	destination_box->Add(dest_browse_sizer, wxSizerFlags().Expand());
 
 	wxStaticBoxSizer *log_box = new wxStaticBoxSizer(wxVERTICAL, this, _("Log"));
-	collection_log = new ScintillaTextCtrl(this, -1, "", wxDefaultPosition, wxSize(600, 300));
-	collection_log->SetWrapMode(wxSTC_WRAP_WORD);
-	collection_log->SetMarginWidth(1, 0);
-	collection_log->SetReadOnly(true);
+	collection_log = new ScintillaTextCtrl(this, "", wxSize(600, 300), 0, true);
 	collection_log->StyleSetForeground(1, wxColour(0, 200, 0));
 	collection_log->StyleSetForeground(2, wxColour(200, 0, 0));
 	collection_log->StyleSetForeground(3, wxColour(200, 100, 0));
@@ -253,9 +250,7 @@ DialogFontsCollector::DialogFontsCollector(agi::Context *c)
 }
 
 void DialogFontsCollector::OnStart(wxCommandEvent &) {
-	collection_log->SetReadOnly(false);
-	collection_log->ClearAll();
-	collection_log->SetReadOnly(true);
+	collection_log->SetText("");
 
 	agi::fs::path dest;
 	int action = collection_mode->GetSelection();
@@ -349,7 +344,6 @@ void DialogFontsCollector::OnRadio(wxCommandEvent &) {
 
 void DialogFontsCollector::OnAddText(wxThreadEvent &event) {
 	std::pair<int, wxString> str = event.GetPayload<std::pair<int, wxString>>();
-	collection_log->SetReadOnly(false);
 	int pos = collection_log->GetReverseUnicodePosition(collection_log->GetLength());
 	collection_log->AppendText(str.second);
 	if (str.first) {
@@ -357,7 +351,6 @@ void DialogFontsCollector::OnAddText(wxThreadEvent &event) {
 		collection_log->SetUnicodeStyling(pos, str.second.size(), str.first);
 	}
 	collection_log->GotoPos(pos);
-	collection_log->SetReadOnly(true);
 }
 
 void DialogFontsCollector::OnCollectionComplete(wxThreadEvent &) {

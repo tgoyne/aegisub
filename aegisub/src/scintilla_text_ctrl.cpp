@@ -78,6 +78,22 @@ void ScintillaTextCtrl::SetSelectionU(int start, int end) {
 	SetSelection(start, end);
 }
 
+void ScintillaTextCtrl::SetText() {
+	SetEvtHandlerEnabled(false);
+	Freeze();
+
+	int from = GetReverseUnicodePosition(GetSelectionStart());
+	int to = GetReverseUnicodePosition(GetSelectionEnd());
+
+	line_text.clear();
+	SetText(text);
+
+	SetSelectionU(from, to);
+
+	SetEvtHandlerEnabled(true);
+	Thaw();
+}
+
 void ScintillaTextCtrl::OnMouseWheel(wxMouseEvent& evt) {
 	if (ForwardMouseWheelEvent(this, evt)) {
 		// Skip the event so that wxSTC's default mouse wheel handler is hit
