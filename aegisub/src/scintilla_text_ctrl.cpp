@@ -40,6 +40,23 @@
 ScintillaTextCtrl::ScintillaTextCtrl(wxWindow* parent, wxWindowID id, const wxString& value, const wxPoint& pos, const wxSize& size, long style)
 : wxTextCtrl(parent, id, value, pos, size, style)
 {
+	SetWrapMode(wxSTC_WRAP_WORD);
+	SetMarginWidth(1, 0);
+	UsePopUp(false);
+
+	// Disable Scintilla's default hotkeys
+	CmdKeyClear(wxSTC_KEY_RETURN, wxSTC_SCMOD_CTRL);
+	CmdKeyClear(wxSTC_KEY_RETURN, wxSTC_SCMOD_SHIFT);
+	CmdKeyClear(wxSTC_KEY_RETURN, wxSTC_SCMOD_NORM);
+	CmdKeyClear(wxSTC_KEY_TAB, wxSTC_SCMOD_NORM);
+	CmdKeyClear(wxSTC_KEY_TAB, wxSTC_SCMOD_SHIFT);
+	CmdKeyClear('D', wxSTC_SCMOD_CTRL);
+	CmdKeyClear('L', wxSTC_SCMOD_CTRL);
+	CmdKeyClear('L', wxSTC_SCMOD_CTRL | wxSTC_SCMOD_SHIFT);
+	CmdKeyClear('T', wxSTC_SCMOD_CTRL);
+	CmdKeyClear('T', wxSTC_SCMOD_CTRL | wxSTC_SCMOD_SHIFT);
+	CmdKeyClear('U', wxSTC_SCMOD_CTRL);
+
 	Bind(wxEVT_MOUSEWHEEL, &ScintillaTextCtrl::OnMouseWheel, this);
 }
 

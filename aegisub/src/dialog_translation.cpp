@@ -82,11 +82,8 @@ DialogTranslation::DialogTranslation(agi::Context *c)
 		line_number_display = new wxStaticText(this, -1, "");
 		original_box->Add(line_number_display, 0, wxBOTTOM, 5);
 
-		original_text = new ScintillaTextCtrl(this, -1, "", wxDefaultPosition, wxSize(320, 80));
-		original_text->SetWrapMode(wxSTC_WRAP_WORD);
-		original_text->SetMarginWidth(1, 0);
+		original_text = new ScintillaTextCtrl(this, "", wxSize(320, 80), 0, true);
 		original_text->StyleSetForeground(1, wxColour(10, 60, 200));
-		original_text->SetReadOnly(true);
 		original_box->Add(original_text, 1, wxEXPAND, 0);
 
 		translation_sizer->Add(original_box, 1, wxEXPAND, 0);
@@ -94,8 +91,6 @@ DialogTranslation::DialogTranslation(agi::Context *c)
 
 	{
 		translated_text = new SubsTextEditCtrl(this, wxSize(320, 80), 0, 0);
-		translated_text->SetWrapMode(wxSTC_WRAP_WORD);
-		translated_text->SetMarginWidth(1, 0);
 		translated_text->SetFocus();
 		translated_text->Bind(wxEVT_CHAR_HOOK, &DialogTranslation::OnKeyDown, this);
 
@@ -241,6 +236,8 @@ bool DialogTranslation::PrevBlock() {
 void DialogTranslation::UpdateDisplay() {
 	line_number_display->SetLabel(wxString::Format(_("Current line: %d/%d"), (int)line_number, (int)line_count));
 
+	std::string new_text;
+	size_t active_start = 0, active_end = 0;
 	original_text->SetReadOnly(false);
 	original_text->ClearAll();
 

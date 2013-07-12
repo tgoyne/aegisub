@@ -50,6 +50,7 @@
 #include <libaegisub/ass/dialogue_parser.h>
 #include <libaegisub/calltip_provider.h>
 #include <libaegisub/spellchecker.h>
+#include <libaegisub/util.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -81,29 +82,12 @@ enum {
 };
 
 SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, agi::Context *context)
-: ScintillaTextCtrl(parent, -1, "", wxDefaultPosition, wsize, style)
+: ScintillaTextCtrl(parent, "", , wsize, style)
 , spellchecker(SpellCheckerFactory::GetSpellChecker())
 , context(context)
 , calltip_position(0)
 {
-	// Set properties
-	SetWrapMode(wxSTC_WRAP_WORD);
-	SetMarginWidth(1,0);
-	UsePopUp(false);
 	SetStyles();
-
-	// Set hotkeys
-	CmdKeyClear(wxSTC_KEY_RETURN,wxSTC_SCMOD_CTRL);
-	CmdKeyClear(wxSTC_KEY_RETURN,wxSTC_SCMOD_SHIFT);
-	CmdKeyClear(wxSTC_KEY_RETURN,wxSTC_SCMOD_NORM);
-	CmdKeyClear(wxSTC_KEY_TAB,wxSTC_SCMOD_NORM);
-	CmdKeyClear(wxSTC_KEY_TAB,wxSTC_SCMOD_SHIFT);
-	CmdKeyClear('D',wxSTC_SCMOD_CTRL);
-	CmdKeyClear('L',wxSTC_SCMOD_CTRL);
-	CmdKeyClear('L',wxSTC_SCMOD_CTRL | wxSTC_SCMOD_SHIFT);
-	CmdKeyClear('T',wxSTC_SCMOD_CTRL);
-	CmdKeyClear('T',wxSTC_SCMOD_CTRL | wxSTC_SCMOD_SHIFT);
-	CmdKeyClear('U',wxSTC_SCMOD_CTRL);
 
 	using std::bind;
 
@@ -123,7 +107,7 @@ SubsTextEditCtrl::SubsTextEditCtrl(wxWindow* parent, wxSize wsize, long style, a
 	Bind(wxEVT_IDLE, std::bind(&SubsTextEditCtrl::UpdateCallTip, this));
 	Bind(wxEVT_STC_STYLENEEDED, [=](wxStyledTextEvent&) {
 		{
-			std::string text = GetTextRaw().data();
+			std::string text = GetText();
 			if (text == line_text) return;
 			line_text = move(text);
 		}
@@ -170,7 +154,7 @@ void SubsTextEditCtrl::Subscribe(std::string const& name) {
 	OPT_SUB("Colour/Subtitle/Syntax/Bold/" + name, &SubsTextEditCtrl::SetStyles, this);
 }
 
-BEGIN_EVENT_TABLE(SubsTextEditCtrl,wxStyledTextCtrl)
+BEGIN_EVENT_TABLE(SubsTextEditCtrl, ScintillaTextCtrl)
 	EVT_KILL_FOCUS(SubsTextEditCtrl::OnLoseFocus)
 
 	EVT_MENU_RANGE(EDIT_MENU_SUGGESTIONS,EDIT_MENU_THESAURUS-1,SubsTextEditCtrl::OnUseSuggestion)
@@ -222,8 +206,8 @@ void SubsTextEditCtrl::SetStyles() {
 	SetSyntaxStyle(ss::KARAOKE_VARIABLE, font, "Karaoke Variable");
 
 	// Misspelling indicator
-	IndicatorSetStyle(0,wxSTC_INDIC_SQUIGGLE);
-	IndicatorSetForeground(0,wxColour(255,0,0));
+	IndicatorSetStyle(0, wxSTC_INDIC_SQUIGGLE);
+	IndicatorSetForeground(0, wxColour(255,0,0));
 }
 
 void SubsTextEditCtrl::UpdateStyle() {
@@ -252,12 +236,12 @@ void SubsTextEditCtrl::UpdateStyle() {
 void SubsTextEditCtrl::UpdateCallTip() {
 	if (!OPT_GET("App/Call Tips")->GetBool()) return;
 
-	int pos = GetCurrentPos();
+	int pos = GetInsertionPoint();
 	if (!pos == cursor_pos) return;
 	cursor_pos = pos;
 
 	if (!calltip_provider)
-		calltip_provider.reset(new agi::CalltipProvider);
+		calltip_provider = agi::util::make_unique<agi::CalltipProvider>();
 
 	agi::Calltip new_calltip = calltip_provider->GetCalltip(tokenized_line, line_text, pos);
 

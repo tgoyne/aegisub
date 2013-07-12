@@ -36,26 +36,31 @@
 
 #include <string>
 
-class ScintillaTextCtrl : public wxTextCtrl {
+class ScintillaTextCtrl : public wxControl {
 	wxString text;
 
 	void OnMouseWheel(wxMouseEvent& evt);
 public:
-	int GetUnicodePosition(int pos);
-	int GetReverseUnicodePosition(int pos);
+	// All in bytes
+	std::pair<int, int> GetSelection() const;
+	int GetSelectionStart() const;
+	int GetSelectionEnd() const;
+	int GetInsertionPoint() const;
 
-	void StartUnicodeStyling(int start,int mask=31);
-	void SetUnicodeStyling(int start,int length,int style);
-	void SetSelectionU(int start,int end);
+	void SetSelection(int from, int to);
+	void SetInsertionPoint(int pos);
 
-    void SetText(std::string const& new_value);
+	std::string GetText() const;
+	void Append(std::string const& text);
+	void Insert(std::string const& text); 
+	void SetText(std::string const& text, bool preserve_selection=false);
 
-    // blurp durp
-    void SetWrapMode(int) { }
-    void SetMarginWidth(int, int) { }
-    void UsePopUp(bool) { }
-    void CmdKeyClear(int, int) { }
+	void Cut();
+	void Copy() const;
+	void Paste();
 
+	void HideCallTip();
+	void ShowCallTip(int pos, int highlight_start, int highlight_end, std::string const& text);
 
-	ScintillaTextCtrl(wxWindow* parent, wxWindowID id, const wxString& value = wxString(), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0);
+	ScintillaTextCtrl(wxWindow* parent, const wxString& value = wxString(), const wxSize& size = wxDefaultSize, long style = 0, bool read_only = false);
 };
