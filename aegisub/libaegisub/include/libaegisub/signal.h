@@ -133,64 +133,77 @@ namespace detail {
 		if (signal) signal->Disconnect(this);
 		signal = nullptr;
 	}
+
+	template<typename Derived, typename... Args>
+	class SignalImpl : public SignalBase {
+	protected:
+		typedef std::function<void (Args...)> Slot;
+		typedef boost::container::map<ConnectionToken*, Slot> SlotMap;
+
+		SlotMap slots; /// Slots currently connected to this signal
+
+		void Disconnect(ConnectionToken *tok) override {
+			slots.erase(tok);
+		}
+
+	public:
+		~Signal() {
+			for (auto& slot : slots) {
+				DisconnectToken(slot.first);
+				if (!TokenClaimed(slot.first)) delete slot.first;
+			}
+		}
+
+		/// @brief Connect a signal to this slot
+		/// @param sig Signal to connect
+		/// @return The connection object
+		UnscopedConnection Connect(Slot sig) {
+			Derived::Connected(sig);
+			auto token = MakeToken();
+			slots.insert(std::make_pair(token, sig));
+			return UnscopedConnection(token);
+		}
+
+		template<typename Func>
+		UnscopedConnection Connect (Func&& fn) {
+			return Connect(Slot(fn));
+		}
+
+		template<typename... FnArgs>
+		UnscopedConnection Connect(FnArgs&&... args) {
+			return Connect(std::bind(std::forward<FnArgs>(args)...));
+		}
+
+		template<typename T, typename Arg1>
+		UnscopedConnection Connect(void (T::*func)(Arg1), T* self) {
+			return Connect(std::bind(func, self), _1);
+		}
+
+		template<typename T, typename Arg1, typename Arg2>
+		UnscopedConnection Connect(void (T::*func)(Arg1, Arg2), T* self) {
+			return Connect(std::bind(func, self), _1, _2);
+		}
+
+		/// @brief Trigger this signal
+		/// @param a1 The argument to the signal
+		///
+		/// The order in which connected slots are called is undefined and
+		/// should not be relied on
+		void operator()(Args&&... args) {
+			for (auto cur = slots.begin(); cur != slots.end(); ) {
+				if (Blocked(cur->first))
+					++cur;
+				else
+					(cur++)->second(std::forward<Args>(args)...);
+			}
+		}
+	};
 }
 
 template<typename... Args>
-class Signal : public detail::SignalBase {
-protected:
-	typedef std::function<void (Args...)> Slot;
-	typedef boost::container::map<detail::ConnectionToken*, Slot> SlotMap;
-
-	SlotMap slots; /// Slots currently connected to this signal
-
-	void Disconnect(detail::ConnectionToken *tok) override {
-		slots.erase(tok);
-	}
-
-public:
-	~Signal() {
-		for (auto& slot : slots) {
-			DisconnectToken(slot.first);
-			if (!TokenClaimed(slot.first)) delete slot.first;
-		}
-	}
-
-	/// @brief Connect a signal to this slot
-	/// @param sig Signal to connect
-	/// @return The connection object
-	UnscopedConnection Connect(Slot sig) {
-		auto token = MakeToken();
-		slots.insert(std::make_pair(token, sig));
-		return UnscopedConnection(token);
-	}
-
-	UnscopedConnection Connect(Args&&... args) {
-		return Connect(std::bind(std::forward<Args>(args)...));
-	}
-
-	template<typename T, typename Arg1>
-	UnscopedConnection Connect(void (T::*func)(Arg1), T* self) {
-		return Connect(std::bind(func, self), _1);
-	}
-
-	template<typename T, typename Arg1, typename Arg2>
-	UnscopedConnection Connect(void (T::*func)(Arg1, Arg2), T* self) {
-		return Connect(std::bind(func, self), _1, _2);
-	}
-
-	/// @brief Trigger this signal
-	/// @param a1 The argument to the signal
-	///
-	/// The order in which connected slots are called is undefined and
-	/// should not be relied on
-	void operator()(Args&&... args) {
-		for (auto cur = slots.begin(); cur != slots.end(); ) {
-			if (Blocked(cur->first))
-				++cur;
-			else
-				(cur++)->second(std::forward<Args>(args)...);
-		}
-	}
+class Signal : public detail::SignalImpl<Signal<Args...>, Args...> {
+	template<typename Func>
+	void Connected(Func& fn) { }
 };
 	}
 }
