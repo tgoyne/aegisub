@@ -49,6 +49,8 @@
 #include "utils.h"
 
 #include <libaegisub/karaoke_matcher.h>
+#include <libaegisub/signal.h>
+#include <libaegisub/util.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -65,13 +67,110 @@
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/string.h>
+#include <wx/weakref.h>
 
-#define TEXT_LABEL_SOURCE _("Source: ")
-#define TEXT_LABEL_DEST _("Dest: ")
+template<typename T>
+class Property {
+	T value;
+	agi::signal::Signal<T const&> ValueChanged;
 
-class KaraokeLineMatchDisplay : public wxControl {
+	class Proxy {
+		Property<T> *property;
+	public:
+		Proxy(Property<T> *property) : property(property) { }
+		Proxy(Proxy&& proxy) : property(proxy.property) { proxy.property = nullptr; }
+		~Proxy() {
+			if (property)
+				property->ValueChanged(*property);
+		}
+	};
+
+public:
+	typedef T value_type;
+
+	Property(T value = T()) : value(value) { }
+	operator T const&() const { return value; }
+
+	Property<T>& operator=(T const& new_value) {
+		value = new_value;
+		ValueChanged(*this);
+		return *this;
+	}
+
+	Property<T>& operator=(T&& new_value) {
+		value = std::move(new_value);
+		ValueChanged(*this);
+		return *this;
+	}
+
+	Proxy Set() { return Proxy(this); }
+	const T *operator->() const { return &value; }
+
+	DEFINE_SIGNAL_ADDERS(ValueChanged, Subscribe)
+};
+
+template<typename Control, typename T>
+void Enable(Control *c, Stream<T>& s) {
+	s.Subscribe(&Control::Enable, c);
+	c->Enable(p);
+}
+
+template<typename T>
+class StreamBase {
+protected:
+	agi::signal::Signal<T const&> SendNext;
+public:
+	DEFINE_SIGNAL_ADDERS(SendNext, Subscribe)
+	virtual T const& Get() const=0;
+
+	template<typename Func>
+	void Map(Func&& func) {
+		auto subject = agi::util::make_unique<Subject<T, agi::signal::Connection>>();
+		auto weak_subject = subject.get();
+		subject->disposable = Subscribe([=](T const& value) {
+			weak_subject->SendNext(func(value));
+		});
+		return subject;
+	}
+};
+
+template<typename T>
+class Stream : public StreamBase {
+	std::unique_ptr<StreamBase> stream;
+	agi::signal::Connection connection;
+public:
+	Stream(std::unique_ptr<StreamBase> stream)
+	: stream(std::move(stream))
+	, connection(this->stream->Subscribe(std::bind(std::ref(SendNext))))
+	{
+	}
+
+	T const& Get() const override { return stream->Get(); }
+};
+
+template<typename T, typename Disposable>
+class Subject : public StreamBase {
+public:
+
+	Disposable disposable;
+	using StreamBase::SendNext;
+	DEFINE_SIGNAL_ADDERS(SendNext, Subscribe)
+};
+
+
+class KaraokeMatchViewModel {
+public:
+	Property<bool> interpolate;
+	Property<std::string> source_style;
+	Property<std::string> destination_style;
+
+	Property<bool> can_link;
+	Property<bool> can_unlink;
+	Property<bool> can_skip_source;
+	Property<bool> can_skip_destination;
+	Property<bool> can_go_back;
+
 	typedef AssKaraoke::Syllable MatchSyllable;
-
 	struct MatchGroup {
 		std::vector<MatchSyllable> src;
 		std::string dst;
@@ -80,14 +179,28 @@ class KaraokeLineMatchDisplay : public wxControl {
 	};
 
 	std::vector<MatchGroup> matched_groups;
-	std::deque<MatchSyllable> unmatched_source;
+	Property<std::vector<MatchSyllable>> unmatched_source;
 	std::string destination_str;
 	boost::locale::boundary::ssegment_index destination;
+
 	boost::locale::boundary::ssegment_index::iterator match_begin, match_end;
+	size_t source_sel_length;
+
+	Property<size_t> remaining_source;
+	Property<size_t> remaining_destination;
+
+	KaraokeMatchViewModel() {
+
+	}
+};
+
+#define TEXT_LABEL_SOURCE _("Source: ")
+#define TEXT_LABEL_DEST _("Dest: ")
+
+class KaraokeLineMatchDisplay : public wxControl {
+	KaraokeMatchViewModel vm;
 
 	int last_total_matchgroup_render_width;
-
-	size_t source_sel_length;
 
 	void OnPaint(wxPaintEvent &event);
 
