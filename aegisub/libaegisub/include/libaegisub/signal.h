@@ -209,9 +209,13 @@ namespace detail {
 template<typename... Args>
 class Signal : public detail::SignalImpl<Signal<Args...>, Args...> { };
 
+/// A signal which remembers the last sent values and sends it immediately to
+/// any slots that connect to it
 template<typename... Args>
 class ReplaySignal : public detail::SignalImpl<ReplaySignal<Args...>, Args...> {
 	typedef detail::SignalImpl<ReplaySignal<Args...>, Args...> super;
+
+protected:
 	std::tuple<Args...> value;
 
 public:
@@ -222,7 +226,7 @@ public:
 		return connection;
 	}
 
-	void operator()(Args&&... args) {
+	void SendNext(Args&&... args) {
 		value = std::make_tuple(args...);
 		super::SendNext(std::forward<Args>(args)...);
 	}
@@ -230,6 +234,45 @@ public:
 public:
 	ReplaySignal(Args... initial) : value(initial...) { }
 };
+
+/// A value with change notifications
+template<typename T>
+class Property : public ReplaySignal<T> {
+	class Proxy {
+		Property<T> *property;
+	public:
+		Proxy(Property<T> *property) : property(property) { }
+		Proxy(Proxy&& proxy) : property(proxy.property) { proxy.property = nullptr; }
+		~Proxy() {
+			//if (property)
+			//	property->ValueChanged(*property);
+		}
+	};
+
+	using ReplaySignal<T>::value;
+
+public:
+	typedef T value_type;
+
+	Property(T value) : ReplaySignal<T>(value) { }
+	operator T const&() const { return value; }
+
+	Property<T>& operator=(T const& new_value) {
+		value = new_value;
+		SendNext(value);
+		return *this;
+	}
+
+	Property<T>& operator=(T&& new_value) {
+		value = std::move(new_value);
+		SendNext(value);
+		return *this;
+	}
+
+	Proxy Set() { return Proxy(this); }
+	const T *operator->() const { return &value; }
+};
+
 	}
 }
 
