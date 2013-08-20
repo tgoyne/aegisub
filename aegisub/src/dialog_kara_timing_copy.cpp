@@ -70,10 +70,28 @@
 #include <wx/weakref.h>
 
 template<typename T>
-class Property {
-	T value;
-	agi::signal::Signal<T const&> ValueChanged;
+class StreamBase {
+protected:
+	agi::signal::Signal<T const&> SendNext;
+public:
+	DEFINE_SIGNAL_ADDERS(SendNext, Subscribe)
 
+	template<typename Func>
+	auto Map(Func&& func) -> std::shared_ptr<StreamBase<decltype(func(T()))>> {
+		auto subject = std::make_shared<Subject<decltype(func(T())), agi::signal::Connection>>();
+		auto weak_subject = subject.get();
+		subject->disposable = Subscribe([=](T const& value) {
+			weak_subject->SendNext(func(value));
+		});
+		return subject;
+	}
+};
+
+template<typename T>
+class Property : public StreamBase<T> {
+	T value;
+	std::shared_ptr<StreamBase<T>> upstream;
+	agi::signal::Connection binding;
 	class Proxy {
 		Property<T> *property;
 	public:
@@ -93,69 +111,55 @@ public:
 
 	Property<T>& operator=(T const& new_value) {
 		value = new_value;
-		ValueChanged(*this);
+		binding = Connection();
+		upstream.reset();
+		SendNext(*this);
 		return *this;
 	}
 
 	Property<T>& operator=(T&& new_value) {
 		value = std::move(new_value);
-		ValueChanged(*this);
+		binding = Connection();
+		upstream.reset();
+		SendNext(*this);
 		return *this;
+	}
+
+	template<typename Stream>
+	Property<T>& operator=(std::shared_ptr<Stream> stream) {
+		upstream = std::move(stream);
+		binding = upstream->Subscribe([=](T const& value) {
+			this->value = value;
+			SendNext(*this);
+		});
 	}
 
 	Proxy Set() { return Proxy(this); }
 	const T *operator->() const { return &value; }
-
-	DEFINE_SIGNAL_ADDERS(ValueChanged, Subscribe)
-};
-
-template<typename Control, typename T>
-void Enable(Control *c, Stream<T>& s) {
-	s.Subscribe(&Control::Enable, c);
-	c->Enable(p);
-}
-
-template<typename T>
-class StreamBase {
-protected:
-	agi::signal::Signal<T const&> SendNext;
-public:
-	DEFINE_SIGNAL_ADDERS(SendNext, Subscribe)
-	virtual T const& Get() const=0;
-
-	template<typename Func>
-	void Map(Func&& func) {
-		auto subject = agi::util::make_unique<Subject<T, agi::signal::Connection>>();
-		auto weak_subject = subject.get();
-		subject->disposable = Subscribe([=](T const& value) {
-			weak_subject->SendNext(func(value));
-		});
-		return subject;
-	}
-};
-
-template<typename T>
-class Stream : public StreamBase {
-	std::unique_ptr<StreamBase> stream;
-	agi::signal::Connection connection;
-public:
-	Stream(std::unique_ptr<StreamBase> stream)
-	: stream(std::move(stream))
-	, connection(this->stream->Subscribe(std::bind(std::ref(SendNext))))
-	{
-	}
-
-	T const& Get() const override { return stream->Get(); }
 };
 
 template<typename T, typename Disposable>
-class Subject : public StreamBase {
+class Subject : public StreamBase<T> {
 public:
-
 	Disposable disposable;
 	using StreamBase::SendNext;
 	DEFINE_SIGNAL_ADDERS(SendNext, Subscribe)
 };
+
+struct ConnectionOwner : public wxClientData {
+	std::vector<agi::signal::Connection> connections;
+};
+
+template<typename Control, typename T>
+void Enable(Control *c, StreamBase<T>& s) {
+	auto connections = agi::util::make_unique<ConnectionOwner>();
+	auto obj = static_cast<ConnectionOwner *>(c->GetClientObject());
+	if (obj)
+		connections->connections = std::move(obj->connections);
+	connections->connections.emplace_back(s.Subscribe([=](bool e) { c->Enable(e); }));
+	//c->Enable(p);
+	c->SetClientObject(connections.release());
+}
 
 
 class KaraokeMatchViewModel {
@@ -178,21 +182,26 @@ public:
 		MatchGroup() : last_render_width(0) { }
 	};
 
-	std::vector<MatchGroup> matched_groups;
+	Property<std::vector<MatchGroup>> matched_groups;
 	Property<std::vector<MatchSyllable>> unmatched_source;
-	std::string destination_str;
-	boost::locale::boundary::ssegment_index destination;
+	Property<std::string> destination_str;
+	Property<boost::locale::boundary::ssegment_index> destination;
 
-	boost::locale::boundary::ssegment_index::iterator match_begin, match_end;
-	size_t source_sel_length;
+	Property<boost::locale::boundary::ssegment_index::iterator> match_begin, match_end;
+	Property<size_t> source_sel_length;
 
 	Property<size_t> remaining_source;
 	Property<size_t> remaining_destination;
 
 	KaraokeMatchViewModel() {
+		wxCheckBox *cb = new wxCheckBox(nullptr, -1, "foo");
+		Enable(cb, can_link);
 
+		remaining_source = unmatched_source.Map([](std::vector<MatchSyllable> const& m) { return m.size(); });
 	}
 };
+
+#if 0
 
 #define TEXT_LABEL_SOURCE _("Source: ")
 #define TEXT_LABEL_DEST _("Dest: ")
@@ -809,3 +818,4 @@ AssEntry *DialogKanjiTimer::FindPrevStyleMatch(AssEntry *search_from, const std:
 	if (!search_from) return search_from;
 	return find_next(EntryList::reverse_iterator(subs->Line.iterator_to(*search_from)), subs->Line.rend(), search_style);
 }
+#endif
