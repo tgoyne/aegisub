@@ -50,7 +50,7 @@ namespace detail {
 }
 
 /// @class Connection
-/// @brief Object representing a connection to a signal
+/// @brief Object which owns a connection between a signal and a slot
 class Connection {
 	std::unique_ptr<detail::ConnectionToken> token;
 public:
@@ -67,18 +67,18 @@ public:
 	/// instead
 	void Disconnect() { if (token) token->Disconnect(); }
 
-	/// @brief Disable this connection until Unblock is called
+	/// Disable this connection until Unblock is called
 	void Block() { if (token) token->blocked = true; }
 
-	/// @brief Reenable this connection after it was disabled by Block
+	/// Reenable this connection after it was disabled by Block
 	void Unblock() { if (token) token->blocked = false; }
 };
 /// @class UnscopedConnection
 /// @brief A connection which is not automatically closed
 ///
-/// Connections initially start out owned by the signal. If a slot knows that it
-/// will outlive a signal and does not need to be able to block a connection, it
-/// can simply ignore the return value of Connect.
+/// Connections initially start out owned by the signal. If a slot knows that
+/// it will outlive a signal and does not need to be able to block a
+/// connection, it can simply ignore the return value of Connect.
 ///
 /// If a slot needs to be able to disconnect from a signal, it should store the
 /// returned connection in a Connection, which transfers ownership of the
@@ -92,11 +92,12 @@ public:
 };
 
 namespace detail {
-	/// @brief Polymorphic base class for slots
+	/// @brief Polymorphic base class for signals
 	///
-	/// This class has two purposes: to avoid having to make Connection
-	/// templated on what type of connection it is controlling, and to avoid
-	/// some messiness with templated friend classes
+	/// This class is used to avoid having to make Connection templated on the
+	/// signal type, by giving it a virtual Disconnect function to call. It
+	/// also speeds up compilation slightly by extracting as much as possible
+	/// from the templated implementation.
 	class SignalBase {
 		friend class ConnectionToken;
 		/// @brief Disconnect the passed slot from the signal
@@ -108,6 +109,7 @@ namespace detail {
 		SignalBase& operator=(SignalBase const&);
 	protected:
 		SignalBase() { }
+
 		/// @brief Notify a slot that it has been disconnected
 		/// @param tok Token to disconnect
 		///
@@ -116,13 +118,13 @@ namespace detail {
 		/// to it)
 		void DisconnectToken(ConnectionToken *tok) { tok->signal = nullptr; }
 
-		/// @brief Has a token been claimed by a scoped connection object?
+		/// Has a token been claimed by a scoped connection object?
 		bool TokenClaimed(ConnectionToken *tok) { return tok->claimed; }
 
-		/// @brief Create a new connection to this slot
+		/// Create a new token that owns a connection to this signal
 		ConnectionToken *MakeToken() { return new ConnectionToken(this); }
 
-		/// @brief Check if a connection currently wants to receive signals
+		/// Check if a slot currently wants to receive signals
 		bool Blocked(ConnectionToken *tok) { return tok->blocked; }
 	};
 
@@ -133,18 +135,18 @@ namespace detail {
 
 	/// @brief Templated common code for signals
 	template<class Slot>
-	class SignalBaseImpl : public SignalBase {
+	class SignalImpl : public SignalBase {
 	protected:
 		typedef boost::container::map<ConnectionToken*, Slot> SlotMap;
 
-		SlotMap slots; /// Signals currently connected to this slot
+		SlotMap slots; /// Slots currently connected to this signal
 
-		void Disconnect(ConnectionToken *tok) {
+		void Disconnect(ConnectionToken *tok) override {
 			slots.erase(tok);
 		}
 
 		/// Protected destructor so that we don't need a virtual destructor
-		~SignalBaseImpl() {
+		~SignalImpl() {
 			for (auto& slot : slots) {
 				DisconnectToken(slot.first);
 				if (!TokenClaimed(slot.first)) delete slot.first;
@@ -174,8 +176,10 @@ namespace detail {
 	};
 }
 
+// Iteration is done in this way to support slots disconnecting in response to
+// signals triggering
 #define SIGNALS_H_FOR_EACH_SIGNAL(...) \
-	for (auto cur = slots.begin(); cur != slots.end();) { \
+	for (auto cur = slots.begin(); cur != slots.end(); ) { \
 		if (Blocked(cur->first)) \
 			++cur; \
 		else \
@@ -187,8 +191,8 @@ namespace detail {
 /// @param Arg1 Type of first argument to pass to slots
 /// @param Arg2 Type of second argument to pass to slots
 template<class Arg1 = void, class Arg2 = void>
-class Signal : public detail::SignalBaseImpl<std::function<void (Arg1, Arg2)> > {
-	typedef detail::SignalBaseImpl<std::function<void (Arg1, Arg2)> > super;
+class Signal : public detail::SignalImpl<std::function<void (Arg1, Arg2)> > {
+	typedef detail::SignalImpl<std::function<void (Arg1, Arg2)> > super;
 	using super::Blocked;
 	using super::slots;
 public:
@@ -234,8 +238,8 @@ public:
 /// @brief One-argument signal
 /// @param Arg1 Type of the argument to pass to slots
 template<class Arg1>
-class Signal<Arg1, void> : public detail::SignalBaseImpl<std::function<void (Arg1)> > {
-	typedef detail::SignalBaseImpl<std::function<void (Arg1)> > super;
+class Signal<Arg1, void> : public detail::SignalImpl<std::function<void (Arg1)> > {
+	typedef detail::SignalImpl<std::function<void (Arg1)> > super;
 	using super::Blocked;
 	using super::slots;
 public:
@@ -266,8 +270,8 @@ public:
 /// @class Signal
 /// @brief Zero-argument signal
 template<>
-class Signal<void> : public detail::SignalBaseImpl<std::function<void ()> > {
-	typedef detail::SignalBaseImpl<std::function<void ()> > super;
+class Signal<void> : public detail::SignalImpl<std::function<void ()> > {
+	typedef detail::SignalImpl<std::function<void ()> > super;
 	using super::Blocked;
 	using super::slots;
 public:
