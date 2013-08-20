@@ -19,6 +19,7 @@
 #pragma once
 
 #include <boost/container/map.hpp>
+#include <boost/fusion/functional/invocation/invoke.hpp>
 
 #include <functional>
 #include <memory>
@@ -161,30 +162,39 @@ namespace detail {
 			slots.insert(std::make_pair(token, sig));
 			return UnscopedConnection(token);
 		}
-		template<class F, class Arg1>
-		UnscopedConnection Connect(F func, Arg1 a1) {
-			return Connect(std::bind(func, a1));
+
+#ifdef _MSC_VER
+#define SIGNAL_CONNECT(TEMPLATE_LIST, PADDING_LIST, LIST, COMMA, X1, X2, X3, X4) \
+	template<LIST(_CLASS_TYPE)> \
+	UnscopedConnection Connect(List(_TYPE_REFREF_ARG)) { \
+		return Connect(std::bind(LIST(_FORWARD_ARG))); \
+	}
+	_VARIADIC_EXPAND_0X(SIGNAL_CONNECT, , , , )
+#undef SIGNAL_CONNECT
+#else
+	template<typename... Args>
+	UnscopedConnection Connect(Args&&... args) {
+		return Connect(std::bind(std::forward<Args>(args)...));
+	}
+#endif
+
+	/// @brief Trigger this signal
+	/// @param a1 The argument to the signal
+	///
+	/// The order in which connected slots are called is undefined and should
+	/// not be relied on
+	template<typename... Args>
+	void operator()(Args&&.. args) {
+		for (auto cur = slots.begin(); cur != slots.end(); ) {
+			if (Blocked(cur->first))
+				++cur;
+			else
+				(cur++)->second(std::forward<Args>(args)...);
 		}
-		template<class F, class Arg1, class Arg2>
-		UnscopedConnection Connect(F func, Arg1 a1, Arg2 a2) {
-			return Connect(std::bind(func, a1, a2));
-		}
-		template<class F, class Arg1, class Arg2, class Arg3>
-		UnscopedConnection Connect(F func, Arg1 a1, Arg2 a2, Arg3 a3) {
-			return Connect(std::bind(func, a1, a2, a3));
-		}
+	}
+
 	};
 }
-
-// Iteration is done in this way to support slots disconnecting in response to
-// signals triggering
-#define SIGNALS_H_FOR_EACH_SIGNAL(...) \
-	for (auto cur = slots.begin(); cur != slots.end(); ) { \
-		if (Blocked(cur->first)) \
-			++cur; \
-		else \
-			(cur++)->second(__VA_ARGS__); \
-	}
 
 /// @class Signal
 /// @brief Two-argument signal
@@ -198,14 +208,6 @@ class Signal : public detail::SignalImpl<std::function<void (Arg1, Arg2)> > {
 public:
 	Signal() { }
 
-	/// @brief Trigger this signal
-	/// @param a1 First argument to the signal
-	/// @param a2 Second argument to the signal
-	///
-	/// The order in which connected slots are called is undefined and should
-	/// not be relied on
-	void operator()(Arg1 a1, Arg2 a2) { SIGNALS_H_FOR_EACH_SIGNAL(a1, a2) }
-
 	// Don't hide the base overloads
 	using super::Connect;
 
@@ -216,9 +218,9 @@ public:
 	/// This overload is purely for convenience so that classes can do
 	/// sig.Connect(&Class::Foo, this) rather than
 	/// sig.Connect(&Class::Foo, this, _1, _2)
-	template<class T>
-	UnscopedConnection Connect(void (T::*func)(Arg1, Arg2), T* a1) {
-		return Connect(std::bind(func, a1, _1, _2));
+	template<class Func>
+	UnscopedConnection Connect(Func&& func, T* self) {
+		return Connect(std::mem_fn(func, self));
 	}
 
 	/// @brief Connect a member function with the correct signature to this signal
@@ -245,13 +247,6 @@ class Signal<Arg1, void> : public detail::SignalImpl<std::function<void (Arg1)> 
 public:
 	Signal() { }
 
-	/// @brief Trigger this signal
-	/// @param a1 The argument to the signal
-	///
-	/// The order in which connected slots are called is undefined and should
-	/// not be relied on
-	void operator()(Arg1 a1) { SIGNALS_H_FOR_EACH_SIGNAL(a1) }
-
 	// Don't hide the base overloads
 	using super::Connect;
 
@@ -276,14 +271,7 @@ class Signal<void> : public detail::SignalImpl<std::function<void ()> > {
 	using super::slots;
 public:
 	Signal() { }
-	/// @brief Trigger this signal
-	///
-	/// The order in which connected slots are called is undefined and should
-	/// not be relied on
-	void operator()() { SIGNALS_H_FOR_EACH_SIGNAL() }
 };
-
-#undef SIGNALS_H_FOR_EACH_SIGNAL
 	}
 }
 
