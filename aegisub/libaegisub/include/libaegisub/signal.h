@@ -146,42 +146,51 @@ namespace detail {
 			slots.erase(tok);
 		}
 
-	public:
-		~Signal() {
+		~SignalImpl() {
 			for (auto& slot : slots) {
 				DisconnectToken(slot.first);
 				if (!TokenClaimed(slot.first)) delete slot.first;
 			}
 		}
 
-		/// @brief Connect a signal to this slot
-		/// @param sig Signal to connect
-		/// @return The connection object
-		UnscopedConnection Connect(Slot sig) {
-			Derived::Connected(sig);
+		UnscopedConnection DoConnect(Slot sig) {
 			auto token = MakeToken();
 			slots.insert(std::make_pair(token, sig));
 			return UnscopedConnection(token);
 		}
 
+		void SendNext(Args&&... args) {
+			for (auto cur = slots.begin(); cur != slots.end(); ) {
+				if (Blocked(cur->first))
+					++cur;
+				else
+					(cur++)->second(std::forward<Args>(args)...);
+			}
+		}
+
+	public:
+		UnscopedConnection Connect(Slot sig) {
+			return Derived::DoConnect(sig);
+		}
+
 		template<typename Func>
 		UnscopedConnection Connect (Func&& fn) {
-			return Connect(Slot(fn));
+			return Derived::DoConnect(Slot(fn));
 		}
 
 		template<typename... FnArgs>
 		UnscopedConnection Connect(FnArgs&&... args) {
-			return Connect(std::bind(std::forward<FnArgs>(args)...));
+			return Derived::DoConnect(std::bind(std::forward<FnArgs>(args)...));
 		}
 
 		template<typename T, typename Arg1>
 		UnscopedConnection Connect(void (T::*func)(Arg1), T* self) {
-			return Connect(std::bind(func, self), _1);
+			return Derived::DoConnect(std::bind(func, self), _1);
 		}
 
 		template<typename T, typename Arg1, typename Arg2>
 		UnscopedConnection Connect(void (T::*func)(Arg1, Arg2), T* self) {
-			return Connect(std::bind(func, self), _1, _2);
+			return Derived::DoConnect(std::bind(func, self), _1, _2);
 		}
 
 		/// @brief Trigger this signal
@@ -190,20 +199,22 @@ namespace detail {
 		/// The order in which connected slots are called is undefined and
 		/// should not be relied on
 		void operator()(Args&&... args) {
-			for (auto cur = slots.begin(); cur != slots.end(); ) {
-				if (Blocked(cur->first))
-					++cur;
-				else
-					(cur++)->second(std::forward<Args>(args)...);
-			}
+			Derived::SendNext(std::forward<Args>(args)...);
 		}
 	};
 }
 
 template<typename... Args>
 class Signal : public detail::SignalImpl<Signal<Args...>, Args...> {
+};
+
+template<typename... Args>
+class ReplaySignal : public detail::SignalImpl<ReplaySignal<Args...>, Args...> {
+	std::tuple<Args...> value;
 	template<typename Func>
-	void Connected(Func& fn) { }
+	void Connected(Func& fn) {
+
+	}
 };
 	}
 }

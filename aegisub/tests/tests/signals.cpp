@@ -97,3 +97,43 @@ TEST(lagi_signal, one_arg) {
 	s(20);
 	EXPECT_EQ(30, x);
 }
+
+TEST(lagi_signal, two_args) {
+	Signal<int, int> s;
+	int x = 0, y = 0;
+
+	Connection c = s.Connect([&](int a, int b) { x = a; y = b; });
+	s(0, 5);
+	EXPECT_EQ(0, x);
+	EXPECT_EQ(5, y);
+	s(10, 15);
+	EXPECT_EQ(10, x);
+	EXPECT_EQ(15, y);
+}
+
+class uncopyable {
+	uncopyable(uncopyable const&) = delete;
+	uncopyable(uncopyable&&) = delete;
+	void operator=(uncopyable&&) = delete;
+	void operator=(uncopyable const&) = delete;
+public:
+	int value;
+};
+
+TEST(lagi_signal, uncopyable_const_ref) {
+	Signal<uncopyable const&> s;
+	const uncopyable value = {10};
+	Connection c = s.Connect([](uncopyable const& u) {
+		EXPECT_EQ(u.value, 10);
+	});
+	s(value);
+}
+
+TEST(lagi_signal, uncopyable_ref) {
+	Signal<uncopyable&> s;
+	uncopyable value = {10};
+	Connection c = s.Connect([](uncopyable& u) {
+		EXPECT_EQ(u.value, 10);
+	});
+	s(value);
+}
