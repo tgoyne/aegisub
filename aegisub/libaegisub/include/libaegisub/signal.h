@@ -133,58 +133,57 @@ namespace detail {
 		if (signal) signal->Disconnect(this);
 		signal = nullptr;
 	}
+}
 
-	/// @brief Templated common code for signals
-	template<class Slot>
-	class SignalImpl : public SignalBase {
-	protected:
-		typedef boost::container::map<ConnectionToken*, Slot> SlotMap;
+template<typename... Args>
+class Signal : public detail::SignalBase {
+protected:
+	typedef std::function<void (Args...)> Slot;
+	typedef boost::container::map<detail::ConnectionToken*, Slot> SlotMap;
 
-		SlotMap slots; /// Slots currently connected to this signal
+	SlotMap slots; /// Slots currently connected to this signal
 
-		void Disconnect(ConnectionToken *tok) override {
-			slots.erase(tok);
-		}
-
-		/// Protected destructor so that we don't need a virtual destructor
-		~SignalImpl() {
-			for (auto& slot : slots) {
-				DisconnectToken(slot.first);
-				if (!TokenClaimed(slot.first)) delete slot.first;
-			}
-		}
-	public:
-		/// @brief Connect a signal to this slot
-		/// @param sig Signal to connect
-		/// @return The connection object
-		UnscopedConnection Connect(Slot sig) {
-			ConnectionToken *token = MakeToken();
-			slots.insert(std::make_pair(token, sig));
-			return UnscopedConnection(token);
-		}
-
-#ifdef _MSC_VER
-#define SIGNAL_CONNECT(TEMPLATE_LIST, PADDING_LIST, LIST, COMMA, X1, X2, X3, X4) \
-	template<LIST(_CLASS_TYPE)> \
-	UnscopedConnection Connect(List(_TYPE_REFREF_ARG)) { \
-		return Connect(std::bind(LIST(_FORWARD_ARG))); \
+	void Disconnect(detail::ConnectionToken *tok) override {
+		slots.erase(tok);
 	}
-	_VARIADIC_EXPAND_0X(SIGNAL_CONNECT, , , , )
-#undef SIGNAL_CONNECT
-#else
-	template<typename... Args>
+
+public:
+	~Signal() {
+		for (auto& slot : slots) {
+			DisconnectToken(slot.first);
+			if (!TokenClaimed(slot.first)) delete slot.first;
+		}
+	}
+
+	/// @brief Connect a signal to this slot
+	/// @param sig Signal to connect
+	/// @return The connection object
+	UnscopedConnection Connect(Slot sig) {
+		auto token = MakeToken();
+		slots.insert(std::make_pair(token, sig));
+		return UnscopedConnection(token);
+	}
+
 	UnscopedConnection Connect(Args&&... args) {
 		return Connect(std::bind(std::forward<Args>(args)...));
 	}
-#endif
+
+	template<typename T, typename Arg1>
+	UnscopedConnection Connect(void (T::*func)(Arg1), T* self) {
+		return Connect(std::bind(func, self), _1);
+	}
+
+	template<typename T, typename Arg1, typename Arg2>
+	UnscopedConnection Connect(void (T::*func)(Arg1, Arg2), T* self) {
+		return Connect(std::bind(func, self), _1, _2);
+	}
 
 	/// @brief Trigger this signal
 	/// @param a1 The argument to the signal
 	///
-	/// The order in which connected slots are called is undefined and should
-	/// not be relied on
-	template<typename... Args>
-	void operator()(Args&&.. args) {
+	/// The order in which connected slots are called is undefined and
+	/// should not be relied on
+	void operator()(Args&&... args) {
 		for (auto cur = slots.begin(); cur != slots.end(); ) {
 			if (Blocked(cur->first))
 				++cur;
@@ -192,85 +191,6 @@ namespace detail {
 				(cur++)->second(std::forward<Args>(args)...);
 		}
 	}
-
-	};
-}
-
-/// @class Signal
-/// @brief Two-argument signal
-/// @param Arg1 Type of first argument to pass to slots
-/// @param Arg2 Type of second argument to pass to slots
-template<class Arg1 = void, class Arg2 = void>
-class Signal : public detail::SignalImpl<std::function<void (Arg1, Arg2)> > {
-	typedef detail::SignalImpl<std::function<void (Arg1, Arg2)> > super;
-	using super::Blocked;
-	using super::slots;
-public:
-	Signal() { }
-
-	// Don't hide the base overloads
-	using super::Connect;
-
-	/// @brief Connect a member function with the correct signature to this signal
-	/// @param func Function to connect
-	/// @param a1   Object
-	///
-	/// This overload is purely for convenience so that classes can do
-	/// sig.Connect(&Class::Foo, this) rather than
-	/// sig.Connect(&Class::Foo, this, _1, _2)
-	template<class Func>
-	UnscopedConnection Connect(Func&& func, T* self) {
-		return Connect(std::mem_fn(func, self));
-	}
-
-	/// @brief Connect a member function with the correct signature to this signal
-	/// @param func Function to connect
-	/// @param a1   Object
-	///
-	/// This overload is purely for convenience so that classes can do
-	/// sig.Connect(&Class::Foo, this) rather than
-	/// sig.Connect(&Class::Foo, this, _1)
-	template<class T>
-	UnscopedConnection Connect(void (T::*func)(Arg1), T* a1) {
-		return Connect(std::bind(func, a1, _1));
-	}
-};
-
-/// @class Signal
-/// @brief One-argument signal
-/// @param Arg1 Type of the argument to pass to slots
-template<class Arg1>
-class Signal<Arg1, void> : public detail::SignalImpl<std::function<void (Arg1)> > {
-	typedef detail::SignalImpl<std::function<void (Arg1)> > super;
-	using super::Blocked;
-	using super::slots;
-public:
-	Signal() { }
-
-	// Don't hide the base overloads
-	using super::Connect;
-
-	/// @brief Connect a member function with the correct signature to this signal
-	/// @param func Function to connect
-	/// @param a1   Object
-	///
-	/// This overload is purely for convenience so that classes can do
-	/// sig.Connect(&Class::Foo, this) rather than sig.Connect(&Class::Foo, this, _1)
-	template<class T>
-	UnscopedConnection Connect(void (T::*func)(Arg1), T* a1) {
-		return Connect(std::bind(func, a1, _1));
-	}
-};
-
-/// @class Signal
-/// @brief Zero-argument signal
-template<>
-class Signal<void> : public detail::SignalImpl<std::function<void ()> > {
-	typedef detail::SignalImpl<std::function<void ()> > super;
-	using super::Blocked;
-	using super::slots;
-public:
-	Signal() { }
 };
 	}
 }
