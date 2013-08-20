@@ -20,6 +20,7 @@
 
 #include <boost/container/map.hpp>
 #include <boost/fusion/functional/invocation/invoke.hpp>
+#include <boost/fusion/adapted/std_tuple.hpp>
 
 #include <functional>
 #include <memory>
@@ -153,6 +154,7 @@ namespace detail {
 			}
 		}
 
+	protected:
 		UnscopedConnection DoConnect(Slot sig) {
 			auto token = MakeToken();
 			slots.insert(std::make_pair(token, sig));
@@ -170,27 +172,27 @@ namespace detail {
 
 	public:
 		UnscopedConnection Connect(Slot sig) {
-			return Derived::DoConnect(sig);
+			return static_cast<Derived*>(this)->DoConnect(sig);
 		}
 
 		template<typename Func>
 		UnscopedConnection Connect (Func&& fn) {
-			return Derived::DoConnect(Slot(fn));
+			return static_cast<Derived*>(this)->DoConnect(Slot(fn));
 		}
 
 		template<typename... FnArgs>
 		UnscopedConnection Connect(FnArgs&&... args) {
-			return Derived::DoConnect(std::bind(std::forward<FnArgs>(args)...));
+			return static_cast<Derived*>(this)->DoConnect(std::bind(std::forward<FnArgs>(args)...));
 		}
 
 		template<typename T, typename Arg1>
 		UnscopedConnection Connect(void (T::*func)(Arg1), T* self) {
-			return Derived::DoConnect(std::bind(func, self), _1);
+			return static_cast<Derived*>(this)->DoConnect(std::bind(func, self), _1);
 		}
 
 		template<typename T, typename Arg1, typename Arg2>
 		UnscopedConnection Connect(void (T::*func)(Arg1, Arg2), T* self) {
-			return Derived::DoConnect(std::bind(func, self), _1, _2);
+			return static_cast<Derived*>(this)->DoConnect(std::bind(func, self), _1, _2);
 		}
 
 		/// @brief Trigger this signal
@@ -199,22 +201,34 @@ namespace detail {
 		/// The order in which connected slots are called is undefined and
 		/// should not be relied on
 		void operator()(Args&&... args) {
-			Derived::SendNext(std::forward<Args>(args)...);
+			static_cast<Derived*>(this)->SendNext(std::forward<Args>(args)...);
 		}
 	};
 }
 
 template<typename... Args>
-class Signal : public detail::SignalImpl<Signal<Args...>, Args...> {
-};
+class Signal : public detail::SignalImpl<Signal<Args...>, Args...> { };
 
 template<typename... Args>
 class ReplaySignal : public detail::SignalImpl<ReplaySignal<Args...>, Args...> {
+	typedef detail::SignalImpl<ReplaySignal<Args...>, Args...> super;
 	std::tuple<Args...> value;
-	template<typename Func>
-	void Connected(Func& fn) {
 
+public:
+	template<typename Func>
+	UnscopedConnection DoConnect(Func&& fn) {
+		auto connection = super::DoConnect(std::forward<Func>(fn));
+		boost::fusion::invoke(fn, value);
+		return connection;
 	}
+
+	void operator()(Args&&... args) {
+		value = std::make_tuple(args...);
+		super::SendNext(std::forward<Args>(args)...);
+	}
+
+public:
+	ReplaySignal(Args... initial) : value(initial...) { }
 };
 	}
 }

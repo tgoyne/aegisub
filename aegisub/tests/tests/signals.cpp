@@ -133,7 +133,31 @@ TEST(lagi_signal, uncopyable_ref) {
 	Signal<uncopyable&> s;
 	uncopyable value = {10};
 	Connection c = s.Connect([](uncopyable& u) {
-		EXPECT_EQ(u.value, 10);
+		EXPECT_EQ(10, u.value);
 	});
 	s(value);
+}
+
+TEST(lagi_replay_signal, should_send_initial_value_on_connection) {
+	ReplaySignal<int> s(5);
+	int x = 0;
+	Connection c = s.Connect([&](int value) { x = value; });
+	EXPECT_EQ(5, x);
+}
+
+TEST(lagi_replay_signal, should_send_last_sent_value) {
+	ReplaySignal<int> s(5);
+	int x = 0;
+	s(10);
+	Connection c = s.Connect([&](int value) { x = value; });
+	EXPECT_EQ(10, x);
+}
+
+TEST(lagi_replay_signal, should_support_multiple_values) {
+	ReplaySignal<int, int, int> s(1, 2, 3);
+	int x = 0, y = 0, z = 0;
+	Connection c = s.Connect([&](int a, int b, int c) { x = a; y = b; z = c; });
+	EXPECT_EQ(1, x);
+	EXPECT_EQ(2, y);
+	EXPECT_EQ(3, z);
 }
