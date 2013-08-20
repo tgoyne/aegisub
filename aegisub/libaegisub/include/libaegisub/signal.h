@@ -161,7 +161,8 @@ namespace detail {
 			return UnscopedConnection(token);
 		}
 
-		void SendNext(Args&&... args) {
+		template<typename... FnArgs>
+		void SendNext(FnArgs&&... args) {
 			for (auto cur = slots.begin(); cur != slots.end(); ) {
 				if (Blocked(cur->first))
 					++cur;
@@ -200,8 +201,9 @@ namespace detail {
 		///
 		/// The order in which connected slots are called is undefined and
 		/// should not be relied on
-		void operator()(Args&&... args) {
-			static_cast<Derived*>(this)->SendNext(std::forward<Args>(args)...);
+		template<typename... FnArgs>
+		void operator()(FnArgs&&... args) {
+			static_cast<Derived*>(this)->SendNext(std::forward<FnArgs>(args)...);
 		}
 	};
 }
@@ -226,9 +228,10 @@ public:
 		return connection;
 	}
 
-	void SendNext(Args&&... args) {
+	template<typename... FnArgs>
+	void SendNext(FnArgs&&... args) {
 		value = std::make_tuple(args...);
-		super::SendNext(std::forward<Args>(args)...);
+		super::SendNext(std::forward<FnArgs>(args)...);
 	}
 
 public:
@@ -238,15 +241,18 @@ public:
 /// A value with change notifications
 template<typename T>
 class Property : public ReplaySignal<T> {
+	class Proxy;
+	friend class Proxy;
 	class Proxy {
 		Property<T> *property;
 	public:
 		Proxy(Property<T> *property) : property(property) { }
 		Proxy(Proxy&& proxy) : property(proxy.property) { proxy.property = nullptr; }
 		~Proxy() {
-			//if (property)
-			//	property->ValueChanged(*property);
+			if (property)
+				property->SendNext(std::get<0>(property->value));
 		}
+		T *operator->() const { return &std::get<0>(property->value); }
 	};
 
 	using ReplaySignal<T>::value;
@@ -255,22 +261,22 @@ public:
 	typedef T value_type;
 
 	Property(T value) : ReplaySignal<T>(value) { }
-	operator T const&() const { return value; }
+	operator T const&() const { return std::get<0>(value); }
 
 	Property<T>& operator=(T const& new_value) {
-		value = new_value;
-		SendNext(value);
+		std::get<0>(value) = new_value;
+		this->SendNext(new_value);
 		return *this;
 	}
 
 	Property<T>& operator=(T&& new_value) {
-		value = std::move(new_value);
-		SendNext(value);
+		std::get<0>(value) = std::move(new_value);
+		this->SendNext(std::get<0>(value));
 		return *this;
 	}
 
 	Proxy Set() { return Proxy(this); }
-	const T *operator->() const { return &value; }
+	const T *operator->() const { return &std::get<0>(value); }
 };
 
 	}

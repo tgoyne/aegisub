@@ -161,3 +161,40 @@ TEST(lagi_replay_signal, should_support_multiple_values) {
 	EXPECT_EQ(2, y);
 	EXPECT_EQ(3, z);
 }
+
+TEST(lagi_property, should_store_intial_value) {
+	Property<int> p(1);
+	EXPECT_EQ(1, p);
+}
+
+TEST(lagi_property, should_store_assigned_values) {
+	Property<int> p(1);
+	p = 2;
+	EXPECT_EQ(2, p);
+}
+
+TEST(lagi_property, should_trigger_on_assign) {
+	int x = 0;
+	Property<int> p(1);
+	p.Connect([&](int value) { x = value; });
+	p = 2;
+	EXPECT_EQ(2, x);
+}
+
+TEST(lagi_property, should_not_break_when_set_is_called) {
+	Property<std::string> p("a");
+	ASSERT_STREQ("a", p->c_str());
+	p.Set();
+	ASSERT_STREQ("a", p->c_str());
+}
+
+TEST(lagi_property, should_trigger_on_mutation_via_set) {
+	bool triggered;
+	Property<std::string> p("a");
+	ASSERT_STREQ("a", p->c_str());
+	p.Connect([&](std::string const&) { triggered = true; });
+	triggered = false;
+	p.Set()->append("b");
+	EXPECT_STREQ("ab", p->c_str());
+	EXPECT_TRUE(triggered);
+}
