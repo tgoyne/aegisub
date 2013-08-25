@@ -31,10 +31,6 @@
 /// @brief Default timing mode for dialogue subtitles
 /// @ingroup audio_ui
 
-
-#include <cstdint>
-#include <wx/pen.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_time.h"
@@ -46,6 +42,9 @@
 #include "pen.h"
 #include "selection_controller.h"
 #include "utils.h"
+
+#include <cstdint>
+#include <wx/pen.h>
 
 class TimeableLine;
 
@@ -403,6 +402,7 @@ public:
 	std::vector<AudioMarker*> OnLeftClick(int ms, bool ctrl_down, int sensitivity, int snap_range);
 	std::vector<AudioMarker*> OnRightClick(int ms, bool, int sensitivity, int snap_range);
 	void OnMarkerDrag(std::vector<AudioMarker*> const& markers, int new_position, int snap_range);
+	void OnDragEnd();
 
 	/// Constructor
 	/// @param c Project context
@@ -674,6 +674,12 @@ std::vector<AudioMarker*> AudioTimingControllerDialogue::OnRightClick(int ms, bo
 void AudioTimingControllerDialogue::OnMarkerDrag(std::vector<AudioMarker*> const& markers, int new_position, int snap_range)
 {
 	SetMarkers(markers, SnapPosition(new_position, snap_range, markers), true);
+}
+
+void AudioTimingControllerDialogue::OnDragEnd()
+{
+	if (auto_commit->GetBool())
+		DoCommit(false);
 }
 
 void AudioTimingControllerDialogue::UpdateSelection()

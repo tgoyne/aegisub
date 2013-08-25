@@ -498,10 +498,10 @@ public:
 				default_snap != event.ShiftDown() ? display->TimeFromAbsoluteX(snap_range) : 0);
 		}
 
-		if (dragging && event.ButtonUp(button_used) && OPT_GET("Audio/Auto/Commit")->GetBool())
+		if (dragging && event.ButtonUp(button_used))
 		{
 			dragging = false;
-			timing_controller->Commit();
+			timing_controller->OnDragEnd();
 		}
 
 		// We lose the marker drag if the button used to initiate it goes up

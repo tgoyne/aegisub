@@ -146,6 +146,7 @@ public:
 	std::vector<AudioMarker*> OnLeftClick(int ms, bool, int sensitivity, int);
 	std::vector<AudioMarker*> OnRightClick(int ms, bool, int, int);
 	void OnMarkerDrag(std::vector<AudioMarker*> const& marker, int new_position, int);
+	void OnDragEnd();
 
 	AudioTimingControllerKaraoke(agi::Context *c, AssKaraoke *kara, agi::signal::Connection& file_changed);
 };
@@ -445,6 +446,11 @@ void AudioTimingControllerKaraoke::OnMarkerDrag(std::vector<AudioMarker*> const&
 	}
 
 	AnnounceChanges(syl, true);
+}
+
+void AudioTimingControllerKaraoke::OnDragEnd() {
+	if (auto_commit)
+		DoCommit();
 }
 
 void AudioTimingControllerKaraoke::GetLabels(TimeRange const& range, std::vector<AudioLabel> &out) const {
