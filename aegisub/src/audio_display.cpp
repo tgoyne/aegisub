@@ -473,6 +473,8 @@ class AudioMarkerInteractionObject : public AudioDisplayInteractionObject {
 	// Range in pixels to snap at
 	int snap_range;
 
+	bool dragging;
+
 public:
 	AudioMarkerInteractionObject(std::vector<AudioMarker*> markers, AudioTimingController *timing_controller, AudioDisplay *display, wxMouseButton button_used)
 	: markers(markers)
@@ -481,6 +483,7 @@ public:
 	, button_used(button_used)
 	, default_snap(OPT_GET("Audio/Snap/Enable")->GetBool())
 	, snap_range(OPT_GET("Audio/Snap/Distance")->GetInt())
+	, dragging(false)
 	{
 	}
 
@@ -488,10 +491,17 @@ public:
 	{
 		if (event.Dragging())
 		{
+			dragging = true;
 			timing_controller->OnMarkerDrag(
 				markers,
 				display->TimeFromRelativeX(event.GetPosition().x),
 				default_snap != event.ShiftDown() ? display->TimeFromAbsoluteX(snap_range) : 0);
+		}
+
+		if (dragging && event.ButtonUp(button_used) && OPT_GET("Audio/Auto/Commit")->GetBool())
+		{
+			dragging = false;
+			timing_controller->Commit();
 		}
 
 		// We lose the marker drag if the button used to initiate it goes up

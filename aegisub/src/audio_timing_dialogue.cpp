@@ -361,7 +361,7 @@ class AudioTimingControllerDialogue : public AudioTimingController {
 	/// @brief Set the position of markers and announce the change to the world
 	/// @param upd_markers Markers to move
 	/// @param ms New position of the markers
-	void SetMarkers(std::vector<AudioMarker*> const& upd_markers, int ms);
+	void SetMarkers(std::vector<AudioMarker*> const& upd_markers, int ms, bool dragging = false);
 
 	/// Snap a position to a nearby marker, if any
 	/// @param position   Position to snap
@@ -673,7 +673,7 @@ std::vector<AudioMarker*> AudioTimingControllerDialogue::OnRightClick(int ms, bo
 
 void AudioTimingControllerDialogue::OnMarkerDrag(std::vector<AudioMarker*> const& markers, int new_position, int snap_range)
 {
-	SetMarkers(markers, SnapPosition(new_position, snap_range, markers));
+	SetMarkers(markers, SnapPosition(new_position, snap_range, markers), true);
 }
 
 void AudioTimingControllerDialogue::UpdateSelection()
@@ -682,7 +682,7 @@ void AudioTimingControllerDialogue::UpdateSelection()
 	AnnounceUpdatedStyleRanges();
 }
 
-void AudioTimingControllerDialogue::SetMarkers(std::vector<AudioMarker*> const& upd_markers, int ms)
+void AudioTimingControllerDialogue::SetMarkers(std::vector<AudioMarker*> const& upd_markers, int ms, bool dragging)
 {
 	// Since we're moving markers, the sorted list of markers will need to be
 	// resorted. To avoid resorting the entire thing, find the subrange that
@@ -710,7 +710,13 @@ void AudioTimingControllerDialogue::SetMarkers(std::vector<AudioMarker*> const& 
 	// Resort the range
 	sort(begin, end, marker_ptr_cmp());
 
-	if (auto_commit->GetBool()) DoCommit(false);
+	if (auto_commit->GetBool()) {
+		using namespace std::chrono;
+		if (!dragging || (duration_cast<milliseconds>(steady_clock::now() - last_commit_time).count() > 50)) {
+			DoCommit(false);
+			last_commit_time = steady_clock::now();
+		}
+	}
 	UpdateSelection();
 
 	AnnounceMarkerMoved();

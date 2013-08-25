@@ -123,7 +123,7 @@ class AudioTimingControllerKaraoke : public AudioTimingController {
 	void DoCommit();
 	void ApplyLead(bool announce_primary);
 	int MoveMarker(KaraokeMarker *marker, int new_position);
-	void AnnounceChanges(int syl);
+	void AnnounceChanges(int syl, bool dragging = false);
 
 public:
 	// AudioTimingController implementation
@@ -409,7 +409,7 @@ int AudioTimingControllerKaraoke::MoveMarker(KaraokeMarker *marker, int new_posi
 	return syl;
 }
 
-void AudioTimingControllerKaraoke::AnnounceChanges(int syl) {
+void AudioTimingControllerKaraoke::AnnounceChanges(int syl, bool dragging) {
 	if (syl < 0) return;
 
 	if (syl == cur_syl || syl == cur_syl + 1) {
@@ -419,8 +419,13 @@ void AudioTimingControllerKaraoke::AnnounceChanges(int syl) {
 	AnnounceMarkerMoved();
 	AnnounceLabelChanged();
 
-	if (auto_commit)
-		DoCommit();
+	if (auto_commit) {
+		using namespace std::chrono;
+		if (!dragging || (duration_cast<milliseconds>(steady_clock::now() - last_commit_time).count() > 50)) {
+			DoCommit();
+			last_commit_time = steady_clock::now();
+		}
+	}
 	else {
 		pending_changes = true;
 		commit_id = -1;
@@ -439,7 +444,7 @@ void AudioTimingControllerKaraoke::OnMarkerDrag(std::vector<AudioMarker*> const&
 		syl = cur_syl;
 	}
 
-	AnnounceChanges(syl);
+	AnnounceChanges(syl, true);
 }
 
 void AudioTimingControllerKaraoke::GetLabels(TimeRange const& range, std::vector<AudioLabel> &out) const {

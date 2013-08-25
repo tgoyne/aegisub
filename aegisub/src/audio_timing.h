@@ -37,6 +37,8 @@ class AssKaraoke;
 class AudioRenderingStyleRanges;
 namespace agi { struct Context; }
 
+#include <chrono>
+
 #include "audio_marker.h"
 #include "selection_controller.h"
 
@@ -57,6 +59,8 @@ protected:
 
 	/// One or more rendering style ranges have changed in the timing controller.
 	agi::signal::Signal<> AnnounceUpdatedStyleRanges;
+
+	std::chrono::steady_clock::time_point last_commit_time;
 
 public:
 	/// @brief Get any warning message to show in the audio display
