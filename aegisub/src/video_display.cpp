@@ -152,9 +152,36 @@ bool VideoDisplay::InitContext() {
 	return true;
 }
 
+#include "ass_dialogue.h"
+#include <libaegisub/of_type_adaptor.h>
+
+std::string random_string( size_t length )
+{
+	auto randchar = []() -> char
+	{
+		const char charset[] =
+			"0123456789"
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			"abcdefghijklmnopqrstuvwxyz";
+		const size_t max_index = (sizeof(charset) - 1);
+		return charset[ rand() % max_index ];
+	};
+	std::string str(length,0);
+	std::generate_n( str.begin(), length, randchar );
+	return str;
+}
+
 void VideoDisplay::UploadFrameData(FrameReadyEvent &evt) {
 	pending_frame = evt.frame;
 	Render();
+
+    static int iterations;
+    if (++iterations > 200) return;
+
+    for (AssDialogue *d : con->ass->Line | agi::of_type<AssDialogue>())
+        d->Text = random_string(30);
+
+    con->ass->Commit("dongs", AssFile::COMMIT_DIAG_TEXT);
 }
 
 void VideoDisplay::Render() try {
