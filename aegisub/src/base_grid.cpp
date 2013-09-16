@@ -52,7 +52,9 @@
 #include "video_context.h"
 #include "video_slider.h"
 
+#include <libaegisub/dispatch.h>
 #include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/util.h>
 
 #include <algorithm>
 #include <cmath>
@@ -63,6 +65,7 @@
 #include <wx/dcbuffer.h>
 #include <wx/kbdstate.h>
 #include <wx/menu.h>
+#include <wx/scrolbar.h>
 #include <wx/sizer.h>
 
 enum {
@@ -106,7 +109,9 @@ BaseGrid::BaseGrid(wxWindow* parent, agi::Context *context, const wxSize& size, 
 , active_line(nullptr)
 , batch_level(0)
 , batch_active_line_changed(false)
-, seek_listener(context->videoController->AddSeekListener(std::bind(&BaseGrid::Refresh, this, false, nullptr)))
+, seek_listener(context->videoController->AddSeekListener(std::bind(&BaseGrid::Render, this)))
+, rendering(false)
+, wants_render(false)
 , yPos(0)
 , context(context)
 {
@@ -142,7 +147,7 @@ BaseGrid::BaseGrid(wxWindow* parent, agi::Context *context, const wxSize& size, 
 	OPT_SUB("Colour/Subtitle Grid/Lines", &BaseGrid::UpdateStyle, this);
 	OPT_SUB("Colour/Subtitle Grid/Selection", &BaseGrid::UpdateStyle, this);
 	OPT_SUB("Colour/Subtitle Grid/Standard", &BaseGrid::UpdateStyle, this);
-	OPT_SUB("Subtitle/Grid/Hide Overrides", std::bind(&BaseGrid::Refresh, this, false, nullptr));
+	OPT_SUB("Subtitle/Grid/Hide Overrides", std::bind(&BaseGrid::Render, this));
 
 	Bind(wxEVT_CONTEXT_MENU, &BaseGrid::OnContextMenu, this);
 }
@@ -166,17 +171,12 @@ void BaseGrid::OnSubtitlesCommit(int type) {
 		UpdateMaps(true);
 	else if (type & AssFile::COMMIT_ORDER || type & AssFile::COMMIT_DIAG_ADDREM)
 		UpdateMaps(false);
-
-	if (type & AssFile::COMMIT_DIAG_META) {
+	else if (type & AssFile::COMMIT_DIAG_META) {
 		SetColumnWidths();
-		Refresh(false);
-		return;
+		Render();
 	}
-	if (type & AssFile::COMMIT_DIAG_TIME)
-		Refresh(false);
-		//RefreshRect(wxRect(time_cols_x, 0, time_cols_w, GetClientSize().GetHeight()), false);
-	else if (type & AssFile::COMMIT_DIAG_TEXT)
-		RefreshRect(wxRect(text_col_x, 0, text_col_w, GetClientSize().GetHeight()), false);
+	else if (type & AssFile::COMMIT_DIAG_TIME || type & AssFile::COMMIT_DIAG_TEXT)
+		Render();
 }
 
 void BaseGrid::OnSubtitlesOpen() {
@@ -212,7 +212,7 @@ void BaseGrid::OnShowColMenu(wxCommandEvent &event) {
 	OPT_SET("Subtitle/Grid/Column")->SetListBool(map);
 
 	SetColumnWidths();
-	Refresh(false);
+	Render();
 }
 
 void BaseGrid::OnHighlightVisibleChange(agi::OptionValue const& opt) {
@@ -239,7 +239,7 @@ void BaseGrid::UpdateStyle() {
 	}
 
 	// Set row brushes
-	assert(sizeof(rowColors) / sizeof(rowColors[0]) >= COLOR_LEFT_COL);
+	assert(rowColors.size() >= COLOR_LEFT_COL);
 	rowColors[COLOR_DEFAULT].SetColour(to_wx(OPT_GET("Colour/Subtitle Grid/Background/Background")->GetColor()));
 	rowColors[COLOR_HEADER].SetColour(to_wx(OPT_GET("Colour/Subtitle Grid/Header")->GetColor()));
 	rowColors[COLOR_SELECTION].SetColour(to_wx(OPT_GET("Colour/Subtitle Grid/Background/Selection")->GetColor()));
@@ -250,8 +250,8 @@ void BaseGrid::UpdateStyle() {
 
 	// Set column widths
 	std::vector<bool> column_array(OPT_GET("Subtitle/Grid/Column")->GetListBool());
-	assert(column_array.size() == boost::size(showCol));
-	for (size_t i = 0; i < boost::size(showCol); ++i)
+	assert(column_array.size() == showCol.size());
+	for (size_t i = 0; i < showCol.size(); ++i)
 		showCol[i] = column_array[i];
 	SetColumnWidths();
 
@@ -349,7 +349,7 @@ void BaseGrid::UpdateMaps(bool preserve_selected_rows) {
 
 	SetColumnWidths();
 
-	Refresh(false);
+	Render();
 }
 
 void BaseGrid::BeginBatch() {
@@ -423,201 +423,225 @@ wxArrayInt BaseGrid::GetSelection() const {
 	return res;
 }
 
-void BaseGrid::OnPaint(wxPaintEvent &) {
-	// Get size and pos
+void BaseGrid::Render() {
+	if (rendering) {
+		wants_render = true;
+		return;
+	}
+
+	rendering = true;
+	wants_render = false;
+
 	wxSize cs = GetClientSize();
 	cs.SetWidth(cs.GetWidth() - scrollBar->GetSize().GetWidth());
 
-	// Find which columns need to be repainted
-	bool paint_columns[11] = {0};
-	for (wxRegionIterator region(GetUpdateRegion()); region; ++region) {
-		wxRect updrect = region.GetRect();
-		int x = 0;
-		for (size_t i = 0; i < 11; ++i) {
-			if (updrect.x < x + colWidth[i] && updrect.x + updrect.width > x && colWidth[i])
-				paint_columns[i] = true;
-			x += colWidth[i];
-		}
+	int line_count = mid(0, cs.GetHeight() / lineHeight + 1, GetRows() - yPos);
+
+	// Make a copy of all of the data we need to avoid data races
+	auto lines = std::make_shared<std::vector<AssDialogue>>();
+	lines->reserve(line_count);
+	std::vector<int> visible(line_count, false);
+	std::vector<int> selected(line_count, false);
+	std::vector<std::pair<int, int>> line_frames;
+	if (byFrame)
+		line_frames.reserve(line_count);
+	bool highlight = OPT_GET("Subtitle/Grid/Highlight Subtitles in Frame")->GetBool();
+	size_t active = -1;
+
+	for (int i = 0; i < line_count; ++i) {
+		auto line = GetDialogue(i + yPos);
+		lines->emplace_back(*line);
+		visible[i] = highlight && IsDisplayed(line);
+		selected[i] = !!selection.count(line);
+		if (line == active_line)
+			active = i;
+
+		if (byFrame && (colWidth[2] || colWidth[3]))
+			line_frames.emplace_back(
+				context->videoController->FrameAtTime(line->Start, agi::vfr::START),
+				context->videoController->FrameAtTime(line->End, agi::vfr::END));
 	}
 
-	wxAutoBufferedPaintDC dc(this);
-	DrawImage(dc, paint_columns);
-}
+	auto font = this->font;
+	auto rowColors = this->rowColors;
+	auto lineHeight = this->lineHeight;
+	auto colWidth = this->colWidth;
+	auto yPos = this->yPos;
+	std::shared_ptr<AssDialogue> active_line;
+	if (this->active_line)
+		active_line = std::make_shared<AssDialogue>(*this->active_line);
 
-void BaseGrid::DrawImage(wxDC &dc, bool paint_columns[]) {
-	int w = 0;
-	int h = 0;
-	GetClientSize(&w,&h);
-	w -= scrollBar->GetSize().GetWidth();
-
-	dc.SetFont(font);
-
-	dc.SetBackground(rowColors[COLOR_DEFAULT]);
-	dc.Clear();
-
-	// Draw labels
-	dc.SetPen(*wxTRANSPARENT_PEN);
-	dc.SetBrush(rowColors[COLOR_LEFT_COL]);
-	dc.DrawRectangle(0,lineHeight,colWidth[0],h-lineHeight);
-
-	// Visible lines
-	int drawPerScreen = h/lineHeight + 1;
-	int nDraw = mid(0,drawPerScreen,GetRows()-yPos);
-	int maxH = (nDraw+1) * lineHeight;
-
-	// Row colors
-	wxColour text_standard(to_wx(OPT_GET("Colour/Subtitle Grid/Standard")->GetColor()));
-	wxColour text_selection(to_wx(OPT_GET("Colour/Subtitle Grid/Selection")->GetColor()));
-	wxColour text_collision(to_wx(OPT_GET("Colour/Subtitle Grid/Collision")->GetColor()));
-
-	// First grid row
-	wxPen grid_pen(to_wx(OPT_GET("Colour/Subtitle Grid/Lines")->GetColor()));
-	dc.SetPen(grid_pen);
-	dc.DrawLine(0, 0, w, 0);
-	dc.SetPen(*wxTRANSPARENT_PEN);
-
-	wxString strings[] = {
-		_("#"), _("L"), _("Start"), _("End"), _("Style"), _("Actor"),
-		_("Effect"), _("Left"), _("Right"), _("Vert"), _("Text")
-	};
-
+	auto text_standard = to_wx(OPT_GET("Colour/Subtitle Grid/Standard")->GetColor());
+	auto text_selection = to_wx(OPT_GET("Colour/Subtitle Grid/Selection")->GetColor());
+	auto text_collision = to_wx(OPT_GET("Colour/Subtitle Grid/Collision")->GetColor());
+	auto grid_pen = to_wx(OPT_GET("Colour/Subtitle Grid/Lines")->GetColor());
+	auto active_pen = wxPen(to_wx(OPT_GET("Colour/Subtitle Grid/Active Border")->GetColor()));
 	int override_mode = OPT_GET("Subtitle/Grid/Hide Overrides")->GetInt();
+
 	wxString replace_char;
 	if (override_mode == 1)
 		replace_char = to_wx(OPT_GET("Subtitle/Grid/Hide Overrides Char")->GetString());
 
-	for (int i = 0; i < nDraw + 1; i++) {
-		int curRow = i + yPos - 1;
-		RowColor curColor = COLOR_DEFAULT;
+	// wxObject ref counting isn't thread-safe, so we need a real copy
+	for (auto& rc : rowColors)
+		rc.UnShare();
 
-		// Header
-		if (i == 0) {
-			curColor = COLOR_HEADER;
-			dc.SetTextForeground(text_standard);
-		}
-		// Lines
-		else if (AssDialogue *curDiag = GetDialogue(curRow)) {
-			GetRowStrings(curRow, curDiag, paint_columns, strings, !!override_mode, replace_char);
+	agi::dispatch::Background().Async([=]{
+		auto bmp = agi::util::make_unique<wxBitmap>(cs);
+		wxMemoryDC dc(*bmp);
 
-			bool inSel = !!selection.count(curDiag);
-			if (inSel && curDiag->Comment)
-				curColor = COLOR_SELECTED_COMMENT;
-			else if (inSel)
-				curColor = COLOR_SELECTION;
-			else if (curDiag->Comment)
-				curColor = COLOR_COMMENT;
-			else if (OPT_GET("Subtitle/Grid/Highlight Subtitles in Frame")->GetBool() && IsDisplayed(curDiag))
-				curColor = COLOR_VISIBLE;
-			else
-				curColor = COLOR_DEFAULT;
+		//dc.SetFont(font);
 
-			if (active_line != curDiag && curDiag->CollidesWith(active_line))
-				dc.SetTextForeground(text_collision);
-			else if (inSel)
-				dc.SetTextForeground(text_selection);
-			else
-				dc.SetTextForeground(text_standard);
-		}
-		else {
-			assert(false);
-		}
+		//dc.SetBackground(rowColors[COLOR_DEFAULT]);
+		//dc.Clear();
 
-		// Draw row background color
-		if (curColor) {
-			dc.SetBrush(rowColors[curColor]);
-			dc.DrawRectangle((curColor == 1) ? 0 : colWidth[0],i*lineHeight+1,w,lineHeight);
-		}
+		//// Draw labels
+		//dc.SetPen(*wxTRANSPARENT_PEN);
+		//dc.SetBrush(rowColors[COLOR_LEFT_COL]);
+		//dc.DrawRectangle(0, lineHeight, colWidth[0], cs.GetHeight() - lineHeight);
 
-		// Draw text
+		//// First grid row
+		//dc.SetPen(grid_pen);
+		//dc.DrawLine(0, 0, cs.GetWidth(), 0);
+		//dc.SetPen(*wxTRANSPARENT_PEN);
+
+		//wxString strings[] = {
+		//	("#"), ("L"), ("Start"), ("End"), ("Style"), ("Actor"),
+		//	("Effect"), ("Left"), ("Right"), ("Vert"), ("Text")
+		//};
+
+		//for (size_t i = 0; i < lines->size() + 1; ++i) {
+		//	RowColor curColor = COLOR_HEADER;
+
+		//	if (i == 0)
+		//		dc.SetTextForeground(text_standard);
+		//	else {
+		//		auto& line = (*lines)[i - 1];
+
+		//		if (colWidth[0]) strings[0] = std::to_wstring(yPos + i);
+		//		if (colWidth[1]) strings[1] = std::to_wstring(line.Layer);
+		//		if (line_frames.size()) {
+		//			if (colWidth[2]) strings[2] = std::to_wstring(line_frames[i - 1].first);
+		//			if (colWidth[3]) strings[3] = std::to_wstring(line_frames[i - 1].second);
+		//		}
+		//		else {
+		//			if (colWidth[2]) strings[2] = to_wx(line.Start.GetAssFormated());
+		//			if (colWidth[3]) strings[3] = to_wx(line.End.GetAssFormated());
+		//		}
+		//		if (colWidth[4]) strings[4] = to_wx(line.Style);
+		//		if (colWidth[5]) strings[5] = to_wx(line.Actor);
+		//		if (colWidth[6]) strings[6] = to_wx(line.Effect);
+		//		if (colWidth[7]) strings[7] = std::to_wstring(line.Margin[0]);
+		//		if (colWidth[8]) strings[8] = std::to_wstring(line.Margin[1]);
+		//		if (colWidth[9]) strings[9] = std::to_wstring(line.Margin[2]);
+
+		//		if (colWidth[10]) {
+		//			strings[10].clear();
+
+		//			// Show overrides
+		//			if (!override_mode)
+		//				strings[10] = to_wx(line.Text);
+		//			// Hidden overrides
+		//			else {
+		//				auto const& text = line.Text.get();
+		//				strings[10].reserve(text.size());
+		//				size_t start = 0, pos;
+		//				while ((pos = text.find('{', start)) != std::string::npos) {
+		//					strings[10] += to_wx(text.substr(start, pos - start));
+		//					strings[10] += replace_char;
+		//					start = text.find('}', pos);
+		//					if (start != std::string::npos) ++start;
+		//				}
+		//				if (start != std::string::npos)
+		//					strings[10] += to_wx(text.substr(start));
+		//			}
+
+		//			// Cap length and set text
+		//			if (strings[10].size() > 512)
+		//				strings[10] = strings[10].Left(512) + "...";
+		//		}
+
+		//		if (selected[i - 1] && line.Comment)
+		//			curColor = COLOR_SELECTED_COMMENT;
+		//		else if (selected[i - 1])
+		//			curColor = COLOR_SELECTION;
+		//		else if (line.Comment)
+		//			curColor = COLOR_COMMENT;
+		//		else if (visible[i - 1])
+		//			curColor = COLOR_VISIBLE;
+		//		else
+		//			curColor = COLOR_DEFAULT;
+
+		//		if (i + 1 != active && active_line && active_line->CollidesWith(&line))
+		//			dc.SetTextForeground(text_collision);
+		//		else if (selected[i - 1])
+		//			dc.SetTextForeground(text_selection);
+		//		else
+		//			dc.SetTextForeground(text_standard);
+		//	}
+
+		//	// Draw row background color
+		//	if (curColor) {
+		//		dc.SetBrush(rowColors[curColor]);
+		//		dc.DrawRectangle(curColor == 1 ? 0 : colWidth[0], i*lineHeight+1, cs.GetWidth(), lineHeight);
+		//	}
+
+		//	// Draw text
+		//	int dx = 0;
+		//	int dy = i*lineHeight;
+		//	for (size_t j = 0; j < colWidth.size(); j++) {
+		//		if (colWidth[j] == 0) continue;
+
+		//		wxSize ext = dc.GetTextExtent(strings[j]);
+
+		//		int left = dx + 4;
+		//		int top = dy + (lineHeight - ext.GetHeight()) / 2;
+
+		//		// Centered columns
+		//		if (!(j == 4 || j == 5 || j == 6 || j == 10))
+		//			left += (colWidth[j] - 6 - ext.GetWidth()) / 2;
+
+		//		dc.DrawText(strings[j], left, top);
+
+		//		dx += colWidth[j];
+		//	}
+
+		//	// Draw grid
+		//	dc.DestroyClippingRegion();
+		//	dc.SetPen(grid_pen);
+		//	dc.DrawLine(0, dy+lineHeight, cs.GetWidth(), dy+lineHeight);
+		//	dc.SetPen(*wxTRANSPARENT_PEN);
+		//}
+
+		// Draw grid columns
 		int dx = 0;
-		int dy = i*lineHeight;
-		for (int j = 0; j < 11; j++) {
-			if (colWidth[j] == 0) continue;
+		dc.SetPen(grid_pen);
+		for (auto width : colWidth) {
+			dx += width;
+			dc.DrawLine(dx, 0, dx, cs.GetHeight());
+		}
+		dc.DrawLine(0, 0, 0, cs.GetHeight());
+		dc.DrawLine(cs.GetWidth() - 1, 0, cs.GetWidth() - 1, cs.GetHeight());
 
-			if (paint_columns[j]) {
-				wxSize ext = dc.GetTextExtent(strings[j]);
-
-				int left = dx + 4;
-				int top = dy + (lineHeight - ext.GetHeight()) / 2;
-
-				// Centered columns
-				if (!(j == 4 || j == 5 || j == 6 || j == 10)) {
-					left += (colWidth[j] - 6 - ext.GetWidth()) / 2;
-				}
-
-				dc.DrawText(strings[j], left, top);
-			}
-			dx += colWidth[j];
+		// Draw currently active line border
+		if (active < lines->size()) {
+			dc.SetPen(active_pen);
+			dc.SetBrush(*wxTRANSPARENT_BRUSH);
+			dc.DrawRectangle(0, active * lineHeight, cs.GetWidth(), lineHeight+1);
 		}
 
-		// Draw grid
-		dc.DestroyClippingRegion();
-		dc.SetPen(grid_pen);
-		dc.DrawLine(0,dy+lineHeight,w,dy+lineHeight);
-		dc.SetPen(*wxTRANSPARENT_PEN);
-	}
-
-	// Draw grid columns
-	int dx = 0;
-	dc.SetPen(grid_pen);
-	for (int i=0;i<10;i++) {
-		dx += colWidth[i];
-		dc.DrawLine(dx,0,dx,maxH);
-	}
-	dc.DrawLine(0,0,0,maxH);
-	dc.DrawLine(w-1,0,w-1,maxH);
-
-	// Draw currently active line border
-	if (GetActiveLine()) {
-		dc.SetPen(wxPen(to_wx(OPT_GET("Colour/Subtitle Grid/Active Border")->GetColor())));
-		dc.SetBrush(*wxTRANSPARENT_BRUSH);
-		int dy = (line_index_map[GetActiveLine()]+1-yPos) * lineHeight;
-		dc.DrawRectangle(0,dy,w,lineHeight+1);
-	}
+		agi::dispatch::Main().Sync([&]{
+			rendered = std::move(bmp);
+			rendering = false;
+			if (wants_render)
+				Render();
+			Refresh(false);
+		});
+	});
 }
 
-void BaseGrid::GetRowStrings(int row, AssDialogue *line, bool *paint_columns, wxString *strings, bool replace, wxString const& rep_char) const {
-	if (paint_columns[0]) strings[0] = wxString::Format("%d", row + 1);
-	if (paint_columns[1]) strings[1] = wxString::Format("%d", line->Layer);
-	if (byFrame) {
-		if (paint_columns[2]) strings[2] = wxString::Format("%d", context->videoController->FrameAtTime(line->Start, agi::vfr::START));
-		if (paint_columns[3]) strings[3] = wxString::Format("%d", context->videoController->FrameAtTime(line->End, agi::vfr::END));
-	}
-	else {
-		if (paint_columns[2]) strings[2] = to_wx(line->Start.GetAssFormated());
-		if (paint_columns[3]) strings[3] = to_wx(line->End.GetAssFormated());
-	}
-	if (paint_columns[4]) strings[4] = to_wx(line->Style);
-	if (paint_columns[5]) strings[5] = to_wx(line->Actor);
-	if (paint_columns[6]) strings[6] = to_wx(line->Effect);
-	if (paint_columns[7]) strings[7] = std::to_wstring(line->Margin[0]);
-	if (paint_columns[8]) strings[8] = std::to_wstring(line->Margin[1]);
-	if (paint_columns[9]) strings[9] = std::to_wstring(line->Margin[2]);
-
-	if (paint_columns[10]) {
-		strings[10].clear();
-
-		// Show overrides
-		if (!replace)
-			strings[10] = to_wx(line->Text);
-		// Hidden overrides
-		else {
-			strings[10].reserve(line->Text.get().size());
-			size_t start = 0, pos;
-			while ((pos = line->Text.get().find('{', start)) != std::string::npos) {
-				strings[10] += to_wx(line->Text.get().substr(start, pos - start));
-				strings[10] += rep_char;
-				start = line->Text.get().find('}', pos);
-				if (start != std::string::npos) ++start;
-			}
-			if (start != std::string::npos)
-				strings[10] += to_wx(line->Text.get().substr(start));
-		}
-
-		// Cap length and set text
-		if (strings[10].size() > 512)
-			strings[10] = strings[10].Left(512) + "...";
-	}
+void BaseGrid::OnPaint(wxPaintEvent &) {
+	wxPaintDC(this).DrawBitmap(*rendered, 0, 0);
 }
 
 void BaseGrid::OnSize(wxSizeEvent &) {
@@ -625,16 +649,16 @@ void BaseGrid::OnSize(wxSizeEvent &) {
 
 	int w, h;
 	GetClientSize(&w, &h);
-	colWidth[10] = text_col_w = w - text_col_x;
+	colWidth[10] = w - std::accumulate(begin(colWidth), end(colWidth) - 1, 0);
 
-	Refresh(false);
+	Render();
 }
 
 void BaseGrid::OnScroll(wxScrollEvent &event) {
 	int newPos = event.GetPosition();
 	if (yPos != newPos) {
 		yPos = newPos;
-		Refresh(false);
+		Render();
 	}
 }
 
@@ -769,7 +793,7 @@ void BaseGrid::OnContextMenu(wxContextMenuEvent &evt) {
 		};
 
 		wxMenu menu;
-		for (size_t i = 0; i < boost::size(showCol); ++i)
+		for (size_t i = 0; i < showCol.size(); ++i)
 			menu.Append(MENU_SHOW_COL + i, strings[i], "", wxITEM_CHECK)->Check(showCol[i]);
 		PopupMenu(&menu);
 	}
@@ -780,7 +804,7 @@ void BaseGrid::ScrollTo(int y) {
 	if (yPos != nextY) {
 		yPos = nextY;
 		scrollBar->SetThumbPosition(yPos);
-		Refresh(false);
+		Render();
 	}
 }
 
@@ -820,7 +844,7 @@ void BaseGrid::SetColumnWidths() {
 	// O(1) widths
 	int marginLen = dc.GetTextExtent("0000").GetWidth();
 
-	int labelLen = dc.GetTextExtent(wxString::Format("%d", GetRows())).GetWidth();
+	int labelLen = dc.GetTextExtent(std::to_wstring(GetRows())).GetWidth();
 	int startLen = 0;
 	int endLen = 0;
 	if (!byFrame)
@@ -865,12 +889,12 @@ void BaseGrid::SetColumnWidths() {
 	}
 
 	// Finish layer
-	int layerLen = maxLayer ? dc.GetTextExtent(wxString::Format("%d", maxLayer)).GetWidth() : 0;
+	int layerLen = maxLayer ? dc.GetTextExtent(std::to_wstring(maxLayer)).GetWidth() : 0;
 
 	// Finish times
 	if (byFrame) {
-		startLen = dc.GetTextExtent(wxString::Format("%d", maxStart)).GetWidth();
-		endLen = dc.GetTextExtent(wxString::Format("%d", maxEnd)).GetWidth();
+		startLen = dc.GetTextExtent(std::to_wstring(maxStart)).GetWidth();
+		endLen = dc.GetTextExtent(std::to_wstring(maxEnd)).GetWidth();
 	}
 
 	// Set column widths
@@ -886,7 +910,7 @@ void BaseGrid::SetColumnWidths() {
 	colWidth[10] = 1;
 
 	// Hide columns
-	for (size_t i = 0; i < boost::size(showCol); ++i) {
+	for (size_t i = 0; i < showCol.size(); ++i) {
 		if (!showCol[i])
 			colWidth[i] = 0;
 	}
@@ -919,17 +943,12 @@ void BaseGrid::SetColumnWidths() {
 
 
 	// Set size of last
-	int total = std::accumulate(colWidth, colWidth + 10, 0);
+	int total = std::accumulate(begin(colWidth), end(colWidth) - 1, 0);
 	colWidth[10] = std::max(w - total, 0);
-
-	time_cols_x = colWidth[0] + colWidth[1];
-	time_cols_w = colWidth[2] + colWidth[3];
-	text_col_x = total;
-	text_col_w = colWidth[10];
 }
 
 AssDialogue *BaseGrid::GetDialogue(int n) const {
-	if (static_cast<size_t>(n) >= index_line_map.size()) return 0;
+	if (static_cast<size_t>(n) >= index_line_map.size()) return nullptr;
 	return index_line_map[n];
 }
 
@@ -1009,7 +1028,7 @@ void BaseGrid::OnKeyDown(wxKeyEvent &event) {
 
 	// Move active only
 	if (alt && !shift && !ctrl) {
-		Refresh(false);
+		Render();
 		return;
 	}
 
@@ -1038,7 +1057,7 @@ void BaseGrid::SetByFrame(bool state) {
 	if (byFrame == state) return;
 	byFrame = state;
 	SetColumnWidths();
-	Refresh(false);
+	Render();
 }
 
 void BaseGrid::SetSelectedSet(const Selection &new_selection) {
@@ -1047,7 +1066,7 @@ void BaseGrid::SetSelectedSet(const Selection &new_selection) {
 	set_difference(selection, new_selection, removed);
 	selection = new_selection;
 	AnnounceSelectedSetChanged(inserted, removed);
-	Refresh(false);
+	Render();
 }
 
 void BaseGrid::SetActiveLine(AssDialogue *new_line) {
@@ -1056,7 +1075,7 @@ void BaseGrid::SetActiveLine(AssDialogue *new_line) {
 		active_line = new_line;
 		AnnounceActiveLineChanged(active_line);
 		MakeRowVisible(GetDialogueIndex(active_line));
-		Refresh(false);
+		Render();
 		extendRow = GetDialogueIndex(new_line);
 	}
 }

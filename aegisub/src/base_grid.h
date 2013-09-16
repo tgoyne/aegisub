@@ -32,15 +32,14 @@
 /// @ingroup main_ui
 ///
 
-
 #pragma once
 
+#include <array>
 #include <map>
 #include <memory>
 #include <vector>
 
-#include <wx/grid.h>
-#include <wx/scrolbar.h>
+#include <wx/window.h>
 
 #include <libaegisub/signal.h>
 
@@ -49,6 +48,9 @@
 namespace agi {
 	struct Context;
 	class OptionValue;
+	namespace dispatch {
+		class Queue;
+	}
 }
 class AssDialogue;
 
@@ -58,7 +60,7 @@ class BaseGrid : public wxWindow, public SubtitleSelectionController {
 	wxFont font;            ///< Current grid font
 	wxScrollBar *scrollBar; ///< The grid's scrollbar
 	bool byFrame;           ///< Should times be displayed as frame numbers
-	wxBrush rowColors[7];   ///< Cached brushes used for row backgrounds
+	std::array<wxBrush, 7> rowColors; ///< Cached brushes used for row backgrounds
 
 	/// Row from which the selection shrinks/grows from when selecting via the
 	/// keyboard, shift-clicking or dragging
@@ -88,6 +90,10 @@ class BaseGrid : public wxWindow, public SubtitleSelectionController {
 	/// Cached grid body context menu
 	std::unique_ptr<wxMenu> context_menu;
 
+	bool rendering;
+	bool wants_render;
+	std::unique_ptr<wxBitmap> rendered;
+
 	void OnContextMenu(wxContextMenuEvent &evt);
 	void OnHighlightVisibleChange(agi::OptionValue const& opt);
 	void OnKeyDown(wxKeyEvent &event);
@@ -101,19 +107,11 @@ class BaseGrid : public wxWindow, public SubtitleSelectionController {
 	void OnSubtitlesOpen();
 	void OnSubtitlesSave();
 
-	void DrawImage(wxDC &dc, bool paint_columns[]);
-	void GetRowStrings(int row, AssDialogue *line, bool *paint_columns, wxString *strings, bool replace, wxString const& rep_char) const;
-
+	void Render();
 	void ScrollTo(int y);
 
-	int colWidth[16];      ///< Width in pixels of each column
-
-	int time_cols_x; ///< Left edge of the times columns
-	int time_cols_w; ///< Width of the two times columns
-	int text_col_x; ///< Left edge of the text column
-	int text_col_w; ///< Width of the text column
-
-	bool showCol[10]; ///< Column visibility mask
+	std::array<int, 11> colWidth; ///< Width in pixels of each column
+	std::array<bool, 10> showCol; ///< Column visibility mask
 
 	int yPos;
 
