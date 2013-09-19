@@ -52,6 +52,7 @@
 #include "video_frame.h"
 #include "visual_tool.h"
 
+#include <libaegisub/dispatch.h>
 #include <libaegisub/util.h>
 
 #include <algorithm>
@@ -85,6 +86,51 @@ public:
 };
 
 #define E(cmd) cmd; if (GLenum err = glGetError()) throw OpenGlException(#cmd, err)
+
+//#ifdef _MSC_VER
+//#define MAKE_UNIQUE(TEMPLATE_LIST, PADDING_LIST, LIST, COMMA, X1, X2, X3, X4) \
+//	template<class T COMMA LIST(_CLASS_TYPE)> \
+//	inline std::unique_ptr<T> make_unique(LIST(_TYPE_REFREF_ARG)) { \
+//		return std::unique_ptr<T>(new T(LIST(_FORWARD_ARG))); \
+//	}
+//	_VARIADIC_EXPAND_0X(MAKE_UNIQUE, , , , )
+//#undef MAKE_UNIQUE
+//#else
+//	template<typename F, typename... Args>
+//	void make_unique(agi::dispatch::Queue *queue, F&& fn, Args&&... args) {
+//		queue->Async(std::bind(fn, args...))
+//		return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+//	}
+//#endif
+
+class RenderQueue {
+	std::unique_ptr<agi::dispatch::Queue> queue;
+	std::unique_ptr<VideoOutGL> video_displayer;
+	std::unique_ptr<wxGLContext> gl_context;
+
+public:
+	RenderQueue() : queue(agi::dispatch::Create()) { }
+
+	void SetFrame(std::shared_ptr<VideoFrame> frame) {
+		if (!video_displayer)
+			video_displayer = agi::util::make_unique<VideoOutGL>();
+		queue->Async([=]{
+			video_displayer->UploadFrameData(*frame);
+		});
+	}
+
+	template<typename Func>
+	void Call(Func&& fn) {
+		queue->Async([=]{
+			if (!gl_context)
+				gl_context = agi::util::make_unique<wxGLContext>(this);
+			SetCurrent(*gl_context);
+			fn();
+		});
+	}
+};
+
+#define ogl(fn, ...) render_queue->Call(std::bind(fn, __VA_ARGS__))
 
 VideoDisplay::VideoDisplay(
 	wxToolBar *visualSubToolBar,
@@ -147,11 +193,6 @@ bool VideoDisplay::InitContext() {
 	// return true, but the client size is guaranteed to be 0
 	if (GetClientSize() == wxSize(0, 0))
 		return false;
-
-	if (!glContext)
-		glContext = agi::util::make_unique<wxGLContext>(this);
-
-	SetCurrent(*glContext);
 	return true;
 }
 
@@ -160,48 +201,30 @@ void VideoDisplay::UploadFrameData(FrameReadyEvent &evt) {
 	Render();
 }
 
-void VideoDisplay::Render() try {
-	if (!con->videoController->IsLoaded() || !InitContext() || (!videoOut && !pending_frame))
+void VideoDisplay::Render() {
+	if (!con->videoController->IsLoaded() || !InitContext() || (!render_queue && !pending_frame))
 		return;
 
-	if (!videoOut)
-		videoOut = agi::util::make_unique<VideoOutGL>();
+	if (!render_queue)
+		render_queue = agi::util::make_unique<RenderQueue>();
 
 	if (!tool)
 		cmd::call("video/tool/cross", con);
 
-	try {
-		if (pending_frame) {
-			videoOut->UploadFrameData(*pending_frame);
-			pending_frame.reset();
-		}
-	}
-	catch (const VideoOutInitException& err) {
-		wxLogError(
-			"Failed to initialize video display. Closing other running "
-			"programs and updating your video card drivers may fix this.\n"
-			"Error message reported: %s",
-			err.GetMessage());
-		con->videoController->SetVideo("");
-		return;
-	}
-	catch (const VideoOutRenderException& err) {
-		wxLogError(
-			"Could not upload video frame to graphics card.\n"
-			"Error message reported: %s",
-			err.GetMessage());
-		return;
+	if (pending_frame) {
+		render_queue->SetFrame(pending_frame);
+		pending_frame.reset();
 	}
 
 	if (!viewport_height || !viewport_width)
 		PositionVideo();
 
-	videoOut->Render(viewport_left, viewport_bottom, viewport_width, viewport_height);
-	E(glViewport(0, std::min(viewport_bottom, 0), videoSize.GetWidth(), videoSize.GetHeight()));
+	//videoOut->Render(viewport_left, viewport_bottom, viewport_width, viewport_height);
+	ogl(glViewport, 0, std::min(viewport_bottom, 0), videoSize.GetWidth(), videoSize.GetHeight());
 
-	E(glMatrixMode(GL_PROJECTION));
-	E(glLoadIdentity());
-	E(glOrtho(0.0f, videoSize.GetWidth(), videoSize.GetHeight(), 0.0f, -1000.0f, 1000.0f));
+	ogl(glMatrixMode, GL_PROJECTION);
+	ogl(glLoadIdentity);
+	ogl(glOrtho, 0.0f, videoSize.GetWidth(), videoSize.GetHeight(), 0.0f, -1000.0f, 1000.0f);
 
 	if (OPT_GET("Video/Overscan Mask")->GetBool()) {
 		double ar = con->videoController->GetAspectRatioValue();
@@ -223,13 +246,6 @@ void VideoDisplay::Render() try {
 		tool->Draw();
 
 	SwapBuffers();
-}
-catch (const agi::Exception &err) {
-	wxLogError(
-		"An error occurred trying to render the video frame on the screen.\n"
-		"Error message reported: %s",
-		err.GetChainedMessage());
-	con->videoController->SetVideo("");
 }
 
 void VideoDisplay::DrawOverscanMask(float horizontal_percent, float vertical_percent) const {

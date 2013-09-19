@@ -50,10 +50,14 @@ class wxComboBox;
 class wxTextCtrl;
 class wxToolBar;
 struct VideoFrame;
+class RenderQueue;
 
 namespace agi {
 	struct Context;
 	class OptionValue;
+	namespace dispatch {
+		class Queue;
+	}
 }
 
 class VideoDisplay : public wxGLCanvas {
@@ -86,8 +90,7 @@ class VideoDisplay : public wxGLCanvas {
 	/// The current zoom level, where 1.0 = 100%
 	double zoomValue;
 
-	/// The video renderer
-	std::unique_ptr<VideoOutGL> videoOut;
+	std::unique_ptr<RenderQueue> render_queue;
 
 	/// The active visual typesetting tool
 	std::unique_ptr<VisualToolBase> tool;
