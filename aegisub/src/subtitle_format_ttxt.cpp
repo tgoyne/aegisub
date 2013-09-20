@@ -36,8 +36,6 @@
 
 #include "subtitle_format_ttxt.h"
 
-#include <wx/xml/xml.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "compat.h"
@@ -45,6 +43,7 @@
 
 #include <libaegisub/of_type_adaptor.h>
 #include <boost/range/adaptor/reversed.hpp>
+#include <wx/xml/xml.h>
 
 DEFINE_SIMPLE_EXCEPTION(TTXTParseError, SubtitleFormatParseError, "subtitle_io/parse/ttxt")
 
@@ -108,7 +107,7 @@ void TTXTSubtitleFormat::ReadFile(AssFile *target, agi::fs::path const& filename
 AssDialogue *TTXTSubtitleFormat::ProcessLine(wxXmlNode *node, AssDialogue *prev, int version) const {
 	// Get time
 	wxString sampleTime = node->GetAttribute("sampleTime", "00:00:00.000");
-	AssTime time(from_wx(sampleTime));
+	agi::ass::Time time(from_wx(sampleTime));
 
 	// Set end time of last line
 	if (prev)
@@ -262,7 +261,7 @@ void TTXTSubtitleFormat::ConvertToTTXT(AssFile &file) const {
 	ConvertNewlines(file, "\r\n");
 
 	// Find last line
-	AssTime lastTime;
+	agi::ass::Time lastTime;
 	for (auto line : file.Line | boost::adaptors::reversed | agi::of_type<AssDialogue>()) {
 		lastTime = line->End;
 		break;

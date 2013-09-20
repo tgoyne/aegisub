@@ -44,6 +44,7 @@
 #include "text_file_writer.h"
 
 #include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/vfr.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/path.hpp>
@@ -110,7 +111,7 @@ std::string TranStationSubtitleFormat::ConvertLine(AssFile *file, AssDialogue *c
 	if (current->Text.get().find("\\i1") != std::string::npos) type = "I";
 
 	// Write header
-	AssTime end = current->End;
+	agi::ass::Time end = current->End;
 
 	// Subtract one frame if the end time of the current line is equal to the
 	// start of next one, since the end timestamp is inclusive and the lines

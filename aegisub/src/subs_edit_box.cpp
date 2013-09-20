@@ -55,6 +55,7 @@
 #include "validators.h"
 #include "video_context.h"
 
+#include <libaegisub/ass/time.h>
 #include <libaegisub/dispatch.h>
 #include <libaegisub/of_type_adaptor.h>
 #include <libaegisub/util.h>

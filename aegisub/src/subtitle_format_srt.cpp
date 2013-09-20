@@ -323,7 +323,7 @@ milliseconds:
 
 std::string WriteSRTTime(agi::ass::Time ts)
 {
-	return str(boost::format("%02d:%02d:%02d,%03d") % Hours(ts) % Minutes(ts) % Seconds(ts) % Miliseconds(ts));
+	return str(boost::format("%02d:%02d:%02d,%03d") % ts.Hours() % ts.Minutes() % ts.Seconds() % ts.Miliseconds());
 }
 
 }
