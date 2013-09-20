@@ -70,6 +70,14 @@
 #include <GL/gl.h>
 #endif
 
+struct jflsgkjdfg {
+	std::shared_ptr<VideoFrame> video_frame;
+	bool render_overscan_mask;
+	int viewport_width;
+	int viewport_height;
+	double video_ar;
+};
+
 /// Attribute list for gl canvases; set the canvases to doublebuffered rgba with an 8 bit stencil buffer
 int attribList[] = { WX_GL_RGBA , WX_GL_DOUBLEBUFFER, WX_GL_STENCIL_SIZE, 8, 0 };
 
@@ -224,26 +232,27 @@ void VideoDisplay::Render() {
 
 	ogl(glMatrixMode, GL_PROJECTION);
 	ogl(glLoadIdentity);
+	auto vs = videoSize.GetWidth();
 	ogl(glOrtho, 0.0f, videoSize.GetWidth(), videoSize.GetHeight(), 0.0f, -1000.0f, 1000.0f);
 
-	if (OPT_GET("Video/Overscan Mask")->GetBool()) {
-		double ar = con->videoController->GetAspectRatioValue();
+	//if (OPT_GET("Video/Overscan Mask")->GetBool()) {
+	//	double ar = con->videoController->GetAspectRatioValue();
 
-		// Based on BBC's guidelines: http://www.bbc.co.uk/guidelines/dq/pdf/tv/tv_standards_london.pdf
-		// 16:9 or wider
-		if (ar > 1.75) {
-			DrawOverscanMask(.1f, .05f);
-			DrawOverscanMask(0.035f, 0.035f);
-		}
-		// Less wide than 16:9 (use 4:3 standard)
-		else {
-			DrawOverscanMask(.067f, .05f);
-			DrawOverscanMask(0.033f, 0.035f);
-		}
-	}
+	//	// Based on BBC's guidelines: http://www.bbc.co.uk/guidelines/dq/pdf/tv/tv_standards_london.pdf
+	//	// 16:9 or wider
+	//	if (ar > 1.75) {
+	//		DrawOverscanMask(.1f, .05f);
+	//		DrawOverscanMask(0.035f, 0.035f);
+	//	}
+	//	// Less wide than 16:9 (use 4:3 standard)
+	//	else {
+	//		DrawOverscanMask(.067f, .05f);
+	//		DrawOverscanMask(0.033f, 0.035f);
+	//	}
+	//}
 
-	if ((mouse_pos || !autohideTools->GetBool()) && tool)
-		tool->Draw();
+	//if ((mouse_pos || !autohideTools->GetBool()) && tool)
+	//	tool->Draw();
 
 	SwapBuffers();
 }
