@@ -34,12 +34,6 @@
 
 #include "config.h"
 
-#include <wx/combobox.h>
-#include <wx/sizer.h>
-#include <wx/statline.h>
-#include <wx/textctrl.h>
-#include <wx/toolbar.h>
-
 #include "video_box.h"
 
 #include "include/aegisub/context.h"
@@ -55,6 +49,16 @@
 #include "video_context.h"
 #include "video_display.h"
 #include "video_slider.h"
+
+#include <wx/bmpbuttn.h>
+#include <wx/combobox.h>
+#include <wx/rawbmp.h>
+#include <wx/settings.h>
+#include <wx/sizer.h>
+#include <wx/statline.h>
+#include <wx/textctrl.h>
+#include <wx/tglbtn.h>
+#include <wx/toolbar.h>
 
 VideoBox::VideoBox(wxWindow *parent, bool isDetached, agi::Context *context)
 : wxPanel(parent,-1)
@@ -133,7 +137,7 @@ void VideoBox::UpdateTimeBoxes() {
 	int time = context->videoController->TimeAtFrame(frame, agi::vfr::EXACT);
 
 	// Set the text box for frame number and time
-	VideoPosition->SetValue(wxString::Format("%s - %d", AssTime(time).GetAssFormated(true), frame));
+	VideoPosition->SetValue(wxString::Format("%s - %d", agi::ass::time::MillisecondFormat(time), frame));
 	if (binary_search(context->videoController->GetKeyFrames().begin(), context->videoController->GetKeyFrames().end(), frame)) {
 		// Set the background color to indicate this is a keyframe
 		VideoPosition->SetBackgroundColour(to_wx(OPT_GET("Colour/Subtitle Grid/Background/Selection")->GetColor()));

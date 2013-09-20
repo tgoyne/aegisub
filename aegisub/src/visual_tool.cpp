@@ -25,7 +25,6 @@
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_style.h"
-#include "ass_time.h"
 #include "include/aegisub/context.h"
 #include "options.h"
 #include "utils.h"

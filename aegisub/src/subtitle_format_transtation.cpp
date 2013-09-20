@@ -41,7 +41,6 @@
 #include "ass_dialogue.h"
 #include "ass_file.h"
 #include "ass_style.h"
-#include "ass_time.h"
 #include "text_file_writer.h"
 
 #include <libaegisub/of_type_adaptor.h>

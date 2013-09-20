@@ -276,7 +276,7 @@ public:
 	}
 };
 
-AssTime ReadSRTTime(std::string const& ts)
+int ReadSRTTime(std::string const& ts)
 {
 	// For the sake of your sanity, please do not read this function.
 
@@ -321,9 +321,9 @@ milliseconds:
 	return ms + 1000*(s + 60*(m + 60*(h + d*24)));
 }
 
-std::string WriteSRTTime(AssTime const& ts)
+std::string WriteSRTTime(agi::ass::Time ts)
 {
-	return str(boost::format("%02d:%02d:%02d,%03d") % ts.GetTimeHours() % ts.GetTimeMinutes() % ts.GetTimeSeconds() % ts.GetTimeMiliseconds());
+	return str(boost::format("%02d:%02d:%02d,%03d") % Hours(ts) % Minutes(ts) % Seconds(ts) % Miliseconds(ts));
 }
 
 }

@@ -34,8 +34,7 @@
 
 #include <wx/textctrl.h>
 
-#include "ass_time.h"
-
+#include <libaegisub/ass/time.h>
 #include <libaegisub/signal.h>
 
 namespace agi {
@@ -51,7 +50,7 @@ class TimeEdit : public wxTextCtrl {
 	agi::Context *c; ///< Project context
 	bool byFrame;    ///< Is the time displayed as a frame number?
 	bool isEnd;      ///< Should the time be treated as an end time for time <-> frame conversions?
-	AssTime time;    ///< The time, which may be displayed as either a frame number or time
+	int time;        ///< The time, which may be displayed as either a frame number or time
 	bool insert;     ///< If true, disable overwriting behavior in time mode
 
 	agi::signal::Connection insert_opt;
@@ -70,9 +69,9 @@ class TimeEdit : public wxTextCtrl {
 
 public:
 	/// Get the current time as an AssTime object
-	AssTime GetTime() const { return time; }
+	agi::ass::Time GetTime() const { return time; }
 	/// Set the time
-	void SetTime(AssTime time);
+	void SetTime(agi::ass::Time time);
 
 	/// Get the current time as a frame number, or 0 if timecodes are unavailable
 	int GetFrame() const;

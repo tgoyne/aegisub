@@ -38,7 +38,6 @@
 
 #include <functional>
 
-#include "ass_time.h"
 #include "compat.h"
 #include "include/aegisub/context.h"
 #include "options.h"
@@ -57,6 +56,8 @@ enum {
 	Time_Edit_Paste
 };
 
+using namespace agi::ass::time;
+
 TimeEdit::TimeEdit(wxWindow* parent, wxWindowID id, agi::Context *c, const std::string& value, const wxSize& size, bool asEnd)
 : wxTextCtrl(parent, id, to_wx(value), wxDefaultPosition, size, wxTE_CENTRE | wxTE_PROCESS_ENTER)
 , c(c)
@@ -67,24 +68,12 @@ TimeEdit::TimeEdit(wxWindow* parent, wxWindowID id, agi::Context *c, const std::
 {
 	// Set validator
 	wxTextValidator val(wxFILTER_INCLUDE_CHAR_LIST);
-	wxArrayString includes;
-	includes.Add("0");
-	includes.Add("1");
-	includes.Add("2");
-	includes.Add("3");
-	includes.Add("4");
-	includes.Add("5");
-	includes.Add("6");
-	includes.Add("7");
-	includes.Add("8");
-	includes.Add("9");
-	includes.Add(".");
-	includes.Add(":");
-	val.SetIncludes(includes);
+	wxString includes[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ":" };
+	val.SetIncludes(wxArrayString(11, includes));
 	SetValidator(val);
 
 	// Other stuff
-	if (value.empty()) SetValue(to_wx(time.GetAssFormated()));
+	if (value.empty()) SetValue(to_wx(AssFormat(time)));
 
 	Bind(wxEVT_COMMAND_MENU_SELECTED, std::bind(&TimeEdit::CopyTime, this), Time_Edit_Copy);
 	Bind(wxEVT_COMMAND_MENU_SELECTED, std::bind(&TimeEdit::PasteTime, this), Time_Edit_Paste);
@@ -94,7 +83,7 @@ TimeEdit::TimeEdit(wxWindow* parent, wxWindowID id, agi::Context *c, const std::
 	Bind(wxEVT_KILL_FOCUS, &TimeEdit::OnFocusLost, this);
 }
 
-void TimeEdit::SetTime(AssTime new_time) {
+void TimeEdit::SetTime(Time new_time) {
 	if (time != new_time) {
 		time = new_time;
 		UpdateText();
@@ -124,14 +113,14 @@ void TimeEdit::OnModified(wxCommandEvent &event) {
 		time = c->videoController->TimeAtFrame(temp, isEnd ? agi::vfr::END : agi::vfr::START);
 	}
 	else if (insert)
-		time = from_wx(GetValue());
+		time = Time(from_wx(GetValue()));
 }
 
 void TimeEdit::UpdateText() {
 	if (byFrame)
 		ChangeValue(std::to_wstring(c->videoController->FrameAtTime(time, isEnd ? agi::vfr::END : agi::vfr::START)));
 	else
-		ChangeValue(to_wx(time.GetAssFormated()));
+		ChangeValue(to_wx(AssFormat(time)));
 }
 
 void TimeEdit::OnKeyDown(wxKeyEvent &event) {
@@ -193,8 +182,8 @@ void TimeEdit::OnKeyDown(wxKeyEvent &event) {
 
 	// Overwrite the digit
 	text[start] = (char)key;
-	time = text;
-	SetValue(to_wx(time.GetAssFormated()));
+	time = Time(text);
+	SetValue(to_wx(AssFormat(time)));
 	SetInsertionPoint(start + 1);
 }
 
@@ -233,8 +222,8 @@ void TimeEdit::PasteTime() {
 	std::string text(GetClipboard());
 	if (text.empty()) return;
 
-	AssTime tempTime(text);
-	if (tempTime.GetAssFormated() == text) {
+	Time tempTime(text);
+	if (AssFormat(tempTime) == text) {
 		SetTime(tempTime);
 		SetSelection(0, GetValue().size());
 

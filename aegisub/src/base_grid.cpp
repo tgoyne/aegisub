@@ -824,7 +824,7 @@ void BaseGrid::SetColumnWidths() {
 	int startLen = 0;
 	int endLen = 0;
 	if (!byFrame)
-		startLen = endLen = dc.GetTextExtent(to_wx(AssTime().GetAssFormated())).GetWidth();
+		startLen = endLen = dc.GetTextExtent(wxS("0:00:00.00")).GetWidth();
 
 	std::unordered_map<boost::flyweight<std::string>, int> widths;
 	auto get_width = [&](boost::flyweight<std::string> const& str) -> int {

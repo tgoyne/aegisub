@@ -41,6 +41,7 @@
 #include "text_file_writer.h"
 
 #include <libaegisub/of_type_adaptor.h>
+#include <libaegisub/vfr.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/path.hpp>
@@ -72,11 +73,12 @@ void EncoreSubtitleFormat::WriteFile(const AssFile *src, agi::fs::path const& fi
 
 	// Encore wants ; for NTSC and : for PAL
 	// The manual suggests no other frame rates are supported
-	SmpteFormatter ft(fps, fps.NeedsDropFrames() ? ";" : ":");
+	char sep = fps.NeedsDropFrames() ? ';' : ':';
+	auto smpte = [&](agi::ass::Time time) { return SmpteFormat(time, fps, sep); };
 
 	// Write lines
 	int i = 0;
 	TextFileWriter file(filename, "UTF-8");
 	for (auto current : copy.Line | agi::of_type<AssDialogue>())
-		file.WriteLineToFile(str(boost::format("%i %s %s %s") % ++i % ft.ToSMPTE(current->Start) % ft.ToSMPTE(current->End) % current->Text));
+		file.WriteLineToFile(str(boost::format("%i %s %s %s") % ++i % smpte(current->Start) % smpte(current->End) % current->Text));
 }

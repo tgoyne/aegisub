@@ -38,7 +38,6 @@
 
 #include "ass_dialogue.h"
 #include "ass_file.h"
-#include "ass_time.h"
 #include "audio_controller.h"
 #include "compat.h"
 #include "include/aegisub/context.h"

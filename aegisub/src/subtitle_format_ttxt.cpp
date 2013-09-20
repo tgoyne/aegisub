@@ -40,7 +40,6 @@
 
 #include "ass_dialogue.h"
 #include "ass_file.h"
-#include "ass_time.h"
 #include "compat.h"
 #include "options.h"
 

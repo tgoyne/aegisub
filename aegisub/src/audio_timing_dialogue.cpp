@@ -31,13 +31,8 @@
 /// @brief Default timing mode for dialogue subtitles
 /// @ingroup audio_ui
 
-
-#include <cstdint>
-#include <wx/pen.h>
-
 #include "ass_dialogue.h"
 #include "ass_file.h"
-#include "ass_time.h"
 #include "audio_renderer.h"
 #include "audio_timing.h"
 #include "command/command.h"
@@ -46,6 +41,11 @@
 #include "pen.h"
 #include "selection_controller.h"
 #include "utils.h"
+
+#include <libaegisub/ass/time.h>
+
+#include <cstdint>
+#include <wx/pen.h>
 
 class TimeableLine;
 

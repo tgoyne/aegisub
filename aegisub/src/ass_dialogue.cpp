@@ -164,8 +164,8 @@ std::string AssDialogue::GetData(bool ssa) const {
 		append_str(str, "Marked=0");
 	else
 		append_int(str, Layer);
-	append_str(str, Start.GetAssFormated());
-	append_str(str, End.GetAssFormated());
+	append_str(str, AssFormat(Start));
+	append_str(str, AssFormat(End));
 	append_unsafe_str(str, Style);
 	append_unsafe_str(str, Actor);
 	for (int i = 0; i < 3; ++i)

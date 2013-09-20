@@ -34,8 +34,8 @@
 
 #include "ass_entry.h"
 #include "ass_override.h"
-#include "ass_time.h"
 
+#include <libaegisub/ass/time.h>
 #include <libaegisub/exception.h>
 
 #include <boost/flyweight.hpp>
@@ -142,9 +142,9 @@ public:
 	/// Margins: 0 = Left, 1 = Right, 2 = Top (Vertical)
 	int Margin[3];
 	/// Starting time
-	AssTime Start;
+	agi::ass::Time Start;
 	/// Ending time
-	AssTime End;
+	agi::ass::Time End;
 	/// Style name
 	boost::flyweight<std::string> Style;
 	/// Actor name
