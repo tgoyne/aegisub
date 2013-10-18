@@ -35,6 +35,7 @@
 
 #include "frame_main.h"
 
+#include <libaegisub/dispatch.h>
 #include <libaegisub/fs.h>
 #include <libaegisub/log.h>
 #include <libaegisub/path.h>
@@ -298,6 +299,7 @@ FrameMain::FrameMain()
 	Bind(FILE_LIST_DROPPED, &FrameMain::OnFilesDropped, this);
 
 	StartupLog("Leaving FrameMain constructor");
+	agi::dispatch::Main().Async([&] { cmd::call("recent/video/0", context.get()); });
 }
 
 /// @brief Delete everything but @a keep and its parents

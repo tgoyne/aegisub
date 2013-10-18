@@ -21,6 +21,8 @@
 
 #include "config.h"
 
+#if 0
+
 #include <algorithm>
 #include <utility>
 
@@ -292,3 +294,5 @@ VideoOutGL::~VideoOutGL() {
 		glDeleteLists(dl, 1);
 	}
 }
+
+#endif

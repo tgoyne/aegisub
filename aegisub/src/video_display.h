@@ -1,37 +1,3 @@
-// Copyright (c) 2005-2010, Rodrigo Braz Monteiro
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//
-//   * Redistributions of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//   * Redistributions in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
-//   * Neither the name of the Aegisub Group nor the names of its contributors
-//     may be used to endorse or promote products derived from this software
-//     without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-//
-// Aegisub Project http://www.aegisub.org/
-
-/// @file video_display.h
-/// @see video_display.cpp
-/// @ingroup video main_ui
-///
-
 #include <libaegisub/signal.h>
 
 #include "vector2d.h"
@@ -60,56 +26,30 @@ class VideoDisplay : public wxGLCanvas {
 	/// Signals the display is connected to
 	std::deque<agi::signal::Connection> slots;
 
-	const agi::OptionValue* autohideTools;
-
 	agi::Context *con;
-
-	std::unique_ptr<wxMenu> context_menu;
 
 	/// The size of the video in screen at the current zoom level, which may not
 	/// be the same as the actual client size of the display
 	wxSize videoSize;
 
-	Vector2D last_mouse_pos, mouse_pos;
-
-	/// Screen pixels between the left of the canvas and the left of the video
-	int viewport_left;
-	/// The width of the video in screen pixels
-	int viewport_width;
-	/// Screen pixels between the bottom of the canvas and the bottom of the video; used for glViewport
-	int viewport_bottom;
-	/// Screen pixels between the bottom of the canvas and the top of the video; used for coordinate space conversion
-	int viewport_top;
-	/// The height of the video in screen pixels
-	int viewport_height;
-
 	/// The current zoom level, where 1.0 = 100%
 	double zoomValue;
 
-	/// The video renderer
-	std::unique_ptr<VideoOutGL> videoOut;
-
-	/// The active visual typesetting tool
-	std::unique_ptr<VisualToolBase> tool;
-	/// The toolbar used by individual typesetting tools
-	wxToolBar* toolBar;
+	int program_handle;
+	int position_attrib;
+	int color_attrib;
+	int projection_uniform;
+	int modelview_uniform;
+	int tex_coord_attrib;
+	int texture_uniform;
+	unsigned int vertex_buffer;
+	unsigned int index_buffer;
 
 	/// The OpenGL context for this display
 	std::unique_ptr<wxGLContext> glContext;
 
-	/// The dropdown box for selecting zoom levels
-	wxComboBox *zoomBox;
-
-	/// Whether the display can be freely resized by the user
-	bool freeSize;
-
 	/// Frame which will replace the currently visible frame on the next render
 	std::shared_ptr<VideoFrame> pending_frame;
-
-	/// @brief Draw an overscan mask
-	/// @param horizontal_percent The percent of the video reserved horizontally
-	/// @param vertical_percent The percent of the video reserved vertically
-	void DrawOverscanMask(float horizontal_percent, float vertical_percent) const;
 
 	/// Upload the image for the current frame to the video card
 	void UploadFrameData(FrameReadyEvent&);
@@ -120,23 +60,6 @@ class VideoDisplay : public wxGLCanvas {
 
 	/// @brief Set the size of the display based on the current zoom and video resolution
 	void UpdateSize();
-	void PositionVideo();
-	/// Set the zoom level to that indicated by the dropdown
-	void SetZoomFromBox(wxCommandEvent&);
-	/// Set the zoom level to that indicated by the text
-	void SetZoomFromBoxText(wxCommandEvent&);
-
-	/// @brief Key event handler
-	void OnKeyDown(wxKeyEvent &event);
-	/// @brief Mouse event handler
-	void OnMouseEvent(wxMouseEvent& event);
-	void OnMouseWheel(wxMouseEvent& event);
-	void OnMouseLeave(wxMouseEvent& event);
-	/// @brief Recalculate video positioning and scaling when the available area or zoom changes
-	void OnSizeEvent(wxSizeEvent &event);
-	void OnContextMenu(wxContextMenuEvent&);
-
-	void OnSubtitlesSave();
 
 public:
 	/// @brief Constructor

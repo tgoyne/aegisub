@@ -87,10 +87,10 @@ public:
 	}
 
 	void Draw(GLenum mode, bool clear = true) {
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(dim, GL_FLOAT, 0, &data[0]);
-		glDrawArrays(mode, 0, data.size() / dim);
-		glDisableClientState(GL_VERTEX_ARRAY);
+		//glEnableClientState(GL_VERTEX_ARRAY);
+		//glVertexPointer(dim, GL_FLOAT, 0, &data[0]);
+		//glDrawArrays(mode, 0, data.size() / dim);
+		//glDisableClientState(GL_VERTEX_ARRAY);
 		if (clear)
 			data.clear();
 	}
@@ -264,35 +264,35 @@ void OpenGLWrapper::SetFillColour(wxColour col, float alpha) {
 }
 
 void OpenGLWrapper::SetModeLine() const {
-	glColor4f(line_r, line_g, line_b, line_a);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glLineWidth(line_width);
-	if (smooth)
-		glEnable(GL_LINE_SMOOTH);
-	else
-		glDisable(GL_LINE_SMOOTH);
+	//glColor4f(line_r, line_g, line_b, line_a);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glLineWidth(line_width);
+	//if (smooth)
+	//	glEnable(GL_LINE_SMOOTH);
+	//else
+	//	glDisable(GL_LINE_SMOOTH);
 }
 
 void OpenGLWrapper::SetModeFill() const {
-	glColor4f(fill_r, fill_g, fill_b, fill_a);
-	if (fill_a == 1.f) glDisable(GL_BLEND);
-	else {
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	}
+	//glColor4f(fill_r, fill_g, fill_b, fill_a);
+	//if (fill_a == 1.f) glDisable(GL_BLEND);
+	//else {
+	//	glEnable(GL_BLEND);
+	//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//}
 }
 
 void OpenGLWrapper::SetInvert() {
-	glEnable(GL_COLOR_LOGIC_OP);
-	glLogicOp(GL_INVERT);
+	//glEnable(GL_COLOR_LOGIC_OP);
+	//glLogicOp(GL_INVERT);
 
 	// GL_LINE_SMOOTH combines badly with inverting
 	smooth = false;
 }
 
 void OpenGLWrapper::ClearInvert() {
-	glDisable(GL_COLOR_LOGIC_OP);
+	//glDisable(GL_COLOR_LOGIC_OP);
 	smooth = true;
 }
 
@@ -306,28 +306,28 @@ void OpenGLWrapper::DrawLines(size_t dim, std::vector<float> const& lines) {
 }
 
 void OpenGLWrapper::DrawLines(size_t dim, std::vector<float> const& lines, size_t c_dim, std::vector<float> const& colors) {
-	glShadeModel(GL_SMOOTH);
-	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(c_dim, GL_FLOAT, 0, &colors[0]);
-	DrawLines(dim, &lines[0], lines.size() / dim);
-	glDisableClientState(GL_COLOR_ARRAY);
-	glShadeModel(GL_FLAT);
+	//glShadeModel(GL_SMOOTH);
+	//glEnableClientState(GL_COLOR_ARRAY);
+	//glColorPointer(c_dim, GL_FLOAT, 0, &colors[0]);
+	//DrawLines(dim, &lines[0], lines.size() / dim);
+	//glDisableClientState(GL_COLOR_ARRAY);
+	//glShadeModel(GL_FLAT);
 }
 
 void OpenGLWrapper::DrawLines(size_t dim, const float *lines, size_t n) {
 	SetModeLine();
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(dim, GL_FLOAT, 0, lines);
-	glDrawArrays(GL_LINES, 0, n);
-	glDisableClientState(GL_VERTEX_ARRAY);
+	//glEnableClientState(GL_VERTEX_ARRAY);
+	//glVertexPointer(dim, GL_FLOAT, 0, lines);
+	//glDrawArrays(GL_LINES, 0, n);
+	//glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void OpenGLWrapper::DrawLineStrip(size_t dim, std::vector<float> const& lines) {
 	SetModeLine();
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(dim, GL_FLOAT, 0, &lines[0]);
-	glDrawArrays(GL_LINE_STRIP, 0, lines.size() / dim);
-	glDisableClientState(GL_VERTEX_ARRAY);
+	//glEnableClientState(GL_VERTEX_ARRAY);
+	//glVertexPointer(dim, GL_FLOAT, 0, &lines[0]);
+	//glDrawArrays(GL_LINE_STRIP, 0, lines.size() / dim);
+	//glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 // Substitute for glMultiDrawArrays for sub-1.4 OpenGL
@@ -335,98 +335,98 @@ void OpenGLWrapper::DrawLineStrip(size_t dim, std::vector<float> const& lines) {
 #ifndef __APPLE__
 static void APIENTRY glMultiDrawArraysFallback(GLenum mode, const GLint *first, const GLsizei *count, GLsizei primcount) {
 	for (int i = 0; i < primcount; ++i) {
-		glDrawArrays(mode, *first++, *count++);
+		//glDrawArrays(mode, *first++, *count++);
 	}
 }
 #endif
 
 void OpenGLWrapper::DrawMultiPolygon(std::vector<float> const& points, std::vector<int> &start, std::vector<int> &count, Vector2D video_pos, Vector2D video_size, bool invert) {
-	GL_EXT(PFNGLMULTIDRAWARRAYSPROC, glMultiDrawArrays);
+	//GL_EXT(PFNGLMULTIDRAWARRAYSPROC, glMultiDrawArrays);
 
-	float real_line_a = line_a;
-	line_a = 0;
+	//float real_line_a = line_a;
+	//line_a = 0;
 
-	// The following is nonzero winding-number PIP based on stencils
+	//// The following is nonzero winding-number PIP based on stencils
 
-	// Draw to stencil only
-	glEnable(GL_STENCIL_TEST);
-	glColorMask(0, 0, 0, 0);
+	//// Draw to stencil only
+	//glEnable(GL_STENCIL_TEST);
+	//glColorMask(0, 0, 0, 0);
 
-	// GL_INCR_WRAP was added in 1.4, so instead set the entire stencil to 128
-	// and wobble from there
-	glStencilFunc(GL_NEVER, 128, 0xFF);
-	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+	//// GL_INCR_WRAP was added in 1.4, so instead set the entire stencil to 128
+	//// and wobble from there
+	//glStencilFunc(GL_NEVER, 128, 0xFF);
+	//glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
-	Vector2D video_max = video_pos + video_size;
-	DrawRectangle(video_pos, video_max);
+	//Vector2D video_max = video_pos + video_size;
+	//DrawRectangle(video_pos, video_max);
 
-	// Increment the winding number for each forward facing triangle
-	glStencilOp(GL_INCR, GL_INCR, GL_INCR);
-	glEnable(GL_CULL_FACE);
+	//// Increment the winding number for each forward facing triangle
+	//glStencilOp(GL_INCR, GL_INCR, GL_INCR);
+	//glEnable(GL_CULL_FACE);
 
-	glCullFace(GL_BACK);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(2, GL_FLOAT, 0, &points[0]);
-	glMultiDrawArrays(GL_TRIANGLE_FAN, &start[0], &count[0], start.size());
+	//glCullFace(GL_BACK);
+	//glEnableClientState(GL_VERTEX_ARRAY);
+	//glVertexPointer(2, GL_FLOAT, 0, &points[0]);
+	//glMultiDrawArrays(GL_TRIANGLE_FAN, &start[0], &count[0], start.size());
 
-	// Decrement the winding number for each backfacing triangle
-	glStencilOp(GL_DECR, GL_DECR, GL_DECR);
-	glCullFace(GL_FRONT);
-	glMultiDrawArrays(GL_TRIANGLE_FAN, &start[0], &count[0], start.size());
-	glDisable(GL_CULL_FACE);
+	//// Decrement the winding number for each backfacing triangle
+	//glStencilOp(GL_DECR, GL_DECR, GL_DECR);
+	//glCullFace(GL_FRONT);
+	//glMultiDrawArrays(GL_TRIANGLE_FAN, &start[0], &count[0], start.size());
+	//glDisable(GL_CULL_FACE);
 
-	// Draw the actual rectangle
-	glColorMask(1, 1, 1, 1);
+	//// Draw the actual rectangle
+	//glColorMask(1, 1, 1, 1);
 
-	// VSFilter draws when the winding number is nonzero, so we want to draw the
-	// mask when the winding number is zero (where 128 is zero due to the lack of
-	// wrapping combined with unsigned numbers)
-	glStencilFunc(invert ? GL_EQUAL : GL_NOTEQUAL, 128, 0xFF);
-	DrawRectangle(video_pos, video_max);
-	glDisable(GL_STENCIL_TEST);
+	//// VSFilter draws when the winding number is nonzero, so we want to draw the
+	//// mask when the winding number is zero (where 128 is zero due to the lack of
+	//// wrapping combined with unsigned numbers)
+	//glStencilFunc(invert ? GL_EQUAL : GL_NOTEQUAL, 128, 0xFF);
+	//DrawRectangle(video_pos, video_max);
+	//glDisable(GL_STENCIL_TEST);
 
-	// Draw lines
-	line_a = real_line_a;
-	SetModeLine();
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(2, GL_FLOAT, 0, &points[0]);
-	glMultiDrawArrays(GL_LINE_LOOP, &start[0], &count[0], start.size());
+	//// Draw lines
+	//line_a = real_line_a;
+	//SetModeLine();
+	//glEnableClientState(GL_VERTEX_ARRAY);
+	//glVertexPointer(2, GL_FLOAT, 0, &points[0]);
+	//glMultiDrawArrays(GL_LINE_LOOP, &start[0], &count[0], start.size());
 
-	glDisableClientState(GL_VERTEX_ARRAY);
+	//glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void OpenGLWrapper::SetOrigin(Vector2D origin) {
 	PrepareTransform();
-	glTranslatef(origin.X(), origin.Y(), -1.f);
+	//glTranslatef(origin.X(), origin.Y(), -1.f);
 }
 
 void OpenGLWrapper::SetScale(Vector2D scale) {
 	PrepareTransform();
-	glScalef(scale.X() / 100.f, scale.Y() / 100.f, 1.f);
+	//glScalef(scale.X() / 100.f, scale.Y() / 100.f, 1.f);
 }
 
 void OpenGLWrapper::SetRotation(float x, float y, float z) {
-	PrepareTransform();
-	float matrix[16] = { 2500, 0, 0, 0, 0, 2500, 0, 0, 0, 0, 1, 1, 0, 0, 2500, 2500 };
-	glMultMatrixf(matrix);
-	glScalef(1.f, 1.f, 8.f);
-	glRotatef(y, 0.f, -1.f, 0.f);
-	glRotatef(x, -1.f, 0.f, 0.f);
-	glRotatef(z, 0.f, 0.f, -1.f);
+	//PrepareTransform();
+	//float matrix[16] = { 2500, 0, 0, 0, 0, 2500, 0, 0, 0, 0, 1, 1, 0, 0, 2500, 2500 };
+	//glMultMatrixf(matrix);
+	//glScalef(1.f, 1.f, 8.f);
+	//glRotatef(y, 0.f, -1.f, 0.f);
+	//glRotatef(x, -1.f, 0.f, 0.f);
+	//glRotatef(z, 0.f, 0.f, -1.f);
 }
 
 void OpenGLWrapper::PrepareTransform() {
-	if (!transform_pushed) {
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-		glLoadIdentity();
-		transform_pushed = true;
-	}
+	//if (!transform_pushed) {
+	//	glMatrixMode(GL_MODELVIEW);
+	//	glPushMatrix();
+	//	glLoadIdentity();
+	//	transform_pushed = true;
+	//}
 }
 
 void OpenGLWrapper::ResetTransform() {
-	if (transform_pushed) {
-		glPopMatrix();
-		transform_pushed = false;
-	}
+	//if (transform_pushed) {
+	//	glPopMatrix();
+	//	transform_pushed = false;
+	//}
 }
