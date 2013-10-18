@@ -102,12 +102,8 @@ void VideoOutGL::DetectOpenGLCapabilities() {
 	else throw VideoOutInitException("Could not create a 64x64 RGB texture in any format.");
 
 	// Test for the maximum supported texture size
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
-	while (maxTextureSize > 64 && !TestTexture(maxTextureSize, maxTextureSize, internalFormat)) maxTextureSize >>= 1;
-	LOG_I("video/out/gl") << "Maximum texture size is " << maxTextureSize << "x" << maxTextureSize;
-
-	// Test for rectangular texture support
-	supportsRectangularTextures = TestTexture(maxTextureSize, maxTextureSize >> 1, internalFormat);
+	maxTextureSize = 65536;
+	supportsRectangularTextures = true;
 }
 
 /// @brief If needed, create the grid of textures for displaying frames of the given format

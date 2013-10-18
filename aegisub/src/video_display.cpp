@@ -164,12 +164,13 @@ void VideoDisplay::Render() try {
 	if (!con->videoController->IsLoaded() || !InitContext() || (!videoOut && !pending_frame))
 		return;
 
-	if (!videoOut)
-		videoOut = agi::util::make_unique<VideoOutGL>();
+	//if (!videoOut)
+	//	videoOut = agi::util::make_unique<VideoOutGL>();
 
 	if (!tool)
 		cmd::call("video/tool/cross", con);
 
+#if 0
 	try {
 		if (pending_frame) {
 			videoOut->UploadFrameData(*pending_frame);
@@ -224,6 +225,7 @@ void VideoDisplay::Render() try {
 
 	if ((mouse_pos || !autohideTools->GetBool()) && tool)
 		tool->Draw();
+#endif
 
 	SwapBuffers();
 }
