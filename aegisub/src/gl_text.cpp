@@ -85,30 +85,30 @@ struct OpenGLTextGlyph {
 	}
 
 	void Draw(float x, float y) const {
-		glBindTexture(GL_TEXTURE_2D, tex);
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		//glBindTexture(GL_TEXTURE_2D, tex);
+		//glEnableClientState(GL_VERTEX_ARRAY);
+		//glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-		float tex_coords[] = {
-			x1, y1,
-			x1, y2,
-			x2, y2,
-			x2, y1
-		};
+		//float tex_coords[] = {
+		//	x1, y1,
+		//	x1, y2,
+		//	x2, y2,
+		//	x2, y1
+		//};
 
-		float vert_coords[] = {
-			x, y,
-			x, y + h,
-			x + w, y + h,
-			x + w, y
-		};
+		//float vert_coords[] = {
+		//	x, y,
+		//	x, y + h,
+		//	x + w, y + h,
+		//	x + w, y
+		//};
 
-		glVertexPointer(2, GL_FLOAT, 0, vert_coords);
-		glTexCoordPointer(2, GL_FLOAT, 0, tex_coords);
-		glDrawArrays(GL_QUADS, 0, 4);
+		//glVertexPointer(2, GL_FLOAT, 0, vert_coords);
+		//glTexCoordPointer(2, GL_FLOAT, 0, tex_coords);
+		//glDrawArrays(GL_QUADS, 0, 4);
 
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		//glDisableClientState(GL_VERTEX_ARRAY);
+		//glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	}
 };
 
@@ -156,9 +156,9 @@ class OpenGLTextTexture : boost::noncopyable {
 			alpha[write] = *read;
 
 		// Upload image to video memory
-		glBindTexture(GL_TEXTURE_2D, tex);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, imgw, imgh, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, &alpha[0]);
-		if (glGetError()) throw "Internal OpenGL text renderer error: Error uploading glyph data to video memory.";
+		//glBindTexture(GL_TEXTURE_2D, tex);
+		//glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, imgw, imgh, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, &alpha[0]);
+		//if (glGetError()) throw "Internal OpenGL text renderer error: Error uploading glyph data to video memory.";
 	}
 
 public:
@@ -173,20 +173,20 @@ public:
 		width = height = std::max(width, height);
 
 		// Generate and bind
-		glGenTextures(1, &tex);
-		glBindTexture(GL_TEXTURE_2D, tex);
+		//glGenTextures(1, &tex);
+		//glBindTexture(GL_TEXTURE_2D, tex);
 
-		// Texture parameters
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		//// Texture parameters
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-		// Allocate texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, nullptr);
-		if (glGetError()) throw "Internal OpenGL text renderer error: Could not allocate Text Texture";
+		//// Allocate texture
+		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, nullptr);
+		//if (glGetError()) throw "Internal OpenGL text renderer error: Could not allocate Text Texture";
 
-		TryToInsert(glyph);
+		//TryToInsert(glyph);
 	}
 
 	OpenGLTextTexture(OpenGLTextTexture&& rhs)
@@ -201,7 +201,7 @@ public:
 	}
 
 	~OpenGLTextTexture() {
-		if (tex) glDeleteTextures(1, &tex);
+		//if (tex) glDeleteTextures(1, &tex);
 	}
 
 	/// @brief Try to insert a glyph into this texture
@@ -269,24 +269,24 @@ void OpenGLText::SetColour(agi::Color col) {
 }
 
 void OpenGLText::Print(const std::string &text, int x, int y) {
-	glEnable(GL_BLEND);
-	glEnable(GL_TEXTURE_2D);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glEnable(GL_TEXTURE_2D);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	// Draw border
-	glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-	DrawString(text, x-1, y);
-	DrawString(text, x+1, y);
-	DrawString(text, x, y-1);
-	DrawString(text, x, y+1);
+	//// Draw border
+	//glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+	//DrawString(text, x-1, y);
+	//DrawString(text, x+1, y);
+	//DrawString(text, x, y-1);
+	//DrawString(text, x, y+1);
 
-	// Draw primary string
-	glColor4f(r, g, b, a);
-	DrawString(text, x, y);
+	//// Draw primary string
+	//glColor4f(r, g, b, a);
+	//DrawString(text, x, y);
 
-	// Disable blend
-	glDisable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
+	//// Disable blend
+	//glDisable(GL_TEXTURE_2D);
+	//glDisable(GL_BLEND);
 }
 
 void OpenGLText::DrawString(const std::string &text, int x, int y) {
