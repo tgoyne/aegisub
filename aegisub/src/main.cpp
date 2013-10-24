@@ -344,6 +344,11 @@ StackWalker::~StackWalker() {
 const static wxString exception_message = _("Oops, Aegisub has crashed!\n\nAn attempt has been made to save a copy of your file to:\n\n%s\n\nAegisub will now close.");
 
 static void UnhandledExeception(bool stackWalk, agi::Context *c) {
+	if (stackWalk) {
+		StackWalker walker("Fatal exception");
+		walker.WalkFromException();
+	}
+
 #if (!defined(_DEBUG) || defined(WITH_EXCEPTIONS)) && (wxUSE_ON_FATAL_EXCEPTION+0)
 	if (c->ass && c->subsController) {
 		auto path = config::path->Decode("?user/recovered");
