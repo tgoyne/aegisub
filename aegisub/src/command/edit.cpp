@@ -583,6 +583,56 @@ struct in_selection : public std::unary_function<AssEntry, bool> {
 	}
 };
 
+static double vsf_round(double value) {
+	return int(value * 8 + .5) / 8.0;
+}
+static void interpolate_pos(std::vector<AssOverrideParameter>& params, int idx, int new_start, int new_end, int mov_start, int mov_end) {
+	double start_pos = params[idx].Get(0.0);
+	double end_pos = params[idx + 2].Get(0.0);
+	double distance = end_pos - start_pos;
+	start_pos += distance * (new_start - mov_start) / (mov_end - mov_start);
+	end_pos += distance * (new_end - mov_end) / (mov_end - mov_start);
+	params[idx].Set(vsf_round(start_pos));
+	params[idx + 2].Set(vsf_round(end_pos));
+}
+
+static void split_tags(AssTime original_start, AssTime original_end, AssDialogue *line) {
+	auto parsed = line->ParseTags();
+	for (auto ovr : *parsed | agi::of_type<AssDialogueBlockOverride>()) {
+		for (auto& tag : ovr->Tags) {
+			if (tag.Name == "\\move") {
+				int start = tag.Params[4].Get(0) + original_start;
+				int end = tag.Params[5].Get(0);
+				if (end == 0)
+					end = original_end - original_start;
+				end += original_start;
+
+				if (start >= line->End) {
+					tag.Name = "\\pos";
+					tag.Params.erase(tag.Params.begin() + 2, tag.Params.end());
+				}
+				else if (end <= line->Start) {
+					tag.Name = "\\pos";
+					tag.Params.erase(tag.Params.begin(), tag.Params.begin() + 2);
+					tag.Params.erase(tag.Params.begin() + 2, tag.Params.end());
+				}
+				else {
+					interpolate_pos(tag.Params, 0, line->Start, line->End, start, end);
+					interpolate_pos(tag.Params, 1, line->Start, line->End, start, end);
+					if (line->Start > original_start) {
+						tag.Params[4].Set(0);
+						tag.Params[5].Set(end - line->Start);
+					}
+					else {
+						tag.Params[5].Set(line->End - line->Start);
+					}
+				}
+			}
+		}
+	}
+	line->UpdateText(*parsed);
+}
+
 static void duplicate_lines(agi::Context *c, int shift) {
 	in_selection sel(c->selectionController->GetSelectedSet());
 	SubtitleSelectionController::Selection new_sel;
@@ -611,6 +661,8 @@ static void duplicate_lines(agi::Context *c, int shift) {
 				new_active = new_diag;
 
 			if (shift) {
+				int start_time = new_diag->Start;
+				int end_time = new_diag->End;
 				int cur_frame = c->videoController->GetFrameN();
 				int old_start = c->videoController->FrameAtTime(new_diag->Start, agi::vfr::START);
 				int old_end = c->videoController->FrameAtTime(new_diag->End, agi::vfr::END);
@@ -631,6 +683,9 @@ static void duplicate_lines(agi::Context *c, int shift) {
 					old_diag->Start = c->videoController->TimeAtFrame(cur_frame + 1, agi::vfr::START);
 					new_diag->End = c->videoController->TimeAtFrame(cur_frame, agi::vfr::END);
 				}
+
+				split_tags(start_time, end_time, old_diag);
+				split_tags(start_time, end_time, new_diag);
 
 				/// @todo also split \t and \move?
 			}
