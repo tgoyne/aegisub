@@ -374,6 +374,7 @@ AGI_OPT_PKG(ffms2, [build without ffms2 A/V provider [auto]], [Enable FFMS2 supp
 
 AGI_OPT_PKG(fftw3, [build without fftw support [auto]], [Enable fftw support])
 AGI_OPT_PKG(hunspell, [build without hunspell spell-checking [auto]], [Enable Hunspell support])
+AGI_OPT_PKG(liblzma, [build without lzma support [auto]], [Enable lzma support])
 
 ############
 # Automation
