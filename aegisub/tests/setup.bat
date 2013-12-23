@@ -47,3 +47,6 @@ xcopy "%~dp0\vfr" data\vfr\in
 
 mkdir data\keyframe
 xcopy "%~dp0\keyframe" data\keyframe
+
+copy "%~dp0\dict\thes.dat.xz" data\
+copy "%~dp0\dict\thes.idx.xz" data\

@@ -32,6 +32,7 @@
 #include <libaegisub/dispatch.h>
 #include <libaegisub/fs.h>
 #include <libaegisub/log.h>
+#include <libaegisub/lzma_filter.h>
 #include <libaegisub/path.h>
 #include <libaegisub/thesaurus.h>
 #include <libaegisub/util.h>
@@ -65,6 +66,15 @@ static std::vector<std::string> langs(const char *ext) {
 	// Drop extensions and the th_ prefix
 	for (auto& fn : paths) fn = fn.substr(3, fn.size() - filter.size() + 1);
 
+#ifdef WITH_XZ
+	size_t uncompressed_count = paths.size();
+	filter += ".xz";
+	agi::fs::DirectoryIterator(data_path, filter).GetAll(paths);
+	agi::fs::DirectoryIterator(user_path, filter).GetAll(paths);
+	for (size_t i = uncompressed_count; i < paths.size(); ++i)
+		paths[i] = paths[i].substr(3, paths[i].size() - filter.size() + 1);
+#endif
+
 	boost::sort(paths);
 	paths.erase(unique(begin(paths), end(paths)), end(paths));
 
@@ -80,6 +90,14 @@ std::vector<std::string> Thesaurus::GetLanguageList() const {
 static bool check_path(agi::fs::path const& path, std::string const& language, agi::fs::path& idx, agi::fs::path& dat) {
 	idx = path/str(boost::format("th_%s.idx") % language);
 	dat = path/str(boost::format("th_%s.dat") % language);
+
+#ifdef WITH_XZ
+	if (agi::fs::FileExists(idx) && agi::fs::FileExists(dat))
+		return true;
+	idx = path/str(boost::format("th_%s.idx.xz") % language);
+	dat = path/str(boost::format("th_%s.dat.xz") % language);
+#endif
+
 	return agi::fs::FileExists(idx) && agi::fs::FileExists(dat);
 }
 

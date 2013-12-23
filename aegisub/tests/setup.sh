@@ -43,3 +43,6 @@ cp vfr/* data/vfr/in/
 
 mkdir data/keyframe
 cp keyframe/* data/keyframe
+
+cp dict/thes.dat.xz data
+cp dict/thes.idx data

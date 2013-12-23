@@ -21,6 +21,7 @@
 #include "libaegisub/charset_conv.h"
 #include "libaegisub/io.h"
 #include "libaegisub/line_iterator.h"
+#include "libaegisub/lzma_filter.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/phoenix/operator/comparison.hpp>
@@ -40,7 +41,7 @@ Thesaurus::Thesaurus(agi::fs::path const& dat_path, agi::fs::path const& idx_pat
 	std::string encoding_name;
 	getline(*idx, encoding_name);
 	std::string unused_entry_count;
-	getline(*idx, unused_entry_count);
+	getline(stream, unused_entry_count);
 
 	// Read the list of words and file offsets for those words
 	for (auto const& line : line_iterator<std::string>(*idx, encoding_name)) {
