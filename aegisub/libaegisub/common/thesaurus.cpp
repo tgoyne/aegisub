@@ -34,14 +34,23 @@ using boost::phoenix::placeholders::_1;
 namespace agi {
 
 Thesaurus::Thesaurus(agi::fs::path const& dat_path, agi::fs::path const& idx_path)
-: dat(io::Open(dat_path))
+: dat(io::Open(dat_path, true))
 {
-	auto idx = io::Open(idx_path);
+	auto idx_file = io::Open(idx_path);
+	std::istream *idx = idx_file.get();
+
+#ifdef WITH_LIBLZMA
+	std::unique_ptr<std::stringstream> xz_idx;
+	if (idx_path.extension() == ".xz") {
+		xz_idx = lzma::decompress(*idx);
+		idx = xz_idx.get();
+	}
+#endif
 
 	std::string encoding_name;
 	getline(*idx, encoding_name);
 	std::string unused_entry_count;
-	getline(stream, unused_entry_count);
+	getline(*idx, unused_entry_count);
 
 	// Read the list of words and file offsets for those words
 	for (auto const& line : line_iterator<std::string>(*idx, encoding_name)) {
@@ -52,6 +61,11 @@ Thesaurus::Thesaurus(agi::fs::path const& dat_path, agi::fs::path const& idx_pat
 	}
 
 	conv.reset(new charset::IconvWrapper(encoding_name.c_str(), "utf-8"));
+
+#ifdef WITH_LIBLZMA
+	if (dat_path.extension() == ".xz")
+		dat = lzma::decompress(*dat);
+#endif
 }
 
 Thesaurus::~Thesaurus() { }

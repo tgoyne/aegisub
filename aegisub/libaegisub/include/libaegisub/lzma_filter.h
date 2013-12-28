@@ -17,7 +17,7 @@
 #if WITH_LIBLZMA
 #include <array>
 #include <cstdint>
-#include <stringstream>
+#include <sstream>
 
 #include <lzma.h>
 
@@ -37,10 +37,10 @@ inline void check(lzma_ret value) {
 }
 
 template<typename Stream>
-std::stringstream decompress(Stream&& istream) {
+std::unique_ptr<std::stringstream> decompress(Stream&& istream) {
 	std::array<char, 65536> inbuf, outbuf;
 
-	std::stringstream ret;
+	std::unique_ptr<std::stringstream> ret{new std::stringstream};
 
 	lzma_stream stream = LZMA_STREAM_INIT;
 	lzma_ret result = lzma_stream_decoder(&stream, UINT64_MAX, 0);
@@ -58,7 +58,7 @@ std::stringstream decompress(Stream&& istream) {
 			lzma_ret result = lzma_code(&stream, LZMA_RUN);
 			check(result);
 
-			ret.write(&outbuf[0], outbuf.size() - stream.avail_out);
+			ret->write(&outbuf[0], outbuf.size() - stream.avail_out);
 		} while (stream.avail_in);
 	}
 
