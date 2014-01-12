@@ -84,7 +84,7 @@ public:
 	}
 
 	void Update() {
-		const agi::MRUManager::MRUListMap *mru = config::mru->Get(type);
+		const auto mru = config::mru->Get(type);
 
 		Resize(mru->size());
 
@@ -96,14 +96,22 @@ public:
 		}
 
 		int i = 0;
-		for (auto it = mru->begin(); it != mru->end(); ++it, ++i) {
-			wxString name = it->wstring();
-			if (!name.StartsWith("?"))
-				name = it->filename().wstring();
+		wxString name;
+		for (auto const& filename : *mru) {
+			try {
+				name = filename.wstring();
+				if (!name.StartsWith("?"))
+					name = filename.filename().wstring();
+			}
+			catch (std::exception const& e) {
+				LOG_E("menu/mru") << "Error converting path to string: " << e.what();
+				name = "<Error>";
+			}
 			items[i]->SetItemLabel(wxString::Format("%s%d %s",
 				i <= 9 ? "&" : "", i + 1,
 				name));
 			items[i]->Enable(true);
+			++i;
 		}
 	}
 };
