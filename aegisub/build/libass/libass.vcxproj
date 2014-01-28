@@ -54,12 +54,9 @@
     <ClInclude Include="$(LibassSrcDir)\libass\ass_shaper.h" />
     <ClInclude Include="$(LibassSrcDir)\libass\ass_types.h" />
     <ClInclude Include="$(LibassSrcDir)\libass\ass_utils.h" />
-    <ClInclude Include="$(LibassSrcDir)\win32\config.h" />
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\enca.h" />
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\inttypes.h" />
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\stdint.h" />
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\strings.h" />
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\unistd.h" />
+    <ClInclude Include="$(LibassSrcDir)\libass\x86\be_blur.h" />
+    <ClInclude Include="$(LibassSrcDir)\libass\x86\blend_bitmaps.h" />
+    <ClInclude Include="$(LibassSrcDir)\libass\x86\cpuid.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(LibassSrcDir)\libass\ass.c" />
@@ -75,6 +72,12 @@
     <ClCompile Include="$(LibassSrcDir)\libass\ass_shaper.c" />
     <ClCompile Include="$(LibassSrcDir)\libass\ass_strtod.c" />
     <ClCompile Include="$(LibassSrcDir)\libass\ass_utils.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(LibassSrcDir)\libass\x86\be_blur.asm" />
+    <None Include="$(LibassSrcDir)\libass\x86\blend_bitmaps.asm" />
+    <None Include="$(LibassSrcDir)\libass\x86\cpuid.asm" />
+    <None Include="$(LibassSrcDir)\libass\x86\x86inc.asm" />
   </ItemGroup>
 
   <!-- Project References -->

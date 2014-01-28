@@ -9,9 +9,8 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Source Files\x86">
+      <UniqueIdentifier>{91b168a9-2262-411f-8f45-a37679f50afb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -54,23 +53,14 @@
     <ClInclude Include="$(LibassSrcDir)\libass\ass_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(LibassSrcDir)\win32\config.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="$(LibassSrcDir)\libass\x86\be_blur.h">
+      <Filter>Source Files\x86</Filter>
     </ClInclude>
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\enca.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="$(LibassSrcDir)\libass\x86\blend_bitmaps.h">
+      <Filter>Source Files\x86</Filter>
     </ClInclude>
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\inttypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\stdint.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\strings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="$(LibassSrcDir)\win32\headers\unistd.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="$(LibassSrcDir)\libass\x86\cpuid.h">
+      <Filter>Source Files\x86</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -113,5 +103,19 @@
     <ClCompile Include="$(LibassSrcDir)\libass\ass_utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(LibassSrcDir)\libass\x86\be_blur.asm">
+      <Filter>Source Files\x86</Filter>
+    </None>
+    <None Include="$(LibassSrcDir)\libass\x86\blend_bitmaps.asm">
+      <Filter>Source Files\x86</Filter>
+    </None>
+    <None Include="$(LibassSrcDir)\libass\x86\cpuid.asm">
+      <Filter>Source Files\x86</Filter>
+    </None>
+    <None Include="$(LibassSrcDir)\libass\x86\x86inc.asm">
+      <Filter>Source Files\x86</Filter>
+    </None>
   </ItemGroup>
 </Project>
