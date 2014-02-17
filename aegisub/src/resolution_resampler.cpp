@@ -23,6 +23,7 @@
 #include "ass_style.h"
 #include "utils.h"
 
+#include <libaegisub/ass/resample.h>
 #include <libaegisub/of_type_adaptor.h>
 #include <libaegisub/split.h>
 #include <libaegisub/util.h>
@@ -32,80 +33,28 @@
 #include <boost/lexical_cast.hpp>
 #include <functional>
 
-enum {
-	LEFT = 0,
-	RIGHT = 1,
-	TOP = 2,
-	BOTTOM = 3
-};
+using namespace agi;
 
 namespace {
-struct YUVColor {
-	unsigned char y;
-	unsigned char u;
-	unsigned char v;
-};
-
-
-
-	std::string transform_drawing(std::string const& drawing, int shift_x, int shift_y, double scale_x, double scale_y) {
-		bool is_x = true;
-		std::string final;
-		final.reserve(drawing.size());
-
-		for (auto const& cur : agi::Split(drawing, ' ')) {
-			double val;
-			if (agi::util::try_parse(agi::str(cur), &val)) {
-				if (is_x)
-					val = (val + shift_x) * scale_x;
-				else
-					val = (val + shift_y) * scale_y;
-				val = int(val * 8 + .5) / 8.0; // round to eighth-pixels
-				final += float_to_string(val);
-				final += ' ';
-				is_x = !is_x;
-			}
-			else if (cur.size() == 1) {
-				char c = tolower(cur[0]);
-				if (c == 'm' || c == 'n' || c == 'l' || c == 'b' || c == 's' || c == 'p' || c == 'c') {
-					is_x = true;
-					final += c;
-					final += ' ';
-				}
-			}
-		}
-
-		if (final.size())
-			final.pop_back();
-		return final;
-	}
-
-	struct resample_state {
-		const int *margin;
-		double rx;
-		double ry;
-		double ar;
-	};
-
 	void resample_tags(std::string const& name, AssOverrideParameter *cur, void *ud) {
-		resample_state *state = static_cast<resample_state *>(ud);
+		ResampleState *state = static_cast<ResampleState *>(ud);
 
 		double resizer = 1.0;
 		int shift = 0;
 
 		switch (cur->classification) {
 			case AssParameterClass::ABSOLUTE_SIZE:
-				resizer = state->ry;
+				resizer = state->scale_x;
 				break;
 
 			case AssParameterClass::ABSOLUTE_POS_X:
-				resizer = state->rx;
-				shift = state->margin[LEFT];
+				resizer = state->scale_x;
+				shift = state->margin[ResampleState::LEFT];
 				break;
 
 			case AssParameterClass::ABSOLUTE_POS_Y:
-				resizer = state->ry;
-				shift = state->margin[TOP];
+				resizer = state->scale_y;
+				shift = state->margin[ResampleState::TOP];
 				break;
 
 			case AssParameterClass::RELATIVE_SIZE_X:
@@ -115,12 +64,9 @@ struct YUVColor {
 			case AssParameterClass::RELATIVE_SIZE_Y:
 				break;
 
-			case AssParameterClass::DRAWING: {
-				cur->Set(transform_drawing(
-					cur->Get<std::string>(),
-					state->margin[LEFT], state->margin[TOP], state->rx, state->ry));
+			case AssParameterClass::DRAWING:
+				 cur->Set(ResampleDrawing(cur->Get<std::string>(), *state));
 				return;
-			}
 
 			default:
 				return;
@@ -133,30 +79,34 @@ struct YUVColor {
 			cur->Set<int>((cur->Get<int>() + shift) * resizer + 0.5);
 	}
 
-	void resample_line(resample_state *state, AssEntry &line) {
+	template<typename Array>
+	void resample_margin(Array& margin, ResampleState const& state) {
+		for (size_t i = 0; i < 3; ++i)
+			margin[i] = int((margin[i] + state.margin[i]) * (i < 2 ? state.scale_x : state.scale_y) + 0.5);
+	}
+
+	void resample_line(ResampleState *state, AssEntry &line) {
 		AssDialogue *diag = dynamic_cast<AssDialogue*>(&line);
 		if (diag && !(diag->Comment && (boost::starts_with(diag->Effect.get(), "template") || boost::starts_with(diag->Effect.get(), "code")))) {
 			boost::ptr_vector<AssDialogueBlock> blocks(diag->ParseTags());
 
-			for (auto block : blocks | agi::of_type<AssDialogueBlockOverride>())
+			for (auto block : blocks | of_type<AssDialogueBlockOverride>())
 				block->ProcessParameters(resample_tags, state);
 
-			for (auto drawing : blocks | agi::of_type<AssDialogueBlockDrawing>())
-				drawing->text = transform_drawing(drawing->text, state->margin[LEFT], state->margin[TOP], state->rx, state->ry);
+			for (auto drawing : blocks | of_type<AssDialogueBlockDrawing>())
+				drawing->text = ResampleDrawing(drawing->text, *state);
 
-			for (size_t i = 0; i < 3; ++i)
-				diag->Margin[i] = int((diag->Margin[i] + state->margin[i]) * (i < 2 ? state->rx : state->ry) + 0.5);
+			resample_margin(diag->Margin, *state);
 
 			diag->UpdateText(blocks);
 		}
 		else if (AssStyle *style = dynamic_cast<AssStyle*>(&line)) {
-			style->fontsize = int(style->fontsize * state->ry + 0.5);
-			style->outline_w *= state->ry;
-			style->shadow_w *= state->ry;
-			style->spacing *= state->rx;
+			style->fontsize = int(style->fontsize * state->scale_y + 0.5);
+			style->outline_w *= state->scale_y;
+			style->shadow_w *= state->scale_y;
+			style->spacing *= state->scale_x;
 			style->scalex *= state->ar;
-			for (int i = 0; i < 3; i++)
-				style->Margin[i] = int((style->Margin[i] + state->margin[i]) * (i < 2 ? state->rx : state->ry) + 0.5);
+			resample_margin(style->Margin, *state);
 			style->UpdateData();
 		}
 	}
@@ -164,10 +114,10 @@ struct YUVColor {
 
 void ResampleResolution(AssFile *ass, ResampleSettings settings) {
 	// Add margins to original resolution
-	settings.source_x += settings.margin[LEFT] + settings.margin[RIGHT];
-	settings.source_y += settings.margin[TOP] + settings.margin[BOTTOM];
+	settings.source_x += settings.margin[ResampleState::LEFT] + settings.margin[ResampleState::RIGHT];
+	settings.source_y += settings.margin[ResampleState::TOP] + settings.margin[ResampleState::BOTTOM];
 
-	resample_state state = {
+	ResampleState state = {
 		settings.margin,
 		double(settings.dest_x) / double(settings.source_x),
 		double(settings.dest_y) / double(settings.source_y),
@@ -175,7 +125,7 @@ void ResampleResolution(AssFile *ass, ResampleSettings settings) {
 	};
 
 	if (settings.change_ar)
-		state.ar = state.rx / state.ry;
+		state.ar = state.scale_x / state.scale_y;
 
 	for (auto& line : ass->Line)
 		resample_line(&state, line);

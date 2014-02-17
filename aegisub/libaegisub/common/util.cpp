@@ -21,6 +21,7 @@
 
 #include "libaegisub/exception.h"
 
+#include <boost/format.hpp>
 #include <boost/locale/boundary.hpp>
 #include <boost/locale/conversion.hpp>
 #include <boost/range/algorithm_ext.hpp>
@@ -59,6 +60,14 @@ std::pair<size_t, size_t> find_range(std::string const& haystack, std::string co
 }
 
 namespace agi { namespace util {
+
+std::string to_string(double value) {
+	std::string s = str(boost::format("%.3f") % value);
+	size_t pos = s.find_last_not_of("0");
+	if (pos != s.find(".")) ++pos;
+	s.erase(begin(s) + pos, end(s));
+	return s;
+}
 
 std::string strftime(const char *fmt, const tm *tmptr) {
 	if (!tmptr) {

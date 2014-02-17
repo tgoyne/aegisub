@@ -1,4 +1,4 @@
-// Copyright (c) 2013, Thomas Goyne <plorkyeran@aegisub.org>
+// Copyright (c) 2014, Thomas Goyne <plorkyeran@aegisub.org>
 //
 // Permission to use, copy, modify, and distribute this software for any
 // purpose with or without fee is hereby granted, provided that the above
@@ -15,20 +15,24 @@
 // Aegisub Project http://www.aegisub.org/
 
 #include <array>
+#include <string>
 
-class AssFile;
-
+namespace agi {
 /// Configuration parameters for a resample
-struct ResampleSettings {
-	std::array<int, 4> margin; ///< Amount to add to each margin
-	int source_x;   ///< Original  X resolution
-	int source_y;   ///< Original Y resolution
-	int dest_x;     ///< New X resolution
-	int dest_y;     ///< New Y resolution
-	bool change_ar; ///< Should the aspect ratio of the subs be changed?
+struct ResampleState {
+	enum {
+		LEFT = 0,
+		RIGHT = 1,
+		TOP = 2,
+		BOTTOM = 3
+	};
+
+	std::array<int, 4> margin;
+	double scale_x;
+	double scale_y;
+	double ar;
 };
 
-/// Resample the subtitles in the project
-/// @param file Subtitles to resample
-/// @param settings Resample configuration settings
-void ResampleResolution(AssFile *file, ResampleSettings settings);
+/// Resample an ASS drawing
+std::string ResampleDrawing(std::string const& drawing, ResampleState const& config);
+}

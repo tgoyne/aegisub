@@ -36,6 +36,9 @@ namespace agi {
 	bool try_parse(std::string const& str, double *out);
 	bool try_parse(std::string const& str, int *out);
 
+	/// A float -> string conversion that trims trailing zeroes
+	std::string to_string(double value);
+
 	/// strftime, but on std::string rather than a fixed buffer
 	/// @param fmt strftime format string
 	/// @param tmptr Time to format, or nullptr for current time

@@ -164,6 +164,9 @@
     <ClInclude Include="$(SrcDir)include\libaegisub\owning_intrusive_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="$(SrcDir)include\libaegisub\ass\resample.h">
+      <Filter>ASS</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SrcDir)windows\lagi_pre.cpp">
@@ -270,6 +273,9 @@
     </ClCompile>
     <ClCompile Include="$(SrcDir)common\karaoke_matcher.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SrcDir)ass\resample.cpp">
+      <Filter>ASS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

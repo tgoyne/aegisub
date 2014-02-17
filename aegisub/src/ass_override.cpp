@@ -40,6 +40,7 @@
 #include "utils.h"
 
 #include <libaegisub/color.h>
+#include <libaegisub/util.h>
 
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -133,7 +134,7 @@ template<> void AssOverrideParameter::Set<int>(int new_value) {
 }
 
 template<> void AssOverrideParameter::Set<double>(double new_value) {
-	Set(float_to_string(new_value));
+	Set(agi::util::to_string(new_value));
 }
 
 template<> void AssOverrideParameter::Set<bool>(bool new_value) {
