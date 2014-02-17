@@ -40,6 +40,14 @@ enum {
 };
 
 namespace {
+struct YUVColor {
+	unsigned char y;
+	unsigned char u;
+	unsigned char v;
+};
+
+
+
 	std::string transform_drawing(std::string const& drawing, int shift_x, int shift_y, double scale_x, double scale_y) {
 		bool is_x = true;
 		std::string final;
