@@ -37,6 +37,7 @@
 #include "auto4_lua.h"
 
 #include "auto4_lua_utils.h"
+#include "ass_attachment.h"
 #include "ass_dialogue.h"
 #include "ass_info.h"
 #include "ass_file.h"

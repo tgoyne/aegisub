@@ -277,7 +277,7 @@ namespace {
 
 		lua_pushvalue(L, 1);
 		std::unique_ptr<AssEntry> et(Automation4::LuaAssFile::LuaToAssEntry(L));
-		AssStyle *st = dynamic_cast<AssStyle*>(et.get());
+		auto st = dynamic_cast<AssStyle*>(et.get());
 		lua_pop(L, 1);
 		if (!st)
 			return luaL_error(L, "Not a style entry");
