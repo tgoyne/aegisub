@@ -110,7 +110,7 @@ std::vector<std::string> YUV4MPEGVideoProvider::ReadHeader(uint64_t &pos) {
 		return tags;
 
 	auto len = std::min<uint64_t>(YUV4MPEG_HEADER_MAXLEN, file->size() - pos);
-	auto buff = file->read(pos, len);
+	const char *buff = file->read(pos, len);
 
 	// read header until terminating newline (0x0A) is found
 	const char *curtag = buff;
