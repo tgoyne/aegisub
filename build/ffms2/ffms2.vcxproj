@@ -66,9 +66,9 @@
     <ClCompile Include="$(FfmsSrcDir)\src\core\matroskaaudio.cpp" />
     <ClCompile Include="$(FfmsSrcDir)\src\core\matroskaindexer.cpp" />
     <ClCompile Include="$(FfmsSrcDir)\src\core\matroskaparser.c" />
+    <ClCompile Include="$(FfmsSrcDir)\src\core\matroskareader.cpp" />
     <ClCompile Include="$(FfmsSrcDir)\src\core\matroskavideo.cpp" />
     <ClCompile Include="$(FfmsSrcDir)\src\core\numthreads.cpp" />
-    <ClCompile Include="$(FfmsSrcDir)\src\core\stdiostream.c" />
     <ClCompile Include="$(FfmsSrcDir)\src\core\utils.cpp" />
     <ClCompile Include="$(FfmsSrcDir)\src\core\videosource.cpp" />
     <ClCompile Include="$(FfmsSrcDir)\src\core\videoutils.cpp" />
@@ -88,8 +88,8 @@
     <ClInclude Include="$(FfmsSrcDir)\src\core\guids.h" />
     <ClInclude Include="$(FfmsSrcDir)\src\core\indexing.h" />
     <ClInclude Include="$(FfmsSrcDir)\src\core\matroskaparser.h" />
+    <ClInclude Include="$(FfmsSrcDir)\src\core\matroskareader.h" />
     <ClInclude Include="$(FfmsSrcDir)\src\core\numthreads.h" />
-    <ClInclude Include="$(FfmsSrcDir)\src\core\stdiostream.h" />
     <ClInclude Include="$(FfmsSrcDir)\src\core\utils.h" />
     <ClInclude Include="$(FfmsSrcDir)\src\core\videosource.h" />
     <ClInclude Include="$(FfmsSrcDir)\src\core\videoutils.h" />
