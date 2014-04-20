@@ -161,6 +161,7 @@ DEFINE_SIMPLE_EXCEPTION_NOINNER(CommandNotFound, CommandError, "command/notfound
 
 	/// Get a list of registered command names
 	std::vector<std::string> get_registered_commands();
+	void log_commands(agi::Context *c);
 
 	/// Unregister and deletes all commands
 	void clear();

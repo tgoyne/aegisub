@@ -15,9 +15,14 @@
 #include "command.h"
 
 #include "../compat.h"
+#include "../options.h"
 
+#include <libaegisub/io.h>
 #include <libaegisub/log.h>
+#include <libaegisub/path.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <wx/intl.h>
 
 namespace cmd {
@@ -55,6 +60,50 @@ namespace cmd {
 		for (auto const& it : cmd_map)
 			ret.push_back(it.first);
 		return ret;
+	}
+
+#ifndef AEGISUB_CATALOG
+#define AEGISUB_CATALOG "aegisub"
+#endif
+
+	std::string fix_str(wxString const& wxs) {
+		auto str = from_wx(wxs);
+		boost::replace_all(str, "&", "");
+		if (boost::contains(str, "'"))
+			return '"' + str + '"';
+		return "'" + str + "'";
+	}
+
+	void log_commands(agi::Context *c) {
+		agi::io::Save file("/Users/tgoyne/aegisite/data/commands_31.yml");
+		auto& out = file.Get();
+
+		wxTranslations *translations = wxTranslations::Get();
+		wxArrayString langs = translations->GetAvailableTranslations(AEGISUB_CATALOG);
+		langs.insert(langs.begin(), "en_US");
+
+		for (auto const& lang : langs) {
+			// 
+			wxTranslations::Set(translations = new wxTranslations);
+			wxFileTranslationsLoader::AddCatalogLookupPathPrefix(config::path->Decode("?data/locale/").wstring());
+
+			translations->SetLanguage(lang);
+			translations->AddCatalog(AEGISUB_CATALOG);
+			translations->AddStdCatalog();
+
+			auto info = wxLocale::FindLanguageInfo(lang);
+			auto name = info ? wxLocale::GetLanguageName(info->Language) : lang;
+
+			out << " - locale: " << lang << "\n"
+				<< "   name: " << name << "\n"
+				<< "   commands:\n";
+
+			for (auto const& it : cmd_map) {
+				out << "    - name: " << it.first << "\n"
+					<< "      display: " << fix_str(it.second->StrDisplay(c)) << "\n"
+					<< "      help: " << fix_str(it.second->StrHelp()) << "\n\n";
+			}
+		}
 	}
 
 	// These forward declarations exist here since we don't want to expose

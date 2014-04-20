@@ -241,6 +241,7 @@ FrameMain::FrameMain()
 	SetDisplayMode(1, 1);
 
 	StartupLog("Leaving FrameMain constructor");
+	cmd::log_commands(context.get());
 }
 
 FrameMain::~FrameMain () {
