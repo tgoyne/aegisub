@@ -14,9 +14,12 @@
 //
 // Aegisub Project http://www.aegisub.org/
 
-#include <libaegisub/lua/utils.h>
-
+#include "compat.h"
+#include "include/aegisub/context.h"
+#include "options.h"
 #include "utils.h"
+
+#include <libaegisub/path.h>
 
 namespace {
 	struct string {
@@ -24,6 +27,7 @@ namespace {
 		size_t len;
 	};
 	struct library {
+		agi::Context *c = nullptr;
 		std::string str;
 
 		string return_string(std::string ret) {
@@ -61,4 +65,12 @@ extern "C" bool auto5_clipboard_set(library *lib, const char *str, size_t len) {
 		cb.Flush();
 	}
 	return succeeded;
+}
+
+extern "C" string auto5_gettext(library *lib, string str) {
+	return lib->return_string(from_wx(wxGetTranslation(wxString::FromUTF8(str.data, str.len))));
+}
+
+extern "C" string auto5_path_decode(library *lib, string str) {
+	return lib->return_string(config::path->Decode(std::string(str.data, str.len)).string());
 }
