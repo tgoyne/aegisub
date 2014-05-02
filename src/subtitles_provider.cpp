@@ -16,10 +16,16 @@
 
 #include "include/aegisub/subtitles_provider.h"
 
+#include "ass_dialogue.h"
+#include "ass_file.h"
+#include "ass_info.h"
+#include "ass_style.h"
 #include "factory_manager.h"
 #include "options.h"
 #include "subtitles_provider_csri.h"
 #include "subtitles_provider_libass.h"
+
+#include <boost/range/algorithm_ext/push_back.hpp>
 
 namespace {
 	struct factory {
@@ -62,4 +68,29 @@ std::unique_ptr<SubtitlesProvider> SubtitlesProviderFactory::GetProvider(agi::Ba
 	}
 
 	throw error;
+}
+
+void SubtitlesProvider::LoadSubtitles(AssFile *subs, int time) {
+	buffer.clear();
+
+	auto push_line = [&](std::string const& str) {
+		boost::push_back(buffer, str);
+		boost::push_back(buffer, "\n");
+	};
+
+	boost::push_back(buffer, "[Script Info]\n");
+	for (auto const& line : subs->Info)
+		push_line(line.GetEntryData());
+
+	boost::push_back(buffer, "[V4+ Styles]\n");
+	for (auto const& line : subs->Info)
+		push_line(line.GetEntryData());
+
+	boost::push_back(buffer, "[Events]\n");
+	for (auto const& line : subs->Events) {
+		if (!line.Comment && time < 0 || !(line.Start > time || line.End <= time))
+			push_line(line.GetEntryData());
+	}
+
+	LoadSubtitles(&buffer[0], buffer.size());
 }
