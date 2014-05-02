@@ -37,7 +37,7 @@ extern "C" library *auto5_init() {
 	return new library;
 }
 
-extern "C" library *auto5_deinit(library *lib) {
+extern "C" void auto5_deinit(library *lib) {
 	delete lib;
 }
 
