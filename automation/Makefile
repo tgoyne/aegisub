@@ -19,7 +19,7 @@ aegisub-lua_LIBS := $(LIBS_WX) $(LIBS_BOOST) $(LIBS_ICU)
 PROGRAM += $(d)aegisub-lua
 
 test-automation: $(PROGRAM)
-	cd $(TOP)automation; LUA=./aegisub-lua busted -p 'moon' tests/modules
+	cd $(TOP)automation; LUA=./aegisub-lua busted -p 'moon' $(BUSTED_FLAGS) tests/modules
 
 test: test-automation
 
