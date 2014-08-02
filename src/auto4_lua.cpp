@@ -219,38 +219,11 @@ namespace {
 		throw error_tag();
 	}
 
-	int lua_text_textents(lua_State *L)
+	bool lua_text_textents(AssEntry *entry, const char *str, double *out)
 	{
-		argcheck(L, !!lua_istable(L, 1), 1, "");
-		argcheck(L, !!lua_isstring(L, 2), 2, "");
-
-		// have to check that it looks like a style table before actually converting
-		// if it's a dialogue table then an active AssFile object is required
-		{
-			lua_getfield(L, 1, "class");
-			std::string actual_class{lua_tostring(L, -1)};
-			boost::to_lower(actual_class);
-			if (actual_class != "style")
-				return error(L, "Not a style entry");
-			lua_pop(L, 1);
-		}
-
-		lua_pushvalue(L, 1);
-		std::unique_ptr<AssEntry> et(Automation4::LuaAssFile::LuaToAssEntry(L));
-		auto st = dynamic_cast<AssStyle*>(et.get());
-		lua_pop(L, 1);
-		if (!st)
-			return error(L, "Not a style entry");
-
-		double width, height, descent, extlead;
-		if (!Automation4::CalculateTextExtents(st, check_string(L, 2), width, height, descent, extlead))
-			return error(L, "Some internal error occurred calculating text_extents");
-
-		push_value(L, width);
-		push_value(L, height);
-		push_value(L, descent);
-		push_value(L, extlead);
-		return 4;
+		auto st = dynamic_cast<AssStyle*>(entry);
+		if (!st) return false;
+		return Automation4::CalculateTextExtents(st, str, out[0], out[1], out[2], out[3]);
 	}
 
 	int project_properties(lua_State *L)
@@ -280,17 +253,16 @@ namespace {
 		return 1;
 	}
 
-	class LuaFeature {
-		int myid = 0;
-	protected:
+	struct LuaFeature {
 		lua_State *L;
 
-		void RegisterFeature();
-		void UnregisterFeature();
-
-		void GetFeatureFunction(const char *function) const;
-
-		LuaFeature(lua_State *L) : L(L) { }
+		void GetFeatureFunction(int id) const
+		{
+			lua_getfield(L, LUA_REGISTRYINDEX, "aegisub function table");
+			lua_rawgeti(L, -1, id);
+			lua_remove(L, -2);
+			assert(lua_isfunction(L, -1));
+		}
 	};
 
 	/// Run a lua function on a background thread
@@ -303,14 +275,20 @@ namespace {
 	/// @throws agi::UserCancelException if the function fails to run to completion (either due to cancelling or errors)
 	void LuaThreadedCall(lua_State *L, int nargs, int nresults, std::string const& title, wxWindow *parent, bool can_open_config);
 
-	class LuaCommand final : public cmd::Command, private LuaFeature {
+	class LuaScript;
+
+	class LuaCommand final : public cmd::Command {
+		LuaScript *script;
 		std::string cmd_name;
 		wxString display;
 		wxString help;
-		int cmd_type;
+		int cmd_type = cmd::COMMAND_NORMAL;
+		int run;
+		int validate;
+		int is_active;
 
 	public:
-		LuaCommand(lua_State *L);
+		LuaCommand(LuaScript *script, const char *display, const char *help, int run, int validate, int is_active);
 		~LuaCommand();
 
 		const char* name() const override { return cmd_name.c_str(); }
@@ -323,25 +301,29 @@ namespace {
 		void operator()(agi::Context *c) override;
 		bool Validate(const agi::Context *c) override;
 		virtual bool IsActive(const agi::Context *c) override;
-
-		static int LuaRegister(lua_State *L);
 	};
 
 	class LuaExportFilter final : public ExportFilter, private LuaFeature {
-		bool has_config;
-		LuaDialog *config_dialog;
+		LuaScript *script;
+		LuaDialog *config_dialog = nullptr;
+		int run;
+		int config;
 
 	protected:
 		std::unique_ptr<ScriptDialog> GenerateConfigDialog(wxWindow *parent, agi::Context *c) override;
 
 	public:
-		LuaExportFilter(lua_State *L);
+		LuaExportFilter(LuaScript *script);
 		static int LuaRegister(lua_State *L);
 
 		void ProcessSubs(AssFile *subs, wxWindow *export_dialog) override;
 	};
+
 	class LuaScript final : public Script {
 		lua_State *L = nullptr;
+		const agi::Context *context = nullptr;
+		agi::Context *mutable_context = nullptr;
+		LuaAssFile *laf = nullptr;
 
 		std::string name;
 		std::string description;
@@ -356,21 +338,60 @@ namespace {
 		/// destroy internal structures, unreg features and delete environment
 		void Destroy();
 
-		static int LuaInclude(lua_State *L);
+		static int LoadFile(lua_State *L) {
+			return 0;
+		}
+
+		void SetProperties(const char *name, const char *description, const char *author, const char *version) {
+			this->name = name;
+			this->description = description;
+			this->author = author;
+			this->version = version;
+
+			if (this->name.empty())
+				this->name = GetPrettyFilename().string();
+		}
+
+		void RegisterCommand(const char *display, const char *help, int run, int validate, int active) {
+
+		}
 
 	public:
-		LuaScript(agi::fs::path const& filename);
+		LuaScript(agi::fs::path const& filename)
+		: Script(filename)
+		{
+			Create();
+		}
 		~LuaScript() { Destroy(); }
 
-		void RegisterCommand(LuaCommand *command);
-		void UnregisterCommand(LuaCommand *command);
-		void RegisterFilter(LuaExportFilter *filter);
+		void SetContext(agi::Context *c, bool allow_undo)
+		{
+			assert(!laf);
+			context = mutable_context = c;
+			laf = new Automation4::LuaAssFile(L, c->ass, true, allow_undo);
+		}
 
-		static LuaScript* GetScriptObject(lua_State *L);
+		void SetContext(const agi::Context *c)
+		{
+			assert(!laf);
+			context = c;
+			laf = new Automation4::LuaAssFile(L, c->ass, false, false);
+		}
+
+		void ClearContext()
+		{
+			laf->ProcessingComplete();
+			context = mutable_context = nullptr;
+		}
+
+		void PushFeatureFunction(int id);
+
+		agi::Context *GetMutableContext() { return mutable_context; }
+		const agi::Context *GetContext() { return context; }
+		lua_State *GetState() { return L; }
 
 		// Script implementation
 		void Reload() override { Create(); }
-
 		std::string GetName() const override { return name; }
 		std::string GetDescription() const override { return description; }
 		std::string GetAuthor() const override { return author; }
@@ -381,11 +402,6 @@ namespace {
 		std::vector<ExportFilter*> GetFilters() const override;
 	};
 
-	LuaScript::LuaScript(agi::fs::path const& filename)
-	: Script(filename)
-	{
-		Create();
-	}
 
 	void LuaScript::Create()
 	{
@@ -405,14 +421,6 @@ namespace {
 		preload_modules(L);
 		stackcheck.check_stack(0);
 
-		// dofile and loadfile are replaced with include
-		lua_pushnil(L);
-		lua_setglobal(L, "dofile");
-		lua_pushnil(L);
-		lua_setglobal(L, "loadfile");
-		push_value(L, exception_wrapper<LuaInclude>);
-		lua_setglobal(L, "include");
-
 		// Replace the default lua module loader with our unicode compatible
 		// one and set the module search path
 		if (!Install(L, include_path)) {
@@ -422,22 +430,23 @@ namespace {
 		}
 		stackcheck.check_stack(0);
 
-		// prepare stuff in the registry
+		// Load the Lua implementation of the auto4 env
+		lua_getglobal(L, "require");
+		push_value(L, "aegisub.auto4");
+		if (lua_pcall(L, 2, 1, 0)) {
+			description = agi::format("Error initializing auto4 environment: %s", get_string_or_default(L, -1));
+			lua_pop(L, 1);
+			return;
+		}
 
-		// store the script's filename
-		push_value(L, GetFilename().stem());
-		lua_setfield(L, LUA_REGISTRYINDEX, "filename");
-		stackcheck.check_stack(0);
+		// Leaves a function on the stack
+		stackcheck.check_stack(1);
 
-		// reference to the script object
+		// Set up the stuff the auto4 framework needs
+		push_value(L, GetFilename());
 		push_value(L, this);
-		lua_setfield(L, LUA_REGISTRYINDEX, "aegisub");
-		stackcheck.check_stack(0);
 
-		// make "aegisub" table
-		lua_pushstring(L, "aegisub");
 		lua_createtable(L, 0, 13);
-
 		set_field<LuaCommand::LuaRegister>(L, "register_macro");
 		set_field<LuaExportFilter::LuaRegister>(L, "register_filter");
 		set_field<lua_text_textents>(L, "text_extents");
@@ -453,45 +462,15 @@ namespace {
 		set_field<get_translation>(L, "gettext");
 		set_field<project_properties>(L, "project_properties");
 
-		// store aegisub table to globals
-		lua_settable(L, LUA_GLOBALSINDEX);
-		stackcheck.check_stack(0);
-
-		// load user script
-		if (!LoadFile(L, GetFilename())) {
-			description = get_string_or_default(L, 1);
-			lua_pop(L, 1);
-			return;
-		}
-		stackcheck.check_stack(1);
-
-		// and execute it
-		// this is where features are registered
-		// don't thread this, as there's no point in it and it seems to break on wx 2.8.3, for some reason
-		if (lua_pcall(L, 0, 0, 0)) {
-			// error occurred, assumed to be on top of Lua stack
+		// And load/run the user's script
+		if (lua_pcall(L, 3, 0, 0)) {
+			// Should be an error message on top of the stack if it fails
 			description = agi::format("Error initialising Lua script \"%s\":\n\n%s", GetPrettyFilename().string(), get_string_or_default(L, -1));
 			lua_pop(L, 1);
 			return;
 		}
 		stackcheck.check_stack(0);
 
-		lua_getglobal(L, "version");
-		if (lua_isnumber(L, -1) && lua_tointeger(L, -1) == 3) {
-			lua_pop(L, 1); // just to avoid tripping the stackcheck in debug
-			description = "Attempted to load an Automation 3 script as an Automation 4 Lua script. Automation 3 is no longer supported.";
-			return;
-		}
-
-		name = get_global_string(L, "script_name");
-		description = get_global_string(L, "script_description");
-		author = get_global_string(L, "script_author");
-		version = get_global_string(L, "script_version");
-
-		if (name.empty())
-			name = GetPrettyFilename().string();
-
-		lua_pop(L, 1);
 		// if we got this far, the script should be ready
 		loaded = true;
 	}
@@ -522,6 +501,13 @@ namespace {
 
 	void LuaScript::RegisterCommand(LuaCommand *command)
 	{
+		static std::mutex mutex;
+		auto command = agi::make_unique<LuaCommand>(L);
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			cmd::reg(std::move(command));
+		}
+
 		for (auto macro : macros) {
 			if (macro->name() == command->name()) {
 				error(L, "A macro named '%s' is already defined in script '%s'",
@@ -539,44 +525,6 @@ namespace {
 	void LuaScript::RegisterFilter(LuaExportFilter *filter)
 	{
 		filters.emplace_back(filter);
-	}
-
-	LuaScript* LuaScript::GetScriptObject(lua_State *L)
-	{
-		lua_getfield(L, LUA_REGISTRYINDEX, "aegisub");
-		void *ptr = lua_touserdata(L, -1);
-		lua_pop(L, 1);
-		return (LuaScript*)ptr;
-	}
-
-
-	int LuaScript::LuaInclude(lua_State *L)
-	{
-		const LuaScript *s = GetScriptObject(L);
-
-		const std::string filename(check_string(L, 1));
-		agi::fs::path filepath;
-
-		// Relative or absolute path
-		if (!boost::all(filename, !boost::is_any_of("/\\")))
-			filepath = s->GetFilename().parent_path()/filename;
-		else { // Plain filename
-			for (auto const& dir : s->include_path) {
-				filepath = dir/filename;
-				if (agi::fs::FileExists(filepath))
-					break;
-			}
-		}
-
-		if (!agi::fs::FileExists(filepath))
-			return error(L, "Lua include not found: %s", filename.c_str());
-
-		if (!LoadFile(L, filepath))
-			return error(L, "Error loading Lua include \"%s\":\n%s", filename.c_str(), check_string(L, 1).c_str());
-
-		int pretop = lua_gettop(L) - 1; // don't count the function value itself
-		lua_call(L, 0, LUA_MULTRET);
-		return lua_gettop(L) - pretop;
 	}
 
 	void LuaThreadedCall(lua_State *L, int nargs, int nresults, std::string const& title, wxWindow *parent, bool can_open_config)
@@ -608,87 +556,17 @@ namespace {
 			throw agi::UserCancelException("Script threw an error");
 	}
 
-	// LuaFeature
-	void LuaFeature::RegisterFeature()
+	LuaCommand::LuaCommand(LuaScript *script, const char *display, const char *help, int run, int validate, int is_active)
+	: script{script}
+	, display(wxString::FromUTF8(display))
+	, help(wxString::FromUTF8(help))
+	, run(run)
+	, validate(validate)
+	, is_active(is_active)
 	{
-		myid = luaL_ref(L, LUA_REGISTRYINDEX);
-	}
-
-	void LuaFeature::UnregisterFeature()
-	{
-		luaL_unref(L, LUA_REGISTRYINDEX, myid);
-	}
-
-	void LuaFeature::GetFeatureFunction(const char *function) const
-	{
-		// get this feature's function pointers
-		lua_rawgeti(L, LUA_REGISTRYINDEX, myid);
-		// get pointer for validation function
-		push_value(L, function);
-		lua_rawget(L, -2);
-		// remove the function table
-		lua_remove(L, -2);
-		assert(lua_isfunction(L, -1));
-	}
-
-	// LuaFeatureMacro
-	int LuaCommand::LuaRegister(lua_State *L)
-	{
-		static std::mutex mutex;
-		auto command = agi::make_unique<LuaCommand>(L);
-		{
-			std::lock_guard<std::mutex> lock(mutex);
-			cmd::reg(std::move(command));
-		}
-		return 0;
-	}
-
-	LuaCommand::LuaCommand(lua_State *L)
-	: LuaFeature(L)
-	, display(check_wxstring(L, 1))
-	, help(get_wxstring(L, 2))
-	, cmd_type(cmd::COMMAND_NORMAL)
-	{
-		lua_getfield(L, LUA_REGISTRYINDEX, "filename");
-		cmd_name = agi::format("automation/lua/%s/%s", check_string(L, -1), check_string(L, 1));
-
-		if (!lua_isfunction(L, 3))
-			error(L, "The macro processing function must be a function");
-
-		if (lua_isfunction(L, 4))
-			cmd_type |= cmd::COMMAND_VALIDATE;
-
-		if (lua_isfunction(L, 5))
-			cmd_type |= cmd::COMMAND_TOGGLE;
-
-		// new table for containing the functions for this feature
-		lua_createtable(L, 0, 3);
-
-		// store processing function
-		push_value(L, "run");
-		lua_pushvalue(L, 3);
-		lua_rawset(L, -3);
-
-		// store validation function
-		push_value(L, "validate");
-		lua_pushvalue(L, 4);
-		lua_rawset(L, -3);
-
-		// store active function
-		push_value(L, "isactive");
-		lua_pushvalue(L, 5);
-		lua_rawset(L, -3);
-
-		// store the table in the registry
-		RegisterFeature();
-
-		LuaScript::GetScriptObject(L)->RegisterCommand(this);
-	}
-
-	LuaCommand::~LuaCommand()
-	{
-		UnregisterFeature();
-		LuaScript::GetScriptObject(L)->UnregisterCommand(this);
+		cmd_name = agi::format("automation/lua/%s/%s", script->GetFilename(), display);
+		if (validate)  cmd_type |= cmd::COMMAND_VALIDATE;
+		if (is_active) cmd_type |= cmd::COMMAND_TOGGLE;
 	}
 
 	static std::vector<int> selected_rows(const agi::Context *c)
@@ -705,20 +583,18 @@ namespace {
 
 	bool LuaCommand::Validate(const agi::Context *c)
 	{
-		if (!(cmd_type & cmd::COMMAND_VALIDATE)) return true;
+		if (!validate) return true;
 
-		set_context(L, c);
+		script->PushFeatureFunction(validate);
+		script->SetContext(c);
 
-		GetFeatureFunction("validate");
-		auto subsobj = new LuaAssFile(L, c->ass.get());
-
+		auto L = script->GetState();
 		push_value(L, selected_rows(c));
 		if (auto active_line = c->selectionController->GetActiveLine())
 			push_value(L, active_line->Row + c->ass->Info.size() + c->ass->Styles.size() + 1);
 
 		int err = lua_pcall(L, 3, 2, 0);
-
-		subsobj->ProcessingComplete();
+		script->ClearContext();
 
 		if (err) {
 			wxLogWarning("Runtime error in Lua macro validation function:\n%s", get_wxstring(L, -1));
@@ -741,12 +617,8 @@ namespace {
 
 	void LuaCommand::operator()(agi::Context *c)
 	{
-		LuaStackcheck stackcheck(L);
-		set_context(L, c);
-		stackcheck.check_stack(0);
-
-		GetFeatureFunction("run");
-		auto subsobj = new LuaAssFile(L, c->ass.get(), true, true);
+		script->PushFeatureFunction(run);
+		script->SetContext(c, true);
 
 		int original_offset = c->ass->Info.size() + c->ass->Styles.size() + 1;
 		auto original_sel = selected_rows(c);
@@ -754,11 +626,13 @@ namespace {
 		if (auto active_line = c->selectionController->GetActiveLine())
 			original_active = active_line->Row + original_offset;
 
+		auto L = script->GetState();
 		push_value(L, original_sel);
 		push_value(L, original_active);
 
 		try {
 			LuaThreadedCall(L, 3, 2, from_wx(StrDisplay(c)), c->parent, true);
+			script->ClearContext();
 
 			auto lines = subsobj->ProcessingComplete(StrDisplay(c));
 
@@ -841,61 +715,36 @@ namespace {
 
 	bool LuaCommand::IsActive(const agi::Context *c)
 	{
-		if (!(cmd_type & cmd::COMMAND_TOGGLE)) return false;
+		if (!is_active) return false;
 
-		LuaStackcheck stackcheck(L);
+		script->PushFeatureFunction(is_active);
+		script->SetContext(c);
 
-		set_context(L, c);
-		stackcheck.check_stack(0);
-
-		GetFeatureFunction("isactive");
-		auto subsobj = new LuaAssFile(L, c->ass.get());
+		auto L = script->GetState();
 		push_value(L, selected_rows(c));
 		if (auto active_line = c->selectionController->GetActiveLine())
 			push_value(L, active_line->Row + c->ass->Info.size() + c->ass->Styles.size() + 1);
 
 		int err = lua_pcall(L, 3, 1, 0);
-		subsobj->ProcessingComplete();
+		script->ClearContext();
 
 		bool result = false;
 		if (err)
 			wxLogWarning("Runtime error in Lua macro IsActive function:\n%s", get_wxstring(L, -1));
 		else
 			result = !!lua_toboolean(L, -1);
-
-		// clean up stack (result or error message)
-		stackcheck.check_stack(1);
 		lua_pop(L, 1);
 
 		return result;
 	}
 
 	// LuaFeatureFilter
-	LuaExportFilter::LuaExportFilter(lua_State *L)
-	: ExportFilter(check_string(L, 1), lua_tostring(L, 2), lua_tointeger(L, 3))
-	, LuaFeature(L)
+	LuaExportFilter::LuaExportFilter(LuaScript *script, const char *name, const char *help, int priority, int run, int config)
+	: ExportFilter(name, help, priority)
+	, script(script)
+	, run(run)
+	, config(config)
 	{
-		if (!lua_isfunction(L, 4))
-			error(L, "The filter processing function must be a function");
-
-		// new table for containing the functions for this feature
-		lua_createtable(L, 0, 2);
-
-		// store processing function
-		push_value(L, "run");
-		lua_pushvalue(L, 4);
-		lua_rawset(L, -3);
-
-		// store config function
-		push_value(L, "config");
-		lua_pushvalue(L, 5);
-		has_config = lua_isfunction(L, -1);
-		lua_rawset(L, -3);
-
-		// store the table in the registry
-		RegisterFeature();
-
-		LuaScript::GetScriptObject(L)->RegisterFilter(this);
 	}
 
 	int LuaExportFilter::LuaRegister(lua_State *L)
@@ -911,19 +760,11 @@ namespace {
 
 	void LuaExportFilter::ProcessSubs(AssFile *subs, wxWindow *export_dialog)
 	{
-		LuaStackcheck stackcheck(L);
-
-		GetFeatureFunction("run");
-		stackcheck.check_stack(1);
-
-		// The entire point of an export filter is to modify the file, but
-		// setting undo points makes no sense
-		auto subsobj = new LuaAssFile(L, subs, true);
-		assert(lua_isuserdata(L, -1));
-		stackcheck.check_stack(2);
+		script->PushFeatureFunction(run);
+//		script->SetContext(<#agi::Context *c#>, <#bool allow_undo#>)
 
 		// config
-		if (has_config && config_dialog) {
+		if (config_dialog) {
 			int results_produced = config_dialog->LuaReadBack(L);
 			assert(results_produced == 1);
 			(void) results_produced;	// avoid warning on release builds
@@ -948,21 +789,15 @@ namespace {
 
 	std::unique_ptr<ScriptDialog> LuaExportFilter::GenerateConfigDialog(wxWindow *parent, agi::Context *c)
 	{
-		if (!has_config)
-			return nullptr;
+		if (!config) return nullptr;
 
-		set_context(L, c);
+		script->PushFeatureFunction(config);
+		script->SetContext(c, false);
 
-		GetFeatureFunction("config");
-
-		// prepare function call
-		auto subsobj = new LuaAssFile(L, c->ass.get());
-		// stored options
-		lua_newtable(L); // TODO, nothing for now
-
-		// do call
+		auto L = script->GetState();
+		lua_newtable(L); // TODO: persist config stuff
 		int err = lua_pcall(L, 2, 1, 0);
-		subsobj->ProcessingComplete();
+		script->ClearContext();
 
 		if (err) {
 			wxLogWarning("Runtime error in Lua config dialog function:\n%s", get_wxstring(L, -1));
@@ -977,10 +812,7 @@ namespace {
 }
 
 namespace Automation4 {
-	LuaScriptFactory::LuaScriptFactory()
-	: ScriptFactory("Lua", "*.lua,*.moon")
-	{
-	}
+	LuaScriptFactory::LuaScriptFactory() : ScriptFactory("Lua", "*.lua,*.moon") { }
 
 	std::unique_ptr<Script> LuaScriptFactory::Produce(agi::fs::path const& filename) const
 	{

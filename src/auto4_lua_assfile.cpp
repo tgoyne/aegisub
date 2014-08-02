@@ -54,6 +54,85 @@
 namespace {
 	using namespace agi::lua;
 
+	struct agi_ass_dialogue {
+		bool comment;
+		int layer;
+		int start_time;
+		int end_time;
+		const char *style;
+		const char *actor;
+		const char *effect;
+		std::array<int, 3> margin;
+		const char *text;
+	};
+
+	struct agi_ass_info {
+		const char *key;
+		const char *value;
+	};
+
+	struct agi_ass_style {
+		const char *name;
+		const char *font_name;
+		double font_size;
+
+		const char *fill_color;
+		const char *karaoke_color;
+		const char *border_color;
+		const char *shadow_color;
+
+		bool bold;
+		bool italic;
+		bool underline;
+		bool strikeout;
+
+		double scale_x;
+		double scale_y;
+		double spacing;
+		double angle;
+		int border_style;
+		int border;
+		int shadow;
+		int alignment;
+		std::array<int, 3> margin;
+		int encoding;
+	};
+
+	struct entry_buffer {
+		union {
+			agi_ass_dialogue dialogue;
+			agi_ass_info info;
+			agi_ass_style style;
+		};
+
+		std::string colors[4];
+	};
+
+	void get_info(const AssFile *file, size_t index, entry_buffer &entry) {
+		auto const& assinfo = file->Info[index];
+		auto& info = entry.info;
+		info.key = assinfo.Key().c_str();
+		info.value = assinfo.Value().c_str();
+	}
+
+	void get_event(const AssFile *file, size_t index, entry_buffer &entry) {
+		auto const& ass = *std::next(file->Events.begin(), index);
+		auto& event = entry.dialogue;
+		event.comment    = ass.Comment;
+		event.layer      = ass.Layer;
+		event.start_time = ass.Start;
+		event.end_time   = ass.End;
+		event.style      = ass.Style.get().c_str();
+		event.actor      = ass.Actor.get().c_str();
+		event.effect     = ass.Effect.get().c_str();
+		event.margin     = ass.Margin;
+		event.text       = ass.Text.get().c_str();
+	}
+
+	void get_style(const AssFile *file, size_t index, entry_buffer &entry) {
+	}
+
+
 	DEFINE_EXCEPTION(BadField, Automation4::MacroRunError);
 	BadField bad_field(const char *expected_type, const char *name, const char *line_clasee)
 	{

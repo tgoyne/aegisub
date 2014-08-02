@@ -37,6 +37,7 @@ class AssEntry;
 class wxControl;
 class wxWindow;
 struct lua_State;
+namespace agi { struct Context; }
 
 namespace Automation4 {
 	/// @class LuaAssFile
@@ -136,15 +137,7 @@ namespace Automation4 {
 
 	class LuaProgressSink {
 		lua_State *L;
-
-		static int LuaSetProgress(lua_State *L);
-		static int LuaSetTask(lua_State *L);
-		static int LuaSetTitle(lua_State *L);
-		static int LuaGetCancelled(lua_State *L);
-		static int LuaDebugOut(lua_State *L);
 		static int LuaDisplayDialog(lua_State *L);
-		static int LuaDisplayOpenDialog(lua_State *L);
-		static int LuaDisplaySaveDialog(lua_State *L);
 
 	public:
 		LuaProgressSink(lua_State *L, ProgressSink *ps, bool allow_config_dialog = true);
@@ -216,5 +209,14 @@ namespace Automation4 {
 		wxWindow* CreateWindow(wxWindow *parent) override;
 		std::string Serialise() override;
 		void Unserialise(const std::string &serialised) override;
+	};
+
+	class LuaEnv {
+	public:
+		lua_State *L;
+		std::unique_ptr<ProgressSink> progress_sink;
+		agi::Context *context;
+
+		static LuaEnv *FromState(lua_State *L);
 	};
 }
