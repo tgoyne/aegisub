@@ -62,6 +62,31 @@
 
 using namespace agi::lua;
 namespace {
+	wxControl *make_static_text(wxWindow *parent, const char *label) {
+		return new wxStaticText(parent, -1, wxString::FromUTF8(label));
+	}
+
+	wxControl *make_text_ctrl(wxWindow *parent, const char *value, bool multiline) {
+		auto ctrl = new wxTextCtrl(parent, -1, wxString::FromUTF8(value));
+		ctrl->SetMaxLength(0);
+		return ctrl;
+	}
+
+	void set_tooltip(wxControl *ctrl, const char *text) {
+		ctrl->SetToolTip(wxString::FromUTF8(text));
+	}
+
+	const char *get_text_value(wxTextCtrl *ctrl) {
+		return strdup(ctrl->GetValue().utf8_str());
+	}
+
+	wxControl *make_color_button(wxWindow *parent, int width, int height, bool alpha, agi::Color const& color) {
+		return new ColourButton(parent, wxSize(50*width,10*height), alpha, color);
+	}
+
+
+
+
 	inline void get_if_right_type(lua_State *L, std::string &def) {
 		if (lua_isstring(L, -1))
 			def = lua_tostring(L, -1);
