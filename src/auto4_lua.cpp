@@ -824,7 +824,7 @@ namespace {
 						++prev;
 						++it;
 					}
-					if (row != prev) break;
+					if (it == c->ass->Events.end()) break;
 					new_sel.insert(&*it);
 					if (row == original_active)
 						new_active = &*it;
