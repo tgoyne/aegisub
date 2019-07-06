@@ -81,6 +81,21 @@ wxWidgets is located in vendor/wxWidgets, and can be built like so:
 Once the dependencies are installed, build Aegisub with `autoreconf && ./configure --with-wxdir=/path/to/Aegisub/vendor/wxWidgets && make && make osx-bundle`.
 `autoreconf` should be skipped if you are building from a source tarball rather than `git`.
 
+### Linux/Unix
+
+Make sure you have `libboost` installed. For video/audio processing, you will also need `ffms2`.
+
+If you use Ubuntu or other debian-based distro, you can use `apt` to install these libraries:
+
+	sudo apt install libboost-all-dev
+	sudo apt install libffms2-dev
+	
+After that, follow the normal compilation path:
+
+	./configure
+	make
+	make install
+	
 ## Updating Moonscript
 
 From within the Moonscript repository, run `bin/moon bin/splat.moon -l moonscript moonscript/ > bin/moonscript.lua`.
