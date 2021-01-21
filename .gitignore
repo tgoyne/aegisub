@@ -37,6 +37,7 @@ subprojects/icu
 subprojects/libass
 subprojects/libffi*
 subprojects/libpng-*
+subprojects/luajit
 subprojects/nasm-*
 subprojects/packagecache
 subprojects/proxy-libintl*
