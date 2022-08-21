@@ -27,11 +27,6 @@
 //
 // Aegisub Project http://www.aegisub.org/
 
-/// @file version.h
-/// @see version.cpp
-/// @ingroup main
-///
-
 /// Version string appended in title bar of main window (quick identification of all elements of a build)
 const char *GetAegisubLongVersionString();
 /// Version string used in About box, looks nicer

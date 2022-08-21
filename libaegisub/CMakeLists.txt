@@ -1,5 +1,6 @@
 set(SOURCES
     ass/dialogue_parser.cpp
+    ass/karaoke.cpp
     ass/time.cpp
     ass/uuencode.cpp
 
@@ -34,6 +35,7 @@ set(SOURCES
     common/parser.cpp
     common/path.cpp
     common/thesaurus.cpp
+    common/unicode.cpp
     common/util.cpp
     common/vfr.cpp
     common/ycbcr_conv.cpp
@@ -91,12 +93,14 @@ set(HEADERS
     include/libaegisub/split.h
     include/libaegisub/thesaurus.h
     include/libaegisub/type_name.h
+    include/libaegisub/unicode.h
     include/libaegisub/util.h
     include/libaegisub/util_osx.h
     include/libaegisub/vfr.h
     include/libaegisub/ycbcr_conv.h
 
     include/libaegisub/ass/dialogue_parser.h
+    include/libaegisub/ass/karaoke.h
     include/libaegisub/ass/smpte.h
     include/libaegisub/ass/time.h
     include/libaegisub/ass/uuencode.h

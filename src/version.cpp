@@ -27,13 +27,9 @@
 //
 // Aegisub Project http://www.aegisub.org/
 
-/// @file version.cpp
-/// @brief Derive and return various information about the build and version at runtime
-/// @ingroup main
-///
-
 #include "version.h"
-#include "git_version.h"
+//#include "git_version.h"
+#define BUILD_GIT_VERSION_STRING "3.4.0-dev"
 
 #ifdef _DEBUG
 	#define DEBUG_SUFFIX " [DEBUG VERSION]"
