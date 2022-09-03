@@ -91,6 +91,7 @@ set(HEADERS
     include/libaegisub/signal.h
     include/libaegisub/spellchecker.h
     include/libaegisub/split.h
+    include/libaegisub/string.h
     include/libaegisub/thesaurus.h
     include/libaegisub/type_name.h
     include/libaegisub/unicode.h
